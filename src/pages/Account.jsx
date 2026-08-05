@@ -10,8 +10,8 @@ const INFO_ROWS = [
   { label: 'Pendidikan dan Pengalaman', icon: GraduationCap, section: 'education' },
   { label: 'Info payroll', icon: Wallet, section: 'payroll' },
   { label: 'Info tambahan', icon: Info, section: 'additional' },
-  { label: 'File saya', icon: Folder, section: null },
-  { label: 'Peringatan', icon: AlertTriangle, section: null },
+  { label: 'File saya', icon: Folder, section: 'files' },
+  { label: 'Peringatan', icon: AlertTriangle, section: 'warnings' },
 ]
 
 export default function Account({ employee, onSignOut, onToast, onNavigate }) {

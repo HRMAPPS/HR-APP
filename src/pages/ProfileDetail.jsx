@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { ArrowLeft, Plus, Pencil, Trash2 } from 'lucide-react'
+import { ArrowLeft, Plus, Pencil, Trash2, FileText, Upload, Download, AlertTriangle } from 'lucide-react'
 import { useProfileDetail } from '../lib/useProfileDetail'
 
 const SECTION_TITLES = {
@@ -10,6 +10,8 @@ const SECTION_TITLES = {
   education: 'Pendidikan dan Pengalaman',
   payroll: 'Info Payroll',
   additional: 'Info Tambahan',
+  files: 'File Saya',
+  warnings: 'Peringatan',
 }
 
 export default function ProfileDetail({ section, onBack, onToast }) {
@@ -34,6 +36,8 @@ export default function ProfileDetail({ section, onBack, onToast }) {
           {section === 'education' && <EducationList profile={profile} onToast={onToast} />}
           {section === 'payroll' && <PayrollForm profile={profile} onToast={onToast} />}
           {section === 'additional' && <AdditionalForm profile={profile} onToast={onToast} />}
+          {section === 'files' && <FilesList profile={profile} onToast={onToast} />}
+          {section === 'warnings' && <WarningsList profile={profile} />}
         </div>
       )}
     </div>
@@ -401,4 +405,119 @@ function AdditionalForm({ profile, onToast }) {
       <button className="primary-btn" disabled={profile.saving}>{profile.saving ? 'Menyimpan...' : 'Simpan'}</button>
     </form>
   )
+}
+
+// ---------------------------------------------------------------------
+// File saya — dokumen milik karyawan (upload sendiri) + dokumen dari
+// perusahaan (company_files, hanya bisa dilihat/unduh)
+// ---------------------------------------------------------------------
+function FilesList({ profile, onToast }) {
+  const [error, setError] = useState('')
+  const myFiles = profile.data.files || []
+  const companyFiles = profile.data.company_files || []
+
+  async function onPick(ev) {
+    const file = ev.target.files?.[0]
+    ev.target.value = ''
+    if (!file) return
+    setError('')
+    if (file.size > 10 * 1024 * 1024) { setError('Ukuran file maksimal 10 MB'); return }
+    const r = await profile.uploadFile(file)
+    if (!r.ok) { setError(r.message); return }
+    onToast('File berhasil diunggah')
+  }
+
+  async function onDelete(id) {
+    const r = await profile.deleteFile(id)
+    if (!r.ok) { setError(r.message); return }
+    onToast('File dihapus')
+  }
+
+  return (
+    <div>
+      <strong style={{ fontSize: 15 }}>Dokumen saya</strong>
+      {myFiles.length === 0 ? (
+        <div className="empty-state" style={{ padding: '14px 0' }}><p>Belum ada file yang diunggah.</p></div>
+      ) : myFiles.map((f) => (
+        <div key={f.id} className="list-item">
+          <div className="info" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <FileText size={18} color="var(--text-muted)" />
+            <div>
+              <div className="name">{f.file_name}</div>
+              <div className="sub">{new Date(f.created_at).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })}</div>
+            </div>
+          </div>
+          <div className="actions">
+            <a href={f.file_url} target="_blank" rel="noreferrer"><Download size={17} /></a>
+            <button onClick={() => onDelete(f.id)}><Trash2 size={17} /></button>
+          </div>
+        </div>
+      ))}
+
+      {error && <p className="error-text">{error}</p>}
+
+      <label className="primary-btn" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 14, cursor: 'pointer' }}>
+        <Upload size={18} /> {profile.saving ? 'Mengunggah...' : 'Unggah file'}
+        <input type="file" onChange={onPick} disabled={profile.saving} style={{ display: 'none' }} />
+      </label>
+
+      {companyFiles.length > 0 && (
+        <>
+          <strong style={{ fontSize: 15, display: 'block', marginTop: 24 }}>Dokumen dari perusahaan</strong>
+          {companyFiles.map((f) => (
+            <div key={f.id} className="list-item">
+              <div className="info" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <FileText size={18} color="var(--text-muted)" />
+                <div>
+                  <div className="name">{f.title}</div>
+                  <div className="sub">{f.category || f.description || '-'}</div>
+                </div>
+              </div>
+              <div className="actions">
+                <a href={f.file_url} target="_blank" rel="noreferrer"><Download size={17} /></a>
+              </div>
+            </div>
+          ))}
+        </>
+      )}
+    </div>
+  )
+}
+
+// ---------------------------------------------------------------------
+// Peringatan — riwayat surat peringatan (SP), read only, diterbitkan HR
+// ---------------------------------------------------------------------
+function WarningsList({ profile }) {
+  const warnings = profile.data.warnings || []
+
+  if (warnings.length === 0) {
+    return (
+      <div className="empty-state" style={{ padding: '14px 0' }}>
+        <p>Tidak ada peringatan. Pertahankan kinerja baik Anda 👍</p>
+      </div>
+    )
+  }
+
+  return (
+    <div>
+      {warnings.map((w) => (
+        <div key={w.id} style={{
+          border: '1px solid var(--border)', borderRadius: 14, padding: 14, marginBottom: 12,
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <AlertTriangle size={17} color="var(--red)" />
+            <strong style={{ fontSize: 14.5 }}>{w.level ? `${w.level} · ` : ''}{w.title}</strong>
+          </div>
+          {w.description && (
+            <p style={{ fontSize: 13.5, color: 'var(--text-muted)', marginTop: 8, whiteSpace: 'pre-wrap' }}>{w.description}</p>
+          )}
+          <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 8 }}>
+            {w.issued_date && new Date(w.issued_date).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })}
+            {w.issued_by && <> · diterbitkan oleh {w.issued_by}</>}
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
 }
