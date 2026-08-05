@@ -37,7 +37,7 @@ export function useAttendance(employee) {
     return pub.publicUrl
   }
 
-  async function handleCapture(blob, onDone) {
+  async function handleCapture(blob, onDone, notes) {
     const kind = cameraMode
     setCameraMode(null)
     setBusy(true)
@@ -48,7 +48,9 @@ export function useAttendance(employee) {
         uploadSelfie(blob, kind),
       ])
       const rpcName = kind === 'in' ? 'clock_in' : 'clock_out'
-      const { error } = await supabase.rpc(rpcName, { p_lat: lat, p_lng: lng, p_photo_url: photoUrl })
+      const { error } = await supabase.rpc(rpcName, {
+        p_lat: lat, p_lng: lng, p_photo_url: photoUrl, p_notes: notes || null,
+      })
       if (error) throw error
       result = { ok: true, message: kind === 'in' ? 'Berhasil clock in' : 'Berhasil clock out' }
       await load()

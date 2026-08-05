@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { ArrowLeft, LogIn, LogOut, ChevronRight, Info, MapPin, Camera as CameraIcon } from 'lucide-react'
+import { ArrowLeft, LogIn, LogOut, ChevronRight, Info } from 'lucide-react'
 import { useAttendance } from '../lib/useAttendance'
 import CameraCapture from '../components/CameraCapture'
 import AttendanceDetail from '../components/AttendanceDetail'
@@ -52,15 +52,17 @@ export default function PresensiOnline({ employee, onBack, onToast }) {
 
       <div style={{ margin: '-46px 16px 0', background: '#fff', borderRadius: 18, padding: '18px 16px', boxShadow: '0 6px 18px rgba(0,0,0,.08)' }}>
         <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>
-            Jadwal: {shift?.work_date ? new Date(shift.work_date).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) : '-'}
-          </div>
           {shift?.is_day_off ? (
-            <div style={{ fontWeight: 700, fontSize: 17, margin: '4px 0' }}>Hari libur</div>
+            <>
+              <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>{shift.shift_name}</div>
+              <div style={{ fontWeight: 700, fontSize: 17, margin: '4px 0' }}>Hari libur</div>
+            </>
           ) : shift ? (
             <>
-              <div style={{ fontWeight: 700, fontSize: 17, margin: '4px 0 2px' }}>{shift.shift_name}</div>
-              <div style={{ fontWeight: 700, fontSize: 17 }}>{shift.start_time?.slice(0,5)} - {shift.end_time?.slice(0,5)}</div>
+              <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>{shift.shift_name}</div>
+              <div style={{ fontWeight: 700, fontSize: 17, margin: '4px 0' }}>
+                {new Date(shift.work_date).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })} ({shift.start_time?.slice(0,5)} - {shift.end_time?.slice(0,5)})
+              </div>
             </>
           ) : (
             <div style={{ fontWeight: 700, fontSize: 17, margin: '4px 0' }}>Belum ada jadwal</div>
@@ -96,25 +98,6 @@ export default function PresensiOnline({ employee, onBack, onToast }) {
             <div style={{ fontSize: 13.5, color: 'var(--text-muted)' }}>
               Anda telah berhasil clock in pada pukul {formatTime(att.clock_in)}
               {att.clock_out && <> · clock out pukul {formatTime(att.clock_out)}</>}
-            </div>
-            <div style={{ display: 'flex', gap: 14, justifyContent: 'center', marginTop: 8, flexWrap: 'wrap' }}>
-              {att.clock_in_lat != null && (
-                <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12.5, color: '#5b554f' }}>
-                  <MapPin size={13} /> {att.clock_in_lat.toFixed(4)}, {att.clock_in_lng.toFixed(4)}
-                </span>
-              )}
-              {att.clock_in_photo_url && (
-                <a href={att.clock_in_photo_url} target="_blank" rel="noreferrer"
-                  style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12.5, color: '#5b554f' }}>
-                  <CameraIcon size={13} /> Lihat foto clock in
-                </a>
-              )}
-              {att.clock_out_photo_url && (
-                <a href={att.clock_out_photo_url} target="_blank" rel="noreferrer"
-                  style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12.5, color: '#5b554f' }}>
-                  <CameraIcon size={13} /> Lihat foto clock out
-                </a>
-              )}
             </div>
           </div>
         )}
@@ -155,8 +138,10 @@ export default function PresensiOnline({ employee, onBack, onToast }) {
 
       {cameraMode && (
         <CameraCapture
-          title={cameraMode === 'in' ? 'Foto Clock In' : 'Foto Clock Out'}
-          onCapture={(blob) => handleCapture(blob, (r) => onToast?.(r.message))}
+          mode={cameraMode}
+          employee={employee}
+          shift={shift}
+          onCapture={(blob, notes) => handleCapture(blob, (r) => onToast?.(r.message), notes)}
           onClose={() => setCameraMode(null)}
         />
       )}

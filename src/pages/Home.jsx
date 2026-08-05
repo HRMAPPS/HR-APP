@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Gift, LogIn, LogOut, MapPin, Camera as CameraIcon } from 'lucide-react'
+import { Gift, LogIn, LogOut } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
 import { HOME_QUICK_APPS } from '../lib/menuConfig'
 import { useAttendance } from '../lib/useAttendance'
@@ -75,25 +75,6 @@ export default function Home({ employee, onNavigate, onOpenAllApps }) {
                 Anda telah berhasil clock in pada pukul {formatTime(att.clock_in)}
                 {att.clock_out && <> · clock out pukul {formatTime(att.clock_out)}</>}
               </div>
-              <div style={{ display: 'flex', gap: 14, justifyContent: 'center', marginTop: 8, flexWrap: 'wrap' }}>
-                {att.clock_in_lat != null && (
-                  <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12.5, color: '#5b554f' }}>
-                    <MapPin size={13} /> {att.clock_in_lat.toFixed(4)}, {att.clock_in_lng.toFixed(4)}
-                  </span>
-                )}
-                {att.clock_in_photo_url && (
-                  <a href={att.clock_in_photo_url} target="_blank" rel="noreferrer"
-                    style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12.5, color: '#5b554f' }}>
-                    <CameraIcon size={13} /> Lihat foto clock in
-                  </a>
-                )}
-                {att.clock_out_photo_url && (
-                  <a href={att.clock_out_photo_url} target="_blank" rel="noreferrer"
-                    style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12.5, color: '#5b554f' }}>
-                    <CameraIcon size={13} /> Lihat foto clock out
-                  </a>
-                )}
-              </div>
             </div>
           )}
         </div>
@@ -138,8 +119,10 @@ export default function Home({ employee, onNavigate, onOpenAllApps }) {
 
       {cameraMode && (
         <CameraCapture
-          title={cameraMode === 'in' ? 'Foto Clock In' : 'Foto Clock Out'}
-          onCapture={(blob) => handleCapture(blob, (r) => flash(r.message))}
+          mode={cameraMode}
+          employee={employee}
+          shift={shift}
+          onCapture={(blob, notes) => handleCapture(blob, (r) => flash(r.message), notes)}
           onClose={() => setCameraMode(null)}
         />
       )}
