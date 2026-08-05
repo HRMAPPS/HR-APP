@@ -113,6 +113,8 @@ function PageRouter({ page, employee, onBack, onToast }) {
     case 'profile-education':
     case 'profile-payroll':
     case 'profile-additional':
+    case 'profile-files':
+    case 'profile-warnings':
       return <ProfileDetail section={page.replace('profile-', '')} onBack={onBack} onToast={onToast} />
     default:
       return null
