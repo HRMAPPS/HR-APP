@@ -16,6 +16,7 @@ import PresensiOnline from './pages/PresensiOnline'
 import ShiftChangeForm from './pages/ShiftChangeForm'
 import DataChangeForm from './pages/DataChangeForm'
 import CalendarPage from './pages/CalendarPage'
+import ProfileDetail from './pages/ProfileDetail'
 
 export default function App() {
   const { isLoggedIn, loading, employee, signOut } = useAuth()
@@ -60,7 +61,7 @@ export default function App() {
             {tab === 'home' && <Home employee={employee} onNavigate={navigateTo} onOpenAllApps={() => setShowAllApps(true)} />}
             {tab === 'employees' && <Employees />}
             {tab === 'inbox' && <Inbox employee={employee} onToast={flash} />}
-            {tab === 'account' && <Account employee={employee} onSignOut={signOut} onToast={flash} />}
+            {tab === 'account' && <Account employee={employee} onSignOut={signOut} onToast={flash} onNavigate={navigateTo} />}
           </>
         )}
       </div>
@@ -105,6 +106,14 @@ function PageRouter({ page, employee, onBack, onToast }) {
       return <DataChangeForm employee={employee} onBack={onBack} onToast={onToast} />
     case 'calendar':
       return <CalendarPage onBack={onBack} />
+    case 'profile-personal':
+    case 'profile-job':
+    case 'profile-emergency':
+    case 'profile-family':
+    case 'profile-education':
+    case 'profile-payroll':
+    case 'profile-additional':
+      return <ProfileDetail section={page.replace('profile-', '')} onBack={onBack} onToast={onToast} />
     default:
       return null
   }

@@ -3,18 +3,18 @@ import { ChevronRight, User, Briefcase, Flag, Users, GraduationCap, Wallet, Info
 import { supabase } from '../lib/supabaseClient'
 
 const INFO_ROWS = [
-  { label: 'Info personal', icon: User },
-  { label: 'Info pekerjaan', icon: Briefcase },
-  { label: 'Info kontak darurat', icon: Flag },
-  { label: 'Info keluarga', icon: Users },
-  { label: 'Pendidikan dan Pengalaman', icon: GraduationCap },
-  { label: 'Info payroll', icon: Wallet },
-  { label: 'Info tambahan', icon: Info },
-  { label: 'File saya', icon: Folder },
-  { label: 'Peringatan', icon: AlertTriangle },
+  { label: 'Info personal', icon: User, section: 'personal' },
+  { label: 'Info pekerjaan', icon: Briefcase, section: 'job' },
+  { label: 'Info kontak darurat', icon: Flag, section: 'emergency' },
+  { label: 'Info keluarga', icon: Users, section: 'family' },
+  { label: 'Pendidikan dan Pengalaman', icon: GraduationCap, section: 'education' },
+  { label: 'Info payroll', icon: Wallet, section: 'payroll' },
+  { label: 'Info tambahan', icon: Info, section: 'additional' },
+  { label: 'File saya', icon: Folder, section: null },
+  { label: 'Peringatan', icon: AlertTriangle, section: null },
 ]
 
-export default function Account({ employee, onSignOut, onToast }) {
+export default function Account({ employee, onSignOut, onToast, onNavigate }) {
   const [showPwd, setShowPwd] = useState(false)
 
   function initials(name) {
@@ -36,7 +36,7 @@ export default function Account({ employee, onSignOut, onToast }) {
         {INFO_ROWS.map((r) => {
           const Icon = r.icon
           return (
-            <button key={r.label} className="menu-row" onClick={() => onToast(`${r.label} segera hadir`)}>
+            <button key={r.label} className="menu-row" onClick={() => r.section ? onNavigate(`profile-${r.section}`) : onToast(`${r.label} segera hadir`)}>
               <Icon size={19} /> {r.label} <ChevronRight size={18} className="chev" />
             </button>
           )
