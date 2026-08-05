@@ -18,6 +18,7 @@ import DataChangeForm from './pages/DataChangeForm'
 import CalendarPage from './pages/CalendarPage'
 import ProfileDetail from './pages/ProfileDetail'
 import SlipGaji from './pages/SlipGaji'
+import Timesheet from './pages/Timesheet'
 
 export default function App() {
   const { isLoggedIn, loading, employee, signOut } = useAuth()
@@ -109,6 +110,8 @@ function PageRouter({ page, employee, onBack, onToast }) {
       return <CalendarPage onBack={onBack} />
     case 'slip_gaji':
       return <SlipGaji onBack={onBack} />
+    case 'timesheet':
+      return <Timesheet employee={employee} onBack={onBack} onToast={onToast} />
     case 'profile-personal':
     case 'profile-job':
     case 'profile-emergency':

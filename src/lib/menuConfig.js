@@ -21,7 +21,7 @@ export const ALL_APPS = [
   { key: 'aset', label: 'Aset', icon: Package, bg: '#E2E6FB', fg: '#4356C4', page: null },
   { key: 'formulir', label: 'Formulir', icon: FileEdit, bg: '#EAE0FB', fg: '#6C4CC4', page: null },
   { key: 'goal', label: 'Goal', icon: Target, bg: '#FBE1DD', fg: '#C0392B', page: null },
-  { key: 'timesheet', label: 'Timesheet', icon: ListChecks, bg: '#DDE7FB', fg: '#3B6ECF', page: null },
+  { key: 'timesheet', label: 'Timesheet', icon: ListChecks, bg: '#DDE7FB', fg: '#3B6ECF', page: 'timesheet' },
   { key: 'peringatan', label: 'Peringatan', icon: AlertTriangle, bg: '#FDE3D3', fg: '#D2762B', page: null },
   { key: 'proyek', label: 'Proyek', icon: FolderKanban, bg: '#FBE1EC', fg: '#C23673', page: null },
   { key: 'tugas', label: 'Tugas', icon: CheckSquare, bg: '#DAF0E4', fg: '#1E8E5A', page: null },
