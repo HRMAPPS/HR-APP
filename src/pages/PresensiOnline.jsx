@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { ArrowLeft, LogIn, LogOut, ChevronRight, Info } from 'lucide-react'
+import { ArrowLeft, LogIn, LogOut, ChevronRight, Info, MapPin, Camera as CameraIcon } from 'lucide-react'
 import { useAttendance } from '../lib/useAttendance'
 import CameraCapture from '../components/CameraCapture'
 import AttendanceDetail from '../components/AttendanceDetail'
@@ -90,6 +90,34 @@ export default function PresensiOnline({ employee, onBack, onToast }) {
             <LogOut size={17} /> Clock Out
           </button>
         </div>
+
+        {att?.clock_in && (
+          <div style={{ textAlign: 'center', marginTop: 14, paddingTop: 14, borderTop: '1px solid var(--border)' }}>
+            <div style={{ fontSize: 13.5, color: 'var(--text-muted)' }}>
+              Anda telah berhasil clock in pada pukul {formatTime(att.clock_in)}
+              {att.clock_out && <> · clock out pukul {formatTime(att.clock_out)}</>}
+            </div>
+            <div style={{ display: 'flex', gap: 14, justifyContent: 'center', marginTop: 8, flexWrap: 'wrap' }}>
+              {att.clock_in_lat != null && (
+                <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12.5, color: '#5b554f' }}>
+                  <MapPin size={13} /> {att.clock_in_lat.toFixed(4)}, {att.clock_in_lng.toFixed(4)}
+                </span>
+              )}
+              {att.clock_in_photo_url && (
+                <a href={att.clock_in_photo_url} target="_blank" rel="noreferrer"
+                  style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12.5, color: '#5b554f' }}>
+                  <CameraIcon size={13} /> Lihat foto clock in
+                </a>
+              )}
+              {att.clock_out_photo_url && (
+                <a href={att.clock_out_photo_url} target="_blank" rel="noreferrer"
+                  style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12.5, color: '#5b554f' }}>
+                  <CameraIcon size={13} /> Lihat foto clock out
+                </a>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       <div style={{ padding: '20px 16px 6px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
