@@ -58,6 +58,8 @@ create table if not exists attendance (
   clock_in_lng    numeric,
   clock_out_lat   numeric,
   clock_out_lng   numeric,
+  clock_in_photo_url  text,
+  clock_out_photo_url text,
   status          text,               -- late / early_leave / no_clock_in / no_clock_out / on_time
   created_at      timestamptz not null default now(),
   unique (employee_id, work_date)
@@ -317,7 +319,9 @@ begin
         where ss.employee_id = v_emp_id and ss.work_date = v_today
       ) s),
     'attendance_today', (select row_to_json(a) from (
-        select clock_in, clock_out from attendance
+        select clock_in, clock_out, clock_in_lat, clock_in_lng, clock_out_lat, clock_out_lng,
+               clock_in_photo_url, clock_out_photo_url
+        from attendance
         where employee_id = v_emp_id and work_date = v_today
       ) a),
     'unread_notifications', (select count(*) from notifications
@@ -331,7 +335,7 @@ $$;
 grant execute on function get_home_data() to authenticated;
 
 
-create or replace function clock_in(p_lat numeric default null, p_lng numeric default null)
+create or replace function clock_in(p_lat numeric default null, p_lng numeric default null, p_photo_url text default null)
 returns attendance
 language plpgsql
 security definer
@@ -350,16 +354,17 @@ begin
   from shift_schedules ss join shifts sh on sh.id = ss.shift_id
   where ss.employee_id = v_emp_id and ss.work_date = current_date;
 
-  insert into attendance (employee_id, work_date, clock_in, clock_in_lat, clock_in_lng, status)
+  insert into attendance (employee_id, work_date, clock_in, clock_in_lat, clock_in_lng, clock_in_photo_url, status)
   values (
-    v_emp_id, current_date, now(), p_lat, p_lng,
+    v_emp_id, current_date, now(), p_lat, p_lng, p_photo_url,
     case when v_shift_start is not null and current_time > v_shift_start + interval '5 minutes'
          then 'late' else 'on_time' end
   )
   on conflict (employee_id, work_date) do update
     set clock_in = excluded.clock_in,
         clock_in_lat = excluded.clock_in_lat,
-        clock_in_lng = excluded.clock_in_lng
+        clock_in_lng = excluded.clock_in_lng,
+        clock_in_photo_url = excluded.clock_in_photo_url
     where attendance.clock_in is null
   returning * into v_row;
 
@@ -371,10 +376,10 @@ begin
 end;
 $$;
 
-grant execute on function clock_in(numeric, numeric) to authenticated;
+grant execute on function clock_in(numeric, numeric, text) to authenticated;
 
 
-create or replace function clock_out(p_lat numeric default null, p_lng numeric default null)
+create or replace function clock_out(p_lat numeric default null, p_lng numeric default null, p_photo_url text default null)
 returns attendance
 language plpgsql
 security definer
@@ -389,7 +394,7 @@ begin
   end if;
 
   update attendance
-    set clock_out = now(), clock_out_lat = p_lat, clock_out_lng = p_lng
+    set clock_out = now(), clock_out_lat = p_lat, clock_out_lng = p_lng, clock_out_photo_url = p_photo_url
     where employee_id = v_emp_id and work_date = current_date and clock_out is null
   returning * into v_row;
 
@@ -401,7 +406,7 @@ begin
 end;
 $$;
 
-grant execute on function clock_out(numeric, numeric) to authenticated;
+grant execute on function clock_out(numeric, numeric, text) to authenticated;
 
 
 -- ---- 4.2 Cuti (leave) --------------------------------------------------
