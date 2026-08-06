@@ -51,6 +51,14 @@ export default function HRDashboard({ onBack, onToast }) {
 function fmtDate(d) {
   return new Date(d).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })
 }
+function isoWeek(dateStr) {
+  const d = new Date(dateStr)
+  d.setHours(0, 0, 0, 0)
+  d.setDate(d.getDate() + 3 - ((d.getDay() + 6) % 7))
+  const firstThursday = new Date(d.getFullYear(), 0, 4)
+  const week = 1 + Math.round(((d - firstThursday) / 86400000 - 3 + ((firstThursday.getDay() + 6) % 7)) / 7)
+  return `${d.getFullYear()}-W${String(week).padStart(2, '0')}`
+}
 function fmtTime(t) {
   if (!t) return '-'
   return new Date(t).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
@@ -298,7 +306,8 @@ function AttendanceTab({ onToast }) {
       </div>
 
       <ExportButton onClick={() => exportToExcel(`absensi-${start}_${end}.xlsx`, 'Absensi', filtered, [
-        ['Kode Karyawan', 'employee_code'], ['Nama', 'full_name'], ['Tanggal', (r) => fmtDate(r.work_date)],
+        ['Kode Karyawan', 'employee_code'], ['Nama', 'full_name'], ['Divisi', (r) => r.department || '-'],
+        ['Tanggal', (r) => fmtDate(r.work_date)], ['Week', (r) => isoWeek(r.work_date)],
         ['Jam Masuk', (r) => fmtTime(r.clock_in)], ['Jam Keluar', (r) => fmtTime(r.clock_out)],
         ['Status', (r) => (r.status === 'late' ? 'Telat' : 'Tepat waktu')],
       ])} />
