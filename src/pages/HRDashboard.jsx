@@ -1,23 +1,27 @@
 import { useEffect, useState } from 'react'
-import { ArrowLeft, Search, Check, X, Plus, Pencil, Trash2 } from 'lucide-react'
+import { ArrowLeft, Search, Check, X, Plus, Pencil, Trash2, Download, Upload, Users, ClipboardList, Wallet, CalendarDays, AlarmClock, Receipt } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
 
 const TABS = [
-  { key: 'attendance', label: 'Absensi' },
-  { key: 'overtime', label: 'Lembur' },
-  { key: 'payslip', label: 'Slip Gaji' },
+  { key: 'overview', label: 'Ringkasan', icon: Users },
+  { key: 'karyawan', label: 'Karyawan', icon: Users },
+  { key: 'attendance', label: 'Absensi', icon: ClipboardList },
+  { key: 'leave', label: 'Cuti', icon: CalendarDays },
+  { key: 'overtime', label: 'Lembur', icon: AlarmClock },
+  { key: 'reimbursement', label: 'Reimburse', icon: Receipt },
+  { key: 'payslip', label: 'Slip Gaji', icon: Wallet },
 ]
 
 export default function HRDashboard({ onBack, onToast }) {
-  const [tab, setTab] = useState('attendance')
+  const [tab, setTab] = useState('overview')
   const [employees, setEmployees] = useState([])
 
-  useEffect(() => {
-    supabase.rpc('get_hr_employees').then(({ data, error }) => {
-      if (error) { onToast(error.message); return }
-      setEmployees(data || [])
-    })
-  }, [])
+  async function loadEmployees() {
+    const { data, error } = await supabase.rpc('get_hr_employees')
+    if (error) { onToast(error.message); return }
+    setEmployees(data || [])
+  }
+  useEffect(() => { loadEmployees() }, [])
 
   return (
     <div>
@@ -27,14 +31,18 @@ export default function HRDashboard({ onBack, onToast }) {
         <span style={{ width: 22 }} />
       </div>
 
-      <div className="tabs">
+      <div className="tabs" style={{ overflowX: 'auto', whiteSpace: 'nowrap', flexWrap: 'nowrap' }}>
         {TABS.map((t) => (
           <button key={t.key} className={tab === t.key ? 'active' : ''} onClick={() => setTab(t.key)}>{t.label}</button>
         ))}
       </div>
 
+      {tab === 'overview' && <OverviewTab onToast={onToast} onGo={setTab} />}
+      {tab === 'karyawan' && <KaryawanTab employees={employees} onReload={loadEmployees} onToast={onToast} />}
       {tab === 'attendance' && <AttendanceTab onToast={onToast} />}
+      {tab === 'leave' && <LeaveTab onToast={onToast} />}
       {tab === 'overtime' && <OvertimeTab onToast={onToast} />}
+      {tab === 'reimbursement' && <ReimbursementTab onToast={onToast} />}
       {tab === 'payslip' && <PayslipTab employees={employees} onToast={onToast} />}
     </div>
   )
@@ -49,6 +57,172 @@ function fmtTime(t) {
 }
 function rupiah(n) {
   return 'Rp' + Number(n || 0).toLocaleString('id-ID')
+}
+
+// ---------------------------------------------------------------------
+// Ringkasan — angka penting untuk HR
+// ---------------------------------------------------------------------
+function OverviewTab({ onToast, onGo }) {
+  const [stats, setStats] = useState(null)
+
+  useEffect(() => {
+    supabase.rpc('get_hr_overview').then(({ data, error }) => {
+      if (error) { onToast(error.message); return }
+      setStats(data)
+    })
+  }, [])
+
+  if (!stats) return <div className="empty-state"><p>Memuat...</p></div>
+
+  const cards = [
+    { label: 'Total Karyawan Aktif', value: stats.total_employees, go: 'karyawan' },
+    { label: 'Hadir Hari Ini', value: stats.present_today, go: 'attendance' },
+    { label: 'Cuti Menunggu', value: stats.pending_leave, go: 'leave' },
+    { label: 'Lembur Menunggu', value: stats.pending_overtime, go: 'overtime' },
+    { label: 'Reimburse Menunggu', value: stats.pending_reimbursement, go: 'reimbursement' },
+  ]
+
+  return (
+    <div className="form-page">
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+        {cards.map((c) => (
+          <button key={c.label} onClick={() => onGo(c.go)} style={{
+            textAlign: 'left', background: '#fff', border: 'none', borderRadius: 14, padding: 16,
+            boxShadow: 'var(--shadow-sm)', cursor: 'pointer',
+          }}>
+            <div style={{ fontSize: 26, fontWeight: 700 }}>{c.value}</div>
+            <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 2 }}>{c.label}</div>
+          </button>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// ---------------------------------------------------------------------
+// Karyawan — kelola roster (tambah, edit, nonaktifkan, ubah role)
+// ---------------------------------------------------------------------
+function KaryawanTab({ employees, onReload, onToast }) {
+  const [query, setQuery] = useState('')
+  const [editing, setEditing] = useState(null) // null closed, {} new, {...} edit
+
+  const filtered = employees.filter((e) =>
+    e.full_name.toLowerCase().includes(query.toLowerCase()) || (e.employee_code || '').toLowerCase().includes(query.toLowerCase())
+  )
+
+  return (
+    <div className="form-page">
+      <div className="search-box" style={{ margin: '0 0 14px' }}>
+        <Search size={16} />
+        <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Cari nama / kode karyawan..."
+          style={{ border: 'none', outline: 'none', background: 'none', flex: 1, fontSize: 14.5 }} />
+      </div>
+
+      <button className="primary-btn" style={{ marginBottom: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }} onClick={() => setEditing({})}>
+        <Plus size={18} /> Tambah karyawan
+      </button>
+
+      {filtered.map((e) => (
+        <div key={e.id} className="list-item">
+          <div className="info">
+            <div className="name">{e.full_name} {e.role !== 'employee' && <span style={{ fontSize: 11, background: '#FBE8D6', color: '#B4650C', padding: '2px 7px', borderRadius: 6, marginLeft: 6 }}>{e.role?.toUpperCase()}</span>}</div>
+            <div className="sub">{e.employee_code} · {e.position || '-'}{e.employment_status === 'inactive' ? ' · Nonaktif' : ''}</div>
+          </div>
+          <div className="actions">
+            <button onClick={() => setEditing(e)}><Pencil size={17} /></button>
+          </div>
+        </div>
+      ))}
+
+      {editing !== null && (
+        <EmployeeForm
+          row={editing}
+          employees={employees}
+          onClose={() => setEditing(null)}
+          onSaved={(msg) => { setEditing(null); onReload(); onToast(msg) }}
+        />
+      )}
+    </div>
+  )
+}
+
+function EmployeeForm({ row, employees, onClose, onSaved }) {
+  const [form, setForm] = useState({
+    employee_code: row.employee_code || '', full_name: row.full_name || '', position: row.position || '',
+    department: row.department || '', manager_id: row.manager_id || '', phone: row.phone || '', email: row.email || '',
+    role: row.role || 'employee', employment_status: row.employment_status || 'active',
+  })
+  const [error, setError] = useState('')
+  const [saving, setSaving] = useState(false)
+
+  const managerOptions = employees.filter((e) => e.id !== row.id)
+
+  async function submit(ev) {
+    ev.preventDefault()
+    setError('')
+    if (!form.full_name.trim() || (!row.id && !form.employee_code.trim())) { setError('Nama dan kode karyawan wajib diisi'); return }
+    setSaving(true)
+    let res
+    if (row.id) {
+      res = await supabase.rpc('update_employee_hr', {
+        p_id: row.id, p_full_name: form.full_name, p_position: form.position || null, p_department: form.department || null,
+        p_manager_id: form.manager_id || null, p_employment_status: form.employment_status,
+        p_phone: form.phone || null, p_email: form.email || null, p_role: form.role,
+      })
+    } else {
+      res = await supabase.rpc('create_employee_hr', {
+        p_employee_code: form.employee_code, p_full_name: form.full_name, p_position: form.position || null,
+        p_department: form.department || null, p_manager_id: form.manager_id || null,
+        p_phone: form.phone || null, p_email: form.email || null, p_role: form.role,
+      })
+    }
+    setSaving(false)
+    if (res.error) { setError(res.error.message); return }
+    onSaved(row.id ? 'Data karyawan diperbarui' : 'Karyawan ditambahkan')
+  }
+
+  return (
+    <div className="sheet-overlay" onClick={onClose}>
+      <div className="sheet" onClick={(e) => e.stopPropagation()}>
+        <div className="sheet-handle" />
+        <div className="sheet-title-row"><h3>{row.id ? 'Edit Karyawan' : 'Tambah Karyawan'}</h3></div>
+        <form onSubmit={submit}>
+          <div className="field"><label>Kode karyawan</label><input value={form.employee_code} onChange={(e) => setForm((f) => ({ ...f, employee_code: e.target.value }))} disabled={!!row.id} /></div>
+          <div className="field"><label>Nama lengkap</label><input value={form.full_name} onChange={(e) => setForm((f) => ({ ...f, full_name: e.target.value }))} /></div>
+          <div className="field"><label>Jabatan</label><input value={form.position} onChange={(e) => setForm((f) => ({ ...f, position: e.target.value }))} /></div>
+          <div className="field"><label>Departemen (teks)</label><input value={form.department} onChange={(e) => setForm((f) => ({ ...f, department: e.target.value }))} /></div>
+          <div className="field">
+            <label>Atasan langsung</label>
+            <select value={form.manager_id} onChange={(e) => setForm((f) => ({ ...f, manager_id: e.target.value }))}>
+              <option value="">- Tidak ada -</option>
+              {managerOptions.map((e) => <option key={e.id} value={e.id}>{e.full_name}</option>)}
+            </select>
+          </div>
+          <div className="field"><label>No. HP</label><input value={form.phone} onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))} /></div>
+          <div className="field"><label>Email</label><input value={form.email} onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))} /></div>
+          <div className="field">
+            <label>Role akses</label>
+            <select value={form.role} onChange={(e) => setForm((f) => ({ ...f, role: e.target.value }))}>
+              <option value="employee">Employee</option>
+              <option value="hr">HR</option>
+              <option value="admin">Admin</option>
+            </select>
+          </div>
+          {row.id && (
+            <div className="field">
+              <label>Status</label>
+              <select value={form.employment_status} onChange={(e) => setForm((f) => ({ ...f, employment_status: e.target.value }))}>
+                <option value="active">Aktif</option>
+                <option value="inactive">Nonaktif</option>
+              </select>
+            </div>
+          )}
+          {error && <p className="error-text">{error}</p>}
+          <button className="primary-btn" disabled={saving}>{saving ? 'Menyimpan...' : 'Simpan'}</button>
+        </form>
+      </div>
+    </div>
+  )
 }
 
 // ---------------------------------------------------------------------
@@ -115,30 +289,30 @@ function AttendanceTab({ onToast }) {
 }
 
 // ---------------------------------------------------------------------
-// Lembur — lihat semua pengajuan lembur, approve/reject
+// Generic approval list (dipakai untuk Cuti, Lembur, Reimburse)
 // ---------------------------------------------------------------------
-function OvertimeTab({ onToast }) {
+function ApprovalTab({ onToast, rpcName, table, statusOptions, renderRow }) {
   const [status, setStatus] = useState('pending')
   const [rows, setRows] = useState(null)
 
   async function load() {
-    const { data, error } = await supabase.rpc('get_hr_overtime', { p_status: status || null })
+    const { data, error } = await supabase.rpc(rpcName, { p_status: status || null })
     if (error) { onToast(error.message); return }
     setRows(data)
   }
   useEffect(() => { load() }, [status])
 
   async function decide(id, approve) {
-    const { error } = await supabase.rpc('decide_request', { p_table: 'overtime_requests', p_request_id: id, p_approve: approve })
+    const { error } = await supabase.rpc('decide_request', { p_table: table, p_request_id: id, p_approve: approve })
     if (error) { onToast(error.message); return }
-    onToast(approve ? 'Lembur disetujui' : 'Lembur ditolak')
+    onToast(approve ? 'Disetujui' : 'Ditolak')
     load()
   }
 
   return (
     <div className="form-page">
       <div className="tabs" style={{ padding: 0, marginBottom: 14 }}>
-        {[['pending', 'Menunggu'], ['approved', 'Disetujui'], ['rejected', 'Ditolak'], ['', 'Semua']].map(([v, l]) => (
+        {statusOptions.map(([v, l]) => (
           <button key={v} className={status === v ? 'active' : ''} onClick={() => setStatus(v)}>{l}</button>
         ))}
       </div>
@@ -146,16 +320,12 @@ function OvertimeTab({ onToast }) {
       {rows === null ? (
         <div className="empty-state"><p>Memuat...</p></div>
       ) : rows.length === 0 ? (
-        <div className="empty-state"><p>Tidak ada pengajuan lembur.</p></div>
+        <div className="empty-state"><p>Tidak ada pengajuan.</p></div>
       ) : (
         rows.map((r) => (
           <div key={r.id} className="shift-hist-row">
             <div className="top">
-              <div>
-                <div className="date">{r.full_name}</div>
-                <div className="desc">{fmtDate(r.work_date)} · {r.start_time?.slice(0, 5)} - {r.end_time?.slice(0, 5)}</div>
-                {r.reason && <div className="desc">{r.reason}</div>}
-              </div>
+              {renderRow(r)}
               {r.status === 'pending' ? (
                 <div style={{ display: 'flex', gap: 8 }}>
                   <button onClick={() => decide(r.id, true)} style={{ background: '#1E8E5A', border: 'none', borderRadius: 8, color: '#fff', padding: 6, cursor: 'pointer' }}><Check size={16} /></button>
@@ -174,12 +344,111 @@ function OvertimeTab({ onToast }) {
   )
 }
 
+const STATUS_OPTS = [['pending', 'Menunggu'], ['approved', 'Disetujui'], ['rejected', 'Ditolak'], ['', 'Semua']]
+
+function LeaveTab({ onToast }) {
+  return (
+    <ApprovalTab
+      onToast={onToast} rpcName="get_hr_leave" table="leave_requests" statusOptions={STATUS_OPTS}
+      renderRow={(r) => (
+        <div>
+          <div className="date">{r.full_name}</div>
+          <div className="desc">{r.leave_type_name || 'Cuti'} · {fmtDate(r.start_date)} - {fmtDate(r.end_date)} ({r.total_days} hari)</div>
+          {r.reason && <div className="desc">{r.reason}</div>}
+        </div>
+      )}
+    />
+  )
+}
+
+function OvertimeTab({ onToast }) {
+  return (
+    <ApprovalTab
+      onToast={onToast} rpcName="get_hr_overtime" table="overtime_requests" statusOptions={STATUS_OPTS}
+      renderRow={(r) => (
+        <div>
+          <div className="date">{r.full_name}</div>
+          <div className="desc">{fmtDate(r.work_date)} · {r.start_time?.slice(0, 5)} - {r.end_time?.slice(0, 5)}</div>
+          {r.reason && <div className="desc">{r.reason}</div>}
+        </div>
+      )}
+    />
+  )
+}
+
+function ReimbursementTab({ onToast }) {
+  return (
+    <ApprovalTab
+      onToast={onToast} rpcName="get_hr_reimbursement" table="reimbursement_requests" statusOptions={STATUS_OPTS}
+      renderRow={(r) => (
+        <div>
+          <div className="date">{r.full_name}</div>
+          <div className="desc">{r.category_name || 'Reimburse'} · {rupiah(r.amount)}</div>
+          {r.description && <div className="desc">{r.description}</div>}
+        </div>
+      )}
+    />
+  )
+}
+
 // ---------------------------------------------------------------------
-// Slip Gaji — input & kelola slip gaji karyawan
+// Slip Gaji — input manual, atau import massal dari template Excel
 // ---------------------------------------------------------------------
+const TEMPLATE_COLUMNS = [
+  'Kode Karyawan', 'Nama (referensi saja)', 'Periode (YYYY-MM)',
+  'Gaji Pokok', 'Tunjangan Makan', 'Tunjangan Transport', 'Tunjangan Jabatan', 'Bonus',
+  'Potongan BPJS', 'Potongan PPh21', 'Potongan Lain', 'Catatan',
+]
+
+async function downloadTemplate(employees) {
+  const XLSX = await import('xlsx')
+  const rows = employees.slice(0, 5).map((e) => ({
+    'Kode Karyawan': e.employee_code, 'Nama (referensi saja)': e.full_name, 'Periode (YYYY-MM)': new Date().toISOString().slice(0, 7),
+    'Gaji Pokok': 5000000, 'Tunjangan Makan': 300000, 'Tunjangan Transport': 200000, 'Tunjangan Jabatan': 0, 'Bonus': 0,
+    'Potongan BPJS': 100000, 'Potongan PPh21': 50000, 'Potongan Lain': 0, 'Catatan': '',
+  }))
+  if (rows.length === 0) rows.push(Object.fromEntries(TEMPLATE_COLUMNS.map((c) => [c, ''])))
+
+  const wsData = XLSX.utils.json_to_sheet(rows, { header: TEMPLATE_COLUMNS })
+  const wsRef = XLSX.utils.aoa_to_sheet([
+    ['Kode Karyawan', 'Nama'],
+    ...employees.map((e) => [e.employee_code, e.full_name]),
+  ])
+  const wb = XLSX.utils.book_new()
+  XLSX.utils.book_append_sheet(wb, wsData, 'Slip Gaji')
+  XLSX.utils.book_append_sheet(wb, wsRef, 'Daftar Kode Karyawan')
+  XLSX.writeFile(wb, 'template-slip-gaji.xlsx')
+}
+
+function parseTemplateRows(rawRows) {
+  return rawRows.map((r) => {
+    const allowances = Number(r['Tunjangan Makan'] || 0) + Number(r['Tunjangan Transport'] || 0) + Number(r['Tunjangan Jabatan'] || 0) + Number(r['Bonus'] || 0)
+    const deductions = Number(r['Potongan BPJS'] || 0) + Number(r['Potongan PPh21'] || 0) + Number(r['Potongan Lain'] || 0)
+    const period = String(r['Periode (YYYY-MM)'] || '').trim()
+    return {
+      employee_code: String(r['Kode Karyawan'] || '').trim(),
+      period: period ? `${period}-01` : null,
+      basic_salary: Number(r['Gaji Pokok'] || 0),
+      allowances, deductions,
+      notes: r['Catatan'] || null,
+      components: {
+        tunjangan_makan: Number(r['Tunjangan Makan'] || 0),
+        tunjangan_transport: Number(r['Tunjangan Transport'] || 0),
+        tunjangan_jabatan: Number(r['Tunjangan Jabatan'] || 0),
+        bonus: Number(r['Bonus'] || 0),
+        potongan_bpjs: Number(r['Potongan BPJS'] || 0),
+        potongan_pph21: Number(r['Potongan PPh21'] || 0),
+        potongan_lain: Number(r['Potongan Lain'] || 0),
+      },
+    }
+  }).filter((r) => r.employee_code && r.period)
+}
+
 function PayslipTab({ employees, onToast }) {
   const [rows, setRows] = useState(null)
   const [editing, setEditing] = useState(null) // null closed, {} new, {...} edit
+  const [importing, setImporting] = useState(false)
+  const [importResult, setImportResult] = useState(null)
 
   async function load() {
     const { data, error } = await supabase.rpc('get_hr_payslips', {})
@@ -195,14 +464,64 @@ function PayslipTab({ employees, onToast }) {
     load()
   }
 
+  async function handleImportFile(ev) {
+    const file = ev.target.files?.[0]
+    ev.target.value = ''
+    if (!file) return
+    setImporting(true)
+    setImportResult(null)
+    try {
+      const XLSX = await import('xlsx')
+      const buf = await file.arrayBuffer()
+      const wb = XLSX.read(buf, { type: 'array' })
+      const ws = wb.Sheets[wb.SheetNames[0]]
+      const rawRows = XLSX.utils.sheet_to_json(ws)
+      const parsed = parseTemplateRows(rawRows)
+      if (parsed.length === 0) {
+        onToast('Tidak ada baris valid di file ini (cek kolom Kode Karyawan & Periode)')
+        setImporting(false)
+        return
+      }
+      const { data, error } = await supabase.rpc('bulk_upsert_payslips', { p_rows: parsed })
+      if (error) { onToast(error.message); setImporting(false); return }
+      setImportResult(data)
+      onToast(`${data.ok.length} slip gaji berhasil diimpor${data.failed.length ? `, ${data.failed.length} gagal` : ''}`)
+      load()
+    } catch (err) {
+      onToast('Gagal membaca file: ' + err.message)
+    } finally {
+      setImporting(false)
+    }
+  }
+
   return (
     <div className="form-page">
+      <div style={{ background: '#eef1fb', color: '#4356C4', borderRadius: 10, padding: '10px 12px', fontSize: 13, marginBottom: 14 }}>
+        Download template Excel, isi rincian gaji &amp; tunjangan per karyawan, lalu unggah lagi di sini untuk input massal.
+      </div>
+
+      <div style={{ display: 'flex', gap: 10, marginBottom: 10 }}>
+        <button className="primary-btn" style={{ flex: 1, background: '#eee', color: '#333', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }} onClick={() => downloadTemplate(employees)}>
+          <Download size={17} /> Template Excel
+        </button>
+        <label className="primary-btn" style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, cursor: 'pointer' }}>
+          <Upload size={17} /> {importing ? 'Mengimpor...' : 'Unggah Excel'}
+          <input type="file" accept=".xlsx,.xls" onChange={handleImportFile} disabled={importing} style={{ display: 'none' }} />
+        </label>
+      </div>
+
+      {importResult?.failed?.length > 0 && (
+        <div style={{ background: '#FBE1DD', color: '#C0392B', borderRadius: 10, padding: '10px 12px', fontSize: 13, marginBottom: 14 }}>
+          Gagal: {importResult.failed.map((f) => `${f.employee_code} (${f.error})`).join(', ')}
+        </div>
+      )}
+
       <button
         className="primary-btn"
         style={{ marginBottom: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
         onClick={() => setEditing({})}
       >
-        <Plus size={18} /> Input slip gaji
+        <Plus size={18} /> Input manual
       </button>
 
       {rows === null ? (
@@ -278,10 +597,11 @@ function PayslipForm({ row, employees, onClose, onSaved }) {
           </div>
           <div className="field"><label>Periode (bulan)</label><input type="month" value={form.period} onChange={(e) => setForm((f) => ({ ...f, period: e.target.value }))} /></div>
           <div className="field"><label>Gaji pokok</label><input type="number" value={form.basic_salary} onChange={(e) => setForm((f) => ({ ...f, basic_salary: e.target.value }))} /></div>
-          <div className="field"><label>Tunjangan</label><input type="number" value={form.allowances} onChange={(e) => setForm((f) => ({ ...f, allowances: e.target.value }))} /></div>
-          <div className="field"><label>Potongan</label><input type="number" value={form.deductions} onChange={(e) => setForm((f) => ({ ...f, deductions: e.target.value }))} /></div>
+          <div className="field"><label>Tunjangan (total)</label><input type="number" value={form.allowances} onChange={(e) => setForm((f) => ({ ...f, allowances: e.target.value }))} /></div>
+          <div className="field"><label>Potongan (total)</label><input type="number" value={form.deductions} onChange={(e) => setForm((f) => ({ ...f, deductions: e.target.value }))} /></div>
           <div className="field"><label>Catatan</label><textarea value={form.notes} onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))} /></div>
           {error && <p className="error-text">{error}</p>}
+          <p style={{ fontSize: 12.5, color: 'var(--text-muted)' }}>Untuk rincian tunjangan/potongan per item, gunakan import Excel.</p>
           <button className="primary-btn" disabled={saving}>{saving ? 'Menyimpan...' : 'Simpan'}</button>
         </form>
       </div>
