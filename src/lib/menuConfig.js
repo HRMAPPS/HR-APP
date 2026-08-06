@@ -2,6 +2,7 @@ import {
   Receipt, Clock, MapPin, AlarmClock, ClipboardList, Wallet,
   CalendarDays, Grid3x3, Folder, Award, Package, FileEdit,
   Target, ListChecks, AlertTriangle, FolderKanban, CheckSquare, Network,
+  Users2,
 } from 'lucide-react'
 
 // Quick-menu grid on Beranda (first 8 shown inline) + the rest inside
@@ -26,6 +27,7 @@ export const ALL_APPS = [
   { key: 'proyek', label: 'Proyek', icon: FolderKanban, bg: '#FBE1EC', fg: '#C23673', page: null },
   { key: 'tugas', label: 'Tugas', icon: CheckSquare, bg: '#DAF0E4', fg: '#1E8E5A', page: null },
   { key: 'struktur', label: 'Struktur Organisasi', icon: Network, bg: '#DDE7FB', fg: '#3B6ECF', page: 'org-chart' },
+  { key: 'hr', label: 'HR', icon: Users2, bg: '#FBE8D6', fg: '#B4650C', page: 'hr-dashboard', hrOnly: true },
 ]
 
 // Beranda shows the first 8 as the quick grid

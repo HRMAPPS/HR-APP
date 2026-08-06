@@ -18,6 +18,7 @@ import DataChangeForm from './pages/DataChangeForm'
 import CalendarPage from './pages/CalendarPage'
 import ProfileDetail from './pages/ProfileDetail'
 import OrgChart from './pages/OrgChart'
+import HRDashboard from './pages/HRDashboard'
 
 export default function App() {
   const { isLoggedIn, loading, employee, signOut } = useAuth()
@@ -70,7 +71,7 @@ export default function App() {
       {!page && <BottomNav active={tab} onChange={handleTabChange} />}
 
       {showAllApps && (
-        <AllAppsSheet onClose={() => setShowAllApps(false)} onNavigate={navigateTo} onToast={flash} />
+        <AllAppsSheet onClose={() => setShowAllApps(false)} onNavigate={navigateTo} onToast={flash} employee={employee} />
       )}
       {showRequestSheet && (
         <RequestSheet onClose={() => setShowRequestSheet(false)} onNavigate={navigateTo} />
@@ -109,6 +110,8 @@ function PageRouter({ page, employee, onBack, onToast }) {
       return <CalendarPage onBack={onBack} />
     case 'org-chart':
       return <OrgChart onBack={onBack} onToast={onToast} />
+    case 'hr-dashboard':
+      return <HRDashboard onBack={onBack} onToast={onToast} />
     case 'profile-personal':
     case 'profile-job':
     case 'profile-emergency':
