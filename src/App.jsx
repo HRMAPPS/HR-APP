@@ -62,7 +62,7 @@ export default function App() {
         ) : (
           <>
             {tab === 'home' && <Home employee={employee} onNavigate={navigateTo} onOpenAllApps={() => setShowAllApps(true)} />}
-            {tab === 'employees' && <Employees />}
+            {tab === 'employees' && <Employees viewer={employee} />}
             {tab === 'inbox' && <Inbox employee={employee} onToast={flash} />}
             {tab === 'account' && <Account employee={employee} onSignOut={signOut} onToast={flash} onNavigate={navigateTo} />}
           </>
