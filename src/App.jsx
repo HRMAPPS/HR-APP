@@ -114,7 +114,7 @@ function PageRouter({ page, employee, onBack, onToast }) {
     case 'hr-dashboard':
       return <HRDashboard onBack={onBack} onToast={onToast} />
     case 'slip-gaji':
-      return <SlipGaji onBack={onBack} />
+      return <SlipGaji onBack={onBack} onToast={onToast} />
     case 'profile-personal':
     case 'profile-job':
     case 'profile-emergency':

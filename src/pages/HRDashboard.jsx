@@ -394,18 +394,42 @@ function ReimbursementTab({ onToast }) {
 // ---------------------------------------------------------------------
 // Slip Gaji — input manual, atau import massal dari template Excel
 // ---------------------------------------------------------------------
+const PENDAPATAN_FIELDS = [
+  ['Tunjangan Jabatan', 'tunjangan_jabatan'],
+  ['Tunjangan Kinerja', 'tunjangan_kinerja'],
+  ['Tunjangan Fullshift', 'tunjangan_fullshift'],
+  ['Business Trip Allowance', 'business_trip_allowance'],
+  ['Lembur', 'lembur'],
+  ['Insentif Penjualan', 'insentif_penjualan'],
+  ['Insentif Event', 'insentif_event'],
+  ['Lain-Lain (Pendapatan)', 'lain_lain'],
+  ['Medical Claim', 'medical_claim'],
+  ['Subsidi BPJS Kesehatan', 'subsidi_bpjs_kesehatan'],
+]
+const POTONGAN_FIELDS = [
+  ['Unpaid Leave', 'unpaid_leave'],
+  ['Hutang Karyawan', 'hutang_karyawan'],
+  ['Cicilan Seragam', 'cicilan_seragam'],
+  ['Potongan Stock Opname', 'potongan_stock_opname'],
+  ['Potongan Lain-Lain', 'potongan_lain_lain'],
+  ['BPJS Kesehatan Karyawan', 'bpjs_kesehatan_karyawan'],
+  ['JHT Karyawan', 'jht_karyawan'],
+  ['JP Karyawan', 'jp_karyawan'],
+  ['PPH 21', 'pph21'],
+]
+
 const TEMPLATE_COLUMNS = [
-  'Kode Karyawan', 'Nama (referensi saja)', 'Periode (YYYY-MM)',
-  'Gaji Pokok', 'Tunjangan Makan', 'Tunjangan Transport', 'Tunjangan Jabatan', 'Bonus',
-  'Potongan BPJS', 'Potongan PPh21', 'Potongan Lain', 'Catatan',
+  'Kode Karyawan', 'Nama (referensi saja)', 'Periode (YYYY-MM)', 'PTKP', 'Badan Usaha',
+  'Gaji Pokok', ...PENDAPATAN_FIELDS.map(([label]) => label), ...POTONGAN_FIELDS.map(([label]) => label), 'Catatan',
 ]
 
 async function downloadTemplate(employees) {
   const XLSX = await import('xlsx')
+  const base = { 'Periode (YYYY-MM)': new Date().toISOString().slice(0, 7), 'PTKP': 'TK/0', 'Badan Usaha': 'CV Napocut', 'Gaji Pokok': 5000000 }
+  PENDAPATAN_FIELDS.forEach(([label]) => { base[label] = 0 })
+  POTONGAN_FIELDS.forEach(([label]) => { base[label] = 0 })
   const rows = employees.slice(0, 5).map((e) => ({
-    'Kode Karyawan': e.employee_code, 'Nama (referensi saja)': e.full_name, 'Periode (YYYY-MM)': new Date().toISOString().slice(0, 7),
-    'Gaji Pokok': 5000000, 'Tunjangan Makan': 300000, 'Tunjangan Transport': 200000, 'Tunjangan Jabatan': 0, 'Bonus': 0,
-    'Potongan BPJS': 100000, 'Potongan PPh21': 50000, 'Potongan Lain': 0, 'Catatan': '',
+    'Kode Karyawan': e.employee_code, 'Nama (referensi saja)': e.full_name, ...base, 'Catatan': '',
   }))
   if (rows.length === 0) rows.push(Object.fromEntries(TEMPLATE_COLUMNS.map((c) => [c, ''])))
 
@@ -422,8 +446,10 @@ async function downloadTemplate(employees) {
 
 function parseTemplateRows(rawRows) {
   return rawRows.map((r) => {
-    const allowances = Number(r['Tunjangan Makan'] || 0) + Number(r['Tunjangan Transport'] || 0) + Number(r['Tunjangan Jabatan'] || 0) + Number(r['Bonus'] || 0)
-    const deductions = Number(r['Potongan BPJS'] || 0) + Number(r['Potongan PPh21'] || 0) + Number(r['Potongan Lain'] || 0)
+    const components = {}
+    let allowances = 0, deductions = 0
+    PENDAPATAN_FIELDS.forEach(([label, key]) => { const v = Number(r[label] || 0); components[key] = v; allowances += v })
+    POTONGAN_FIELDS.forEach(([label, key]) => { const v = Number(r[label] || 0); components[key] = v; deductions += v })
     const period = String(r['Periode (YYYY-MM)'] || '').trim()
     return {
       employee_code: String(r['Kode Karyawan'] || '').trim(),
@@ -431,15 +457,9 @@ function parseTemplateRows(rawRows) {
       basic_salary: Number(r['Gaji Pokok'] || 0),
       allowances, deductions,
       notes: r['Catatan'] || null,
-      components: {
-        tunjangan_makan: Number(r['Tunjangan Makan'] || 0),
-        tunjangan_transport: Number(r['Tunjangan Transport'] || 0),
-        tunjangan_jabatan: Number(r['Tunjangan Jabatan'] || 0),
-        bonus: Number(r['Bonus'] || 0),
-        potongan_bpjs: Number(r['Potongan BPJS'] || 0),
-        potongan_pph21: Number(r['Potongan PPh21'] || 0),
-        potongan_lain: Number(r['Potongan Lain'] || 0),
-      },
+      ptkp_status: r['PTKP'] || null,
+      business_entity: r['Badan Usaha'] || null,
+      components,
     }
   }).filter((r) => r.employee_code && r.period)
 }
