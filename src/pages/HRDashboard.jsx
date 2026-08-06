@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { ArrowLeft, Search, Check, X, Plus, Pencil, Trash2, Download, Upload, Users, ClipboardList, Wallet, CalendarDays, AlarmClock, Receipt, Bell } from 'lucide-react'
+import { ArrowLeft, Search, Check, X, Plus, Pencil, Trash2, Download, Upload, Users, ClipboardList, Wallet, CalendarDays, AlarmClock, Receipt, Bell, FileDown } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
 
 const TABS = [
@@ -57,6 +57,35 @@ function fmtTime(t) {
 }
 function rupiah(n) {
   return 'Rp' + Number(n || 0).toLocaleString('id-ID')
+}
+
+// Generic Excel export — columns: [[label, key-or-fn], ...]
+async function exportToExcel(filename, sheetName, rows, columns) {
+  const XLSX = await import('xlsx')
+  const data = rows.map((r) => {
+    const obj = {}
+    columns.forEach(([label, fn]) => { obj[label] = typeof fn === 'function' ? fn(r) : r[fn] })
+    return obj
+  })
+  const ws = XLSX.utils.json_to_sheet(data)
+  const wb = XLSX.utils.book_new()
+  XLSX.utils.book_append_sheet(wb, ws, sheetName)
+  XLSX.writeFile(wb, filename)
+}
+
+function ExportButton({ onClick, label = 'Export Excel' }) {
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        display: 'flex', alignItems: 'center', gap: 6, background: '#fff', border: '1px solid var(--border)',
+        borderRadius: 10, padding: '8px 12px', fontSize: 13, fontWeight: 600, color: 'var(--text)', cursor: 'pointer',
+        boxShadow: 'var(--shadow-xs)', marginBottom: 14,
+      }}
+    >
+      <FileDown size={15} /> {label}
+    </button>
+  )
 }
 
 // ---------------------------------------------------------------------
@@ -121,6 +150,11 @@ function KaryawanTab({ employees, onReload, onToast }) {
       <button className="primary-btn" style={{ marginBottom: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }} onClick={() => setEditing({})}>
         <Plus size={18} /> Tambah karyawan
       </button>
+
+      <ExportButton onClick={() => exportToExcel('data-karyawan.xlsx', 'Karyawan', filtered, [
+        ['Kode Karyawan', 'employee_code'], ['Nama', 'full_name'], ['Jabatan', 'position'], ['Departemen', 'department'],
+        ['Role', 'role'], ['Status', (r) => r.employment_status || 'active'], ['No HP', 'phone'], ['Email', 'email'],
+      ])} />
 
       {filtered.map((e) => (
         <div key={e.id} className="list-item">
@@ -263,6 +297,12 @@ function AttendanceTab({ onToast }) {
           style={{ border: 'none', outline: 'none', background: 'none', flex: 1, fontSize: 14.5 }} />
       </div>
 
+      <ExportButton onClick={() => exportToExcel(`absensi-${start}_${end}.xlsx`, 'Absensi', filtered, [
+        ['Kode Karyawan', 'employee_code'], ['Nama', 'full_name'], ['Tanggal', (r) => fmtDate(r.work_date)],
+        ['Jam Masuk', (r) => fmtTime(r.clock_in)], ['Jam Keluar', (r) => fmtTime(r.clock_out)],
+        ['Status', (r) => (r.status === 'late' ? 'Telat' : 'Tepat waktu')],
+      ])} />
+
       {rows === null ? (
         <div className="empty-state"><p>Memuat...</p></div>
       ) : filtered.length === 0 ? (
@@ -291,7 +331,7 @@ function AttendanceTab({ onToast }) {
 // ---------------------------------------------------------------------
 // Generic approval list (dipakai untuk Cuti, Lembur, Reimburse)
 // ---------------------------------------------------------------------
-function ApprovalTab({ onToast, rpcName, table, statusOptions, renderRow }) {
+function ApprovalTab({ onToast, rpcName, table, statusOptions, renderRow, exportColumns, exportFilename }) {
   const [status, setStatus] = useState('pending')
   const [rows, setRows] = useState(null)
 
@@ -316,6 +356,10 @@ function ApprovalTab({ onToast, rpcName, table, statusOptions, renderRow }) {
           <button key={v} className={status === v ? 'active' : ''} onClick={() => setStatus(v)}>{l}</button>
         ))}
       </div>
+
+      {rows && rows.length > 0 && (
+        <ExportButton onClick={() => exportToExcel(`${exportFilename}-${status || 'semua'}.xlsx`, 'Data', rows, exportColumns)} />
+      )}
 
       {rows === null ? (
         <div className="empty-state"><p>Memuat...</p></div>
@@ -350,6 +394,11 @@ function LeaveTab({ onToast }) {
   return (
     <ApprovalTab
       onToast={onToast} rpcName="get_hr_leave" table="leave_requests" statusOptions={STATUS_OPTS}
+      exportFilename="cuti" exportColumns={[
+        ['Kode Karyawan', 'employee_code'], ['Nama', 'full_name'], ['Jenis Cuti', 'leave_type_name'],
+        ['Mulai', (r) => fmtDate(r.start_date)], ['Selesai', (r) => fmtDate(r.end_date)], ['Total Hari', 'total_days'],
+        ['Alasan', 'reason'], ['Status', 'status'],
+      ]}
       renderRow={(r) => (
         <div>
           <div className="date">{r.full_name}</div>
@@ -365,6 +414,11 @@ function OvertimeTab({ onToast }) {
   return (
     <ApprovalTab
       onToast={onToast} rpcName="get_hr_overtime" table="overtime_requests" statusOptions={STATUS_OPTS}
+      exportFilename="lembur" exportColumns={[
+        ['Kode Karyawan', 'employee_code'], ['Nama', 'full_name'], ['Tanggal', (r) => fmtDate(r.work_date)],
+        ['Jam Mulai', (r) => r.start_time?.slice(0, 5)], ['Jam Selesai', (r) => r.end_time?.slice(0, 5)],
+        ['Alasan', 'reason'], ['Status', 'status'],
+      ]}
       renderRow={(r) => (
         <div>
           <div className="date">{r.full_name}</div>
@@ -380,6 +434,10 @@ function ReimbursementTab({ onToast }) {
   return (
     <ApprovalTab
       onToast={onToast} rpcName="get_hr_reimbursement" table="reimbursement_requests" statusOptions={STATUS_OPTS}
+      exportFilename="reimbursement" exportColumns={[
+        ['Kode Karyawan', 'employee_code'], ['Nama', 'full_name'], ['Kategori', 'category_name'],
+        ['Jumlah', 'amount'], ['Deskripsi', 'description'], ['Bulan', 'submitted_month'], ['Status', 'status'],
+      ]}
       renderRow={(r) => (
         <div>
           <div className="date">{r.full_name}</div>
@@ -545,11 +603,20 @@ function PayslipTab({ employees, onToast }) {
 
       <button
         className="primary-btn"
-        style={{ marginBottom: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
+        style={{ marginBottom: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
         onClick={() => setEditing({})}
       >
         <Plus size={18} /> Input manual
       </button>
+
+      {rows && rows.length > 0 && (
+        <ExportButton onClick={() => exportToExcel('data-slip-gaji.xlsx', 'Slip Gaji', rows, [
+          ['Kode Karyawan', 'employee_code'], ['Nama', 'full_name'], ['Jabatan', 'position'], ['Departemen', 'department'],
+          ['Periode', (r) => new Date(r.period).toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })],
+          ['Gaji Pokok', 'basic_salary'], ['Total Tunjangan', 'allowances'], ['Total Potongan', 'deductions'],
+          ['Take Home Pay', 'net_salary'], ['PTKP', 'ptkp_status'], ['Badan Usaha', 'business_entity'], ['Catatan', 'notes'],
+        ])} />
+      )}
 
       {rows === null ? (
         <div className="empty-state"><p>Memuat...</p></div>
