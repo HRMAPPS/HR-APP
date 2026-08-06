@@ -19,6 +19,7 @@ import CalendarPage from './pages/CalendarPage'
 import ProfileDetail from './pages/ProfileDetail'
 import OrgChart from './pages/OrgChart'
 import HRDashboard from './pages/HRDashboard'
+import SlipGaji from './pages/SlipGaji'
 
 export default function App() {
   const { isLoggedIn, loading, employee, signOut } = useAuth()
@@ -112,6 +113,8 @@ function PageRouter({ page, employee, onBack, onToast }) {
       return <OrgChart onBack={onBack} onToast={onToast} />
     case 'hr-dashboard':
       return <HRDashboard onBack={onBack} onToast={onToast} />
+    case 'slip-gaji':
+      return <SlipGaji onBack={onBack} />
     case 'profile-personal':
     case 'profile-job':
     case 'profile-emergency':

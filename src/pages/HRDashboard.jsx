@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { ArrowLeft, Search, Check, X, Plus, Pencil, Trash2, Download, Upload, Users, ClipboardList, Wallet, CalendarDays, AlarmClock, Receipt } from 'lucide-react'
+import { ArrowLeft, Search, Check, X, Plus, Pencil, Trash2, Download, Upload, Users, ClipboardList, Wallet, CalendarDays, AlarmClock, Receipt, Bell } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
 
 const TABS = [
@@ -464,6 +464,12 @@ function PayslipTab({ employees, onToast }) {
     load()
   }
 
+  async function resend(row) {
+    const { error } = await supabase.rpc('notify_payslip', { p_employee_id: row.employee_id, p_period: row.period })
+    if (error) { onToast(error.message); return }
+    onToast(`Notifikasi dikirim ke ${row.full_name}`)
+  }
+
   async function handleImportFile(ev) {
     const file = ev.target.files?.[0]
     ev.target.value = ''
@@ -498,6 +504,7 @@ function PayslipTab({ employees, onToast }) {
     <div className="form-page">
       <div style={{ background: '#eef1fb', color: '#4356C4', borderRadius: 10, padding: '10px 12px', fontSize: 13, marginBottom: 14 }}>
         Download template Excel, isi rincian gaji &amp; tunjangan per karyawan, lalu unggah lagi di sini untuk input massal.
+        Setiap kali slip gaji disimpan/diimpor, karyawan otomatis dapat notifikasi di app (ikon 🔔 untuk kirim ulang).
       </div>
 
       <div style={{ display: 'flex', gap: 10, marginBottom: 10 }}>
@@ -536,6 +543,7 @@ function PayslipTab({ employees, onToast }) {
               <div className="sub">{new Date(r.period).toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })} · {rupiah(r.net_salary)}</div>
             </div>
             <div className="actions">
+              <button onClick={() => resend(r)} title="Kirim ulang notifikasi"><Bell size={17} /></button>
               <button onClick={() => setEditing(r)}><Pencil size={17} /></button>
               <button onClick={() => remove(r.id)}><Trash2 size={17} /></button>
             </div>

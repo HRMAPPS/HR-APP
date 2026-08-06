@@ -14,7 +14,7 @@ export const ALL_APPS = [
   { key: 'presensi', label: 'Presensi Online', icon: MapPin, bg: '#FBE1DD', fg: '#C0392B', page: 'presensi' },
   { key: 'lembur', label: 'Lembur', icon: AlarmClock, bg: '#FBE1EC', fg: '#C23673', page: 'lembur' },
   { key: 'daftar_kehadiran', label: 'Daftar Kehadiran', icon: ClipboardList, bg: '#FDE3D3', fg: '#D2762B', page: 'absensi' },
-  { key: 'slip_gaji', label: 'Slip Gaji', icon: Wallet, bg: '#DCEEF0', fg: '#2C8C9C', page: null },
+  { key: 'slip_gaji', label: 'Slip Gaji', icon: Wallet, bg: '#DCEEF0', fg: '#2C8C9C', page: 'slip-gaji' },
   { key: 'kalender', label: 'Kalender', icon: CalendarDays, bg: '#FBE1EC', fg: '#C23673', page: 'calendar' },
   { key: 'semua', label: 'Semua Aplikasi', icon: Grid3x3, bg: '#EAE7E3', fg: '#5B554F', page: '__ALL_APPS__' },
   { key: 'file', label: 'File', icon: Folder, bg: '#FCE4D6', fg: '#D2762B', page: null },
