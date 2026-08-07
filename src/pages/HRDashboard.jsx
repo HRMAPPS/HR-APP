@@ -171,7 +171,10 @@ function KaryawanTab({ employees, onReload, onToast }) {
         <div key={e.id} className="list-item">
           <div className="info">
             <div className="name">{e.full_name} {e.role !== 'employee' && <span style={{ fontSize: 11, background: '#FBE8D6', color: '#B4650C', padding: '2px 7px', borderRadius: 6, marginLeft: 6 }}>{e.role?.toUpperCase()}</span>}</div>
-            <div className="sub">{e.employee_code} · {e.position || '-'}{e.employment_status === 'inactive' ? ' · Nonaktif' : ''}</div>
+            <div className="sub">
+              {e.employee_code} · {e.position || '-'}{e.employment_status === 'inactive' ? ' · Nonaktif' : ''}
+              {e.default_shift_name && ` · ${e.default_shift_name} (${e.default_shift_start?.slice(0, 5)}-${e.default_shift_end?.slice(0, 5)})`}
+            </div>
           </div>
           <div className="actions">
             <button onClick={() => setEditing(e)}><Pencil size={17} /></button>
@@ -196,29 +199,44 @@ function EmployeeForm({ row, employees, onClose, onSaved }) {
     employee_code: row.employee_code || '', full_name: row.full_name || '', position: row.position || '',
     department: row.department || '', manager_id: row.manager_id || '', phone: row.phone || '', email: row.email || '',
     role: row.role || 'employee', employment_status: row.employment_status || 'active',
+    default_shift_id: row.default_shift_id || '',
+    default_days: row.default_work_days && row.default_work_days.length > 0 ? row.default_work_days.map(String) : ['0', '1', '2', '3', '4', '5', '6'],
   })
+  const [shifts, setShifts] = useState([])
   const [error, setError] = useState('')
   const [saving, setSaving] = useState(false)
 
+  useEffect(() => {
+    supabase.rpc('get_hr_shifts').then(({ data }) => setShifts(data || []))
+  }, [])
+
   const managerOptions = employees.filter((e) => e.id !== row.id)
+
+  function toggleDay(d) {
+    setForm((f) => ({ ...f, default_days: f.default_days.includes(d) ? f.default_days.filter((x) => x !== d) : [...f.default_days, d] }))
+  }
 
   async function submit(ev) {
     ev.preventDefault()
     setError('')
     if (!form.full_name.trim() || (!row.id && !form.employee_code.trim())) { setError('Nama dan kode karyawan wajib diisi'); return }
     setSaving(true)
+    const daysParam = form.default_shift_id && form.default_days.length < 7 ? form.default_days.map(Number) : null
     let res
     if (row.id) {
       res = await supabase.rpc('update_employee_hr', {
         p_id: row.id, p_full_name: form.full_name, p_position: form.position || null, p_department: form.department || null,
         p_manager_id: form.manager_id || null, p_employment_status: form.employment_status,
         p_phone: form.phone || null, p_email: form.email || null, p_role: form.role,
+        p_default_shift_id: form.default_shift_id || null, p_default_work_days: daysParam,
+        p_clear_default_shift: !form.default_shift_id,
       })
     } else {
       res = await supabase.rpc('create_employee_hr', {
         p_employee_code: form.employee_code, p_full_name: form.full_name, p_position: form.position || null,
         p_department: form.department || null, p_manager_id: form.manager_id || null,
         p_phone: form.phone || null, p_email: form.email || null, p_role: form.role,
+        p_default_shift_id: form.default_shift_id || null, p_default_work_days: daysParam,
       })
     }
     setSaving(false)
@@ -262,6 +280,31 @@ function EmployeeForm({ row, employees, onClose, onSaved }) {
               </select>
             </div>
           )}
+
+          <div className="field">
+            <label>Shift default (berlaku terus-menerus)</label>
+            <select value={form.default_shift_id} onChange={(e) => setForm((f) => ({ ...f, default_shift_id: e.target.value }))}>
+              <option value="">- Tidak ada shift default -</option>
+              {shifts.map((s) => <option key={s.id} value={s.id}>{s.name} ({s.start_time?.slice(0, 5)}-{s.end_time?.slice(0, 5)})</option>)}
+            </select>
+          </div>
+          {form.default_shift_id && (
+            <div className="field">
+              <label>Berlaku di hari</label>
+              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                {DOW_OPTIONS.map(([val, label]) => (
+                  <button key={val} type="button" onClick={() => toggleDay(val)} style={{
+                    padding: '6px 12px', borderRadius: 8, border: '1px solid var(--border)', fontSize: 13, cursor: 'pointer',
+                    background: form.default_days.includes(val) ? 'var(--blue)' : '#fff', color: form.default_days.includes(val) ? '#fff' : 'var(--text)',
+                  }}>{label}</button>
+                ))}
+              </div>
+              <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 6 }}>
+                Hari yang tidak dicentang otomatis jadi "Libur" tiap minggu. Ini cuma default — jadwal khusus per-tanggal (kalau ada) tetap yang menang.
+              </p>
+            </div>
+          )}
+
           {error && <p className="error-text">{error}</p>}
           <button className="primary-btn" disabled={saving}>{saving ? 'Menyimpan...' : 'Simpan'}</button>
         </form>

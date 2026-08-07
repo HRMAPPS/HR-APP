@@ -36,7 +36,7 @@ export default function Absensi({ employee, onBack, startNew, onToast }) {
   async function load() {
     if (!employee?.id) return
     setLoading(true)
-    const [{ data: att }, { data: absR }, { data: shR }, { data: sched }] = await Promise.all([
+    const [{ data: att }, { data: absR }, { data: shR }, { data: sched }, { data: empDefault }] = await Promise.all([
       supabase.from('attendance').select('*').eq('employee_id', employee.id).gte('work_date', monthStart).lte('work_date', monthEnd).order('work_date', { ascending: false }),
       supabase.from('absence_requests').select('*').eq('employee_id', employee.id).order('created_at', { ascending: false }),
       supabase.from('shift_change_requests')
@@ -45,24 +45,46 @@ export default function Absensi({ employee, onBack, startNew, onToast }) {
       supabase.from('shift_schedules')
         .select('work_date, is_day_off, shifts(name, start_time, end_time)')
         .eq('employee_id', employee.id).gte('work_date', monthStart).lte('work_date', monthEnd),
+      supabase.from('employees')
+        .select('default_work_days, default_shift:default_shift_id(name, start_time, end_time)')
+        .eq('id', employee.id).maybeSingle(),
     ])
     setAbsenceReqs(absR || [])
     setShiftReqs(shR || [])
-    const shiftMap = Object.fromEntries((sched || []).map((s) => [
+    const explicitMap = Object.fromEntries((sched || []).map((s) => [
       s.work_date, { work_date: s.work_date, is_day_off: s.is_day_off, shift_name: s.shifts?.name, start_time: s.shifts?.start_time, end_time: s.shifts?.end_time },
     ]))
+    const defaultShift = empDefault?.default_shift
+    const defaultDays = empDefault?.default_work_days // null = setiap hari
+
+    // Untuk setiap tanggal di periode: jadwal khusus (shift_schedules) kalau
+    // ada selalu menang; kalau tidak ada, fallback ke shift default
+    // karyawan (kalau HR sudah set satu).
+    const shiftMap = {}
+    let d0 = new Date(monthStart + 'T00:00:00')
+    const endD0 = new Date(monthEnd + 'T00:00:00')
+    while (d0 <= endD0) {
+      const dateStr = `${d0.getFullYear()}-${pad2(d0.getMonth() + 1)}-${pad2(d0.getDate())}`
+      if (explicitMap[dateStr]) {
+        shiftMap[dateStr] = explicitMap[dateStr]
+      } else if (defaultShift) {
+        const dow = d0.getDay()
+        const isDayOff = defaultDays ? !defaultDays.includes(dow) : false
+        shiftMap[dateStr] = { work_date: dateStr, is_day_off: isDayOff, shift_name: defaultShift.name, start_time: defaultShift.start_time, end_time: defaultShift.end_time }
+      }
+      d0.setDate(d0.getDate() + 1)
+    }
     setShiftByDate(shiftMap)
 
     // Bangun daftar untuk SETIAP tanggal di periode (bukan cuma yang sudah
     // ada baris absensinya) supaya jadwal ke depan & hari libur ikut
-    // tampil, mengikuti shift yang sudah diatur HR.
+    // tampil, mengikuti shift yang sudah diatur HR (atau shift default).
     const attByDate = Object.fromEntries((att || []).map((a) => [a.work_date, a]))
     const merged = []
     let d = new Date(monthStart + 'T00:00:00')
     const endD = new Date(monthEnd + 'T00:00:00')
     while (d <= endD) {
       const dateStr = `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`
-      const shift = shiftMap[dateStr]
       const existing = attByDate[dateStr]
       merged.push(existing || { id: `virtual-${dateStr}`, employee_id: employee.id, work_date: dateStr, clock_in: null, clock_out: null, status: null, _virtual: true })
       d.setDate(d.getDate() + 1)
