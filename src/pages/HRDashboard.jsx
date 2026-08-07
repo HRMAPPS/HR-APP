@@ -11,6 +11,7 @@ const TABS = [
   { key: 'leave', label: 'Cuti', icon: CalendarDays },
   { key: 'overtime', label: 'Lembur', icon: AlarmClock },
   { key: 'reimbursement', label: 'Reimburse', icon: Receipt },
+  { key: 'correction', label: 'Koreksi Absen', icon: ClipboardList },
   { key: 'payslip', label: 'Slip Gaji', icon: Wallet },
 ]
 
@@ -46,6 +47,7 @@ export default function HRDashboard({ onBack, onToast }) {
       {tab === 'leave' && <LeaveTab onToast={onToast} />}
       {tab === 'overtime' && <OvertimeTab onToast={onToast} />}
       {tab === 'reimbursement' && <ReimbursementTab onToast={onToast} />}
+      {tab === 'correction' && <CorrectionTab onToast={onToast} />}
       {tab === 'payslip' && <PayslipTab employees={employees} onToast={onToast} />}
     </div>
   )
@@ -788,6 +790,29 @@ function ReimbursementTab({ onToast }) {
           <div className="date">{r.full_name}</div>
           <div className="desc">{r.category_name || 'Reimburse'} · {rupiah(r.amount)}</div>
           {r.description && <div className="desc">{r.description}</div>}
+        </div>
+      )}
+    />
+  )
+}
+
+function CorrectionTab({ onToast }) {
+  return (
+    <ApprovalTab
+      onToast={onToast} rpcName="get_hr_absence" table="absence_requests" statusOptions={STATUS_OPTS}
+      exportFilename="koreksi-absensi" exportColumns={[
+        ['Kode Karyawan', 'employee_code'], ['Nama', 'full_name'], ['Tanggal', (r) => fmtDate(r.work_date)],
+        ['Jenis Masalah', 'issue_type'], ['Usulan Clock In', (r) => r.requested_clock_in?.slice(0, 5)],
+        ['Usulan Clock Out', (r) => r.requested_clock_out?.slice(0, 5)], ['Alasan', 'reason'], ['Status', 'status'],
+      ]}
+      renderRow={(r) => (
+        <div>
+          <div className="date">{r.full_name}</div>
+          <div className="desc">
+            {fmtDate(r.work_date)} · usul {r.requested_clock_in?.slice(0, 5) || '-'} - {r.requested_clock_out?.slice(0, 5) || '-'}
+          </div>
+          {r.reason && <div className="desc">{r.reason}</div>}
+          {r.attachment_url && <a href={r.attachment_url} target="_blank" rel="noreferrer" style={{ fontSize: 13, color: 'var(--blue)' }}>Lihat lampiran</a>}
         </div>
       )}
     />
