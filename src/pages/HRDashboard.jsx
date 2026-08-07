@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react'
-import { ArrowLeft, Search, Check, X, Plus, Pencil, Trash2, Download, Upload, Users, ClipboardList, Wallet, CalendarDays, AlarmClock, Receipt, Bell, FileDown } from 'lucide-react'
+import { ArrowLeft, Search, Check, X, Plus, Pencil, Trash2, Download, Upload, Users, ClipboardList, Wallet, CalendarDays, AlarmClock, Receipt, Bell, FileDown, CalendarClock } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
 import { todayStr } from '../lib/dateUtils'
 
 const TABS = [
   { key: 'overview', label: 'Ringkasan', icon: Users },
   { key: 'karyawan', label: 'Karyawan', icon: Users },
+  { key: 'shift', label: 'Shift', icon: CalendarClock },
   { key: 'attendance', label: 'Absensi', icon: ClipboardList },
   { key: 'leave', label: 'Cuti', icon: CalendarDays },
   { key: 'overtime', label: 'Lembur', icon: AlarmClock },
@@ -40,6 +41,7 @@ export default function HRDashboard({ onBack, onToast }) {
 
       {tab === 'overview' && <OverviewTab onToast={onToast} onGo={setTab} />}
       {tab === 'karyawan' && <KaryawanTab employees={employees} onReload={loadEmployees} onToast={onToast} />}
+      {tab === 'shift' && <ShiftTab employees={employees} onToast={onToast} />}
       {tab === 'attendance' && <AttendanceTab onToast={onToast} />}
       {tab === 'leave' && <LeaveTab onToast={onToast} />}
       {tab === 'overtime' && <OvertimeTab onToast={onToast} />}
@@ -262,6 +264,296 @@ function EmployeeForm({ row, employees, onClose, onSaved }) {
           )}
           {error && <p className="error-text">{error}</p>}
           <button className="primary-btn" disabled={saving}>{saving ? 'Menyimpan...' : 'Simpan'}</button>
+        </form>
+      </div>
+    </div>
+  )
+}
+
+// ---------------------------------------------------------------------
+// Shift — kelola jenis shift, dan atur jadwal karyawan (satuan / massal)
+// ---------------------------------------------------------------------
+const DOW_OPTIONS = [
+  ['1', 'Sen'], ['2', 'Sel'], ['3', 'Rab'], ['4', 'Kam'], ['5', 'Jum'], ['6', 'Sab'], ['0', 'Min'],
+]
+
+function ShiftTab({ employees, onToast }) {
+  const [sub, setSub] = useState('jadwal') // 'jadwal' | 'jenis'
+  const [shifts, setShifts] = useState([])
+  const [editingShift, setEditingShift] = useState(null)
+
+  async function loadShifts() {
+    const { data, error } = await supabase.rpc('get_hr_shifts')
+    if (error) { onToast(error.message); return }
+    setShifts(data || [])
+  }
+  useEffect(() => { loadShifts() }, [])
+
+  return (
+    <div className="form-page">
+      <div className="tabs" style={{ padding: 0, marginBottom: 14 }}>
+        <button className={sub === 'jadwal' ? 'active' : ''} onClick={() => setSub('jadwal')}>Jadwal Karyawan</button>
+        <button className={sub === 'jenis' ? 'active' : ''} onClick={() => setSub('jenis')}>Jenis Shift</button>
+      </div>
+
+      {sub === 'jenis' && (
+        <div>
+          <button className="primary-btn" style={{ marginBottom: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }} onClick={() => setEditingShift({})}>
+            <Plus size={18} /> Tambah jenis shift
+          </button>
+          {shifts.length === 0 ? (
+            <div className="empty-state"><p>Belum ada jenis shift. Tambah dulu, misalnya "Office Staff 08:00 - 17:00".</p></div>
+          ) : (
+            shifts.map((s) => (
+              <div key={s.id} className="list-item">
+                <div className="info">
+                  <div className="name">{s.name}</div>
+                  <div className="sub">{s.start_time?.slice(0, 5)} - {s.end_time?.slice(0, 5)}</div>
+                </div>
+                <div className="actions"><button onClick={() => setEditingShift(s)}><Pencil size={17} /></button></div>
+              </div>
+            ))
+          )}
+          {editingShift !== null && (
+            <ShiftForm row={editingShift} onClose={() => setEditingShift(null)} onSaved={(msg) => { setEditingShift(null); loadShifts(); onToast(msg) }} />
+          )}
+        </div>
+      )}
+
+      {sub === 'jadwal' && <ScheduleManager employees={employees} shifts={shifts} onToast={onToast} />}
+    </div>
+  )
+}
+
+function ShiftForm({ row, onClose, onSaved }) {
+  const [form, setForm] = useState({ name: row.name || '', start_time: row.start_time?.slice(0, 5) || '08:00', end_time: row.end_time?.slice(0, 5) || '17:00' })
+  const [error, setError] = useState('')
+  const [saving, setSaving] = useState(false)
+
+  async function submit(ev) {
+    ev.preventDefault()
+    setError('')
+    if (!form.name.trim()) { setError('Nama shift wajib diisi'); return }
+    setSaving(true)
+    const { error } = await supabase.rpc('upsert_shift_hr', { p_id: row.id || null, p_name: form.name, p_start_time: form.start_time, p_end_time: form.end_time })
+    setSaving(false)
+    if (error) { setError(error.message); return }
+    onSaved(row.id ? 'Jenis shift diperbarui' : 'Jenis shift ditambahkan')
+  }
+
+  return (
+    <div className="sheet-overlay" onClick={onClose}>
+      <div className="sheet" onClick={(e) => e.stopPropagation()}>
+        <div className="sheet-handle" />
+        <div className="sheet-title-row"><h3>{row.id ? 'Edit Jenis Shift' : 'Tambah Jenis Shift'}</h3></div>
+        <form onSubmit={submit}>
+          <div className="field"><label>Nama shift</label><input value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} placeholder="mis. Office Staff" /></div>
+          <div style={{ display: 'flex', gap: 12 }}>
+            <div className="field" style={{ flex: 1 }}><label>Jam mulai</label><input type="time" value={form.start_time} onChange={(e) => setForm((f) => ({ ...f, start_time: e.target.value }))} /></div>
+            <div className="field" style={{ flex: 1 }}><label>Jam selesai</label><input type="time" value={form.end_time} onChange={(e) => setForm((f) => ({ ...f, end_time: e.target.value }))} /></div>
+          </div>
+          {error && <p className="error-text">{error}</p>}
+          <button className="primary-btn" disabled={saving}>{saving ? 'Menyimpan...' : 'Simpan'}</button>
+        </form>
+      </div>
+    </div>
+  )
+}
+
+function ScheduleManager({ employees, shifts, onToast }) {
+  const [start, setStart] = useState(todayStr())
+  const [end, setEnd] = useState(() => { const d = new Date(todayStr()); d.setDate(d.getDate() + 6); return d.toISOString().slice(0, 10) })
+  const [rows, setRows] = useState(null)
+  const [showBulk, setShowBulk] = useState(false)
+  const [editingRow, setEditingRow] = useState(null)
+
+  async function load() {
+    const { data, error } = await supabase.rpc('get_hr_schedules', { p_start: start, p_end: end })
+    if (error) { onToast(error.message); return }
+    setRows(data)
+  }
+  useEffect(() => { load() }, [start, end])
+
+  async function remove(id) {
+    const { error } = await supabase.rpc('delete_schedule_hr', { p_id: id })
+    if (error) { onToast(error.message); return }
+    onToast('Jadwal dihapus')
+    load()
+  }
+
+  return (
+    <div>
+      <div style={{ display: 'flex', gap: 10, marginBottom: 14 }}>
+        <div className="field" style={{ flex: 1, margin: 0 }}><label>Dari</label><input type="date" value={start} onChange={(e) => setStart(e.target.value)} /></div>
+        <div className="field" style={{ flex: 1, margin: 0 }}><label>Sampai</label><input type="date" value={end} onChange={(e) => setEnd(e.target.value)} /></div>
+      </div>
+
+      <button className="primary-btn" style={{ marginBottom: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }} onClick={() => setShowBulk(true)}>
+        <Plus size={18} /> Atur Jadwal (massal)
+      </button>
+
+      {rows === null ? (
+        <div className="empty-state"><p>Memuat...</p></div>
+      ) : rows.length === 0 ? (
+        <div className="empty-state"><p>Belum ada jadwal di rentang ini.</p></div>
+      ) : (
+        rows.map((r) => (
+          <div key={r.id} className="list-item">
+            <div className="info">
+              <div className="name">{r.full_name}</div>
+              <div className="sub">
+                {fmtDate(r.work_date)} · {r.is_day_off ? 'Libur' : (r.shift_name ? `${r.shift_name} (${r.start_time?.slice(0, 5)}-${r.end_time?.slice(0, 5)})` : 'Belum ada shift')}
+              </div>
+            </div>
+            <div className="actions">
+              <button onClick={() => setEditingRow(r)}><Pencil size={17} /></button>
+              <button onClick={() => remove(r.id)}><Trash2 size={17} /></button>
+            </div>
+          </div>
+        ))
+      )}
+
+      {showBulk && (
+        <BulkScheduleForm employees={employees} shifts={shifts} onClose={() => setShowBulk(false)}
+          onSaved={(msg) => { setShowBulk(false); load(); onToast(msg) }} />
+      )}
+      {editingRow && (
+        <SingleScheduleForm row={editingRow} shifts={shifts} onClose={() => setEditingRow(null)}
+          onSaved={(msg) => { setEditingRow(null); load(); onToast(msg) }} />
+      )}
+    </div>
+  )
+}
+
+function SingleScheduleForm({ row, shifts, onClose, onSaved }) {
+  const [shiftId, setShiftId] = useState(row.shift_id || '')
+  const [isDayOff, setIsDayOff] = useState(row.is_day_off || false)
+  const [error, setError] = useState('')
+  const [saving, setSaving] = useState(false)
+
+  async function submit(ev) {
+    ev.preventDefault()
+    setError('')
+    setSaving(true)
+    const { error } = await supabase.rpc('upsert_schedule_hr', {
+      p_id: row.id, p_employee_id: row.employee_id, p_work_date: row.work_date,
+      p_shift_id: isDayOff ? null : (shiftId || null), p_is_day_off: isDayOff,
+    })
+    setSaving(false)
+    if (error) { setError(error.message); return }
+    onSaved('Jadwal diperbarui')
+  }
+
+  return (
+    <div className="sheet-overlay" onClick={onClose}>
+      <div className="sheet" onClick={(e) => e.stopPropagation()}>
+        <div className="sheet-handle" />
+        <div className="sheet-title-row"><h3>{row.full_name} · {fmtDate(row.work_date)}</h3></div>
+        <form onSubmit={submit}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, marginBottom: 14 }}>
+            <input type="checkbox" checked={isDayOff} onChange={(e) => setIsDayOff(e.target.checked)} /> Hari libur
+          </label>
+          {!isDayOff && (
+            <div className="field">
+              <label>Jenis shift</label>
+              <select value={shiftId} onChange={(e) => setShiftId(e.target.value)}>
+                <option value="">- Pilih shift -</option>
+                {shifts.map((s) => <option key={s.id} value={s.id}>{s.name} ({s.start_time?.slice(0, 5)}-{s.end_time?.slice(0, 5)})</option>)}
+              </select>
+            </div>
+          )}
+          {error && <p className="error-text">{error}</p>}
+          <button className="primary-btn" disabled={saving}>{saving ? 'Menyimpan...' : 'Simpan'}</button>
+        </form>
+      </div>
+    </div>
+  )
+}
+
+function BulkScheduleForm({ employees, shifts, onClose, onSaved }) {
+  const [selectedIds, setSelectedIds] = useState([])
+  const [start, setStart] = useState(todayStr())
+  const [end, setEnd] = useState(todayStr())
+  const [shiftId, setShiftId] = useState('')
+  const [isDayOff, setIsDayOff] = useState(false)
+  const [days, setDays] = useState(['1', '2', '3', '4', '5']) // default Senin-Jumat
+  const [error, setError] = useState('')
+  const [saving, setSaving] = useState(false)
+
+  function toggleEmp(id) {
+    setSelectedIds((ids) => ids.includes(id) ? ids.filter((x) => x !== id) : [...ids, id])
+  }
+  function toggleDay(d) {
+    setDays((ds) => ds.includes(d) ? ds.filter((x) => x !== d) : [...ds, d])
+  }
+
+  async function submit(ev) {
+    ev.preventDefault()
+    setError('')
+    if (selectedIds.length === 0) { setError('Pilih minimal 1 karyawan'); return }
+    if (!isDayOff && !shiftId) { setError('Pilih jenis shift, atau centang Hari Libur'); return }
+    setSaving(true)
+    const { data, error } = await supabase.rpc('bulk_assign_schedule_hr', {
+      p_employee_ids: selectedIds, p_start_date: start, p_end_date: end,
+      p_shift_id: isDayOff ? null : shiftId, p_is_day_off: isDayOff,
+      p_days_of_week: days.length === 7 ? null : days.map(Number),
+    })
+    setSaving(false)
+    if (error) { setError(error.message); return }
+    onSaved(`${data} jadwal berhasil diatur`)
+  }
+
+  return (
+    <div className="sheet-overlay" onClick={onClose}>
+      <div className="sheet" onClick={(e) => e.stopPropagation()}>
+        <div className="sheet-handle" />
+        <div className="sheet-title-row"><h3>Atur Jadwal Massal</h3></div>
+        <form onSubmit={submit}>
+          <div className="field">
+            <label>Karyawan ({selectedIds.length} dipilih)</label>
+            <div style={{ maxHeight: 160, overflowY: 'auto', border: '1px solid var(--border)', borderRadius: 12, padding: 8 }}>
+              {employees.map((e) => (
+                <label key={e.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 4px', fontSize: 14 }}>
+                  <input type="checkbox" checked={selectedIds.includes(e.id)} onChange={() => toggleEmp(e.id)} />
+                  {e.full_name} <span style={{ color: 'var(--text-muted)', fontSize: 12.5 }}>({e.employee_code})</span>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: 12 }}>
+            <div className="field" style={{ flex: 1 }}><label>Dari tanggal</label><input type="date" value={start} onChange={(e) => setStart(e.target.value)} /></div>
+            <div className="field" style={{ flex: 1 }}><label>Sampai tanggal</label><input type="date" value={end} onChange={(e) => setEnd(e.target.value)} /></div>
+          </div>
+
+          <div className="field">
+            <label>Hanya di hari (opsional, default semua)</label>
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+              {DOW_OPTIONS.map(([val, label]) => (
+                <button key={val} type="button" onClick={() => toggleDay(val)} style={{
+                  padding: '6px 12px', borderRadius: 8, border: '1px solid var(--border)', fontSize: 13, cursor: 'pointer',
+                  background: days.includes(val) ? 'var(--blue)' : '#fff', color: days.includes(val) ? '#fff' : 'var(--text)',
+                }}>{label}</button>
+              ))}
+            </div>
+          </div>
+
+          <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, margin: '4px 0 14px' }}>
+            <input type="checkbox" checked={isDayOff} onChange={(e) => setIsDayOff(e.target.checked)} /> Set sebagai Hari Libur (bukan shift kerja)
+          </label>
+
+          {!isDayOff && (
+            <div className="field">
+              <label>Jenis shift</label>
+              <select value={shiftId} onChange={(e) => setShiftId(e.target.value)}>
+                <option value="">- Pilih shift -</option>
+                {shifts.map((s) => <option key={s.id} value={s.id}>{s.name} ({s.start_time?.slice(0, 5)}-{s.end_time?.slice(0, 5)})</option>)}
+              </select>
+            </div>
+          )}
+
+          {error && <p className="error-text">{error}</p>}
+          <button className="primary-btn" disabled={saving}>{saving ? 'Menyimpan...' : 'Terapkan Jadwal'}</button>
         </form>
       </div>
     </div>
