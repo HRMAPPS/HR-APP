@@ -9,7 +9,7 @@ const MONTHS_FULL = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Ju
 
 function pad2(n) { return String(n).padStart(2, '0') }
 
-export default function Absensi({ onBack, startNew, onToast }) {
+export default function Absensi({ employee, onBack, startNew, onToast }) {
   const [tab, setTab] = useState('riwayat')
   const [showForm, setShowForm] = useState(!!startNew)
   const [attendance, setAttendance] = useState([])
@@ -34,23 +34,41 @@ export default function Absensi({ onBack, startNew, onToast }) {
   const monthEnd = useMemo(() => `${monthYear}-${pad2(monthIndex + 1)}-24`, [monthYear, monthIndex])
 
   async function load() {
+    if (!employee?.id) return
     setLoading(true)
     const [{ data: att }, { data: absR }, { data: shR }, { data: sched }] = await Promise.all([
-      supabase.from('attendance').select('*').gte('work_date', monthStart).lte('work_date', monthEnd).order('work_date', { ascending: false }),
-      supabase.from('absence_requests').select('*').order('created_at', { ascending: false }),
+      supabase.from('attendance').select('*').eq('employee_id', employee.id).gte('work_date', monthStart).lte('work_date', monthEnd).order('work_date', { ascending: false }),
+      supabase.from('absence_requests').select('*').eq('employee_id', employee.id).order('created_at', { ascending: false }),
       supabase.from('shift_change_requests')
         .select('id, work_date, reason, status, to_is_day_off, from_shift:from_shift_id(name,start_time,end_time), to_shift:to_shift_id(name,start_time,end_time)')
-        .order('created_at', { ascending: false }),
+        .eq('employee_id', employee.id).order('created_at', { ascending: false }),
       supabase.from('shift_schedules')
-        .select('work_date, shifts(name, start_time, end_time)')
-        .gte('work_date', monthStart).lte('work_date', monthEnd),
+        .select('work_date, is_day_off, shifts(name, start_time, end_time)')
+        .eq('employee_id', employee.id).gte('work_date', monthStart).lte('work_date', monthEnd),
     ])
-    setAttendance(att || [])
     setAbsenceReqs(absR || [])
     setShiftReqs(shR || [])
-    setShiftByDate(Object.fromEntries((sched || []).map((s) => [
-      s.work_date, s.shifts ? { work_date: s.work_date, shift_name: s.shifts.name, start_time: s.shifts.start_time, end_time: s.shifts.end_time } : null,
-    ])))
+    const shiftMap = Object.fromEntries((sched || []).map((s) => [
+      s.work_date, { work_date: s.work_date, is_day_off: s.is_day_off, shift_name: s.shifts?.name, start_time: s.shifts?.start_time, end_time: s.shifts?.end_time },
+    ]))
+    setShiftByDate(shiftMap)
+
+    // Bangun daftar untuk SETIAP tanggal di periode (bukan cuma yang sudah
+    // ada baris absensinya) supaya jadwal ke depan & hari libur ikut
+    // tampil, mengikuti shift yang sudah diatur HR.
+    const attByDate = Object.fromEntries((att || []).map((a) => [a.work_date, a]))
+    const merged = []
+    let d = new Date(monthStart + 'T00:00:00')
+    const endD = new Date(monthEnd + 'T00:00:00')
+    while (d <= endD) {
+      const dateStr = `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`
+      const shift = shiftMap[dateStr]
+      const existing = attByDate[dateStr]
+      merged.push(existing || { id: `virtual-${dateStr}`, employee_id: employee.id, work_date: dateStr, clock_in: null, clock_out: null, status: null, _virtual: true })
+      d.setDate(d.getDate() + 1)
+    }
+    merged.sort((a, b) => (a.work_date < b.work_date ? 1 : -1))
+    setAttendance(merged)
     setLoading(false)
   }
 
@@ -61,7 +79,7 @@ export default function Absensi({ onBack, startNew, onToast }) {
     return outHHMM < shift.end_time.slice(0, 5)
   }
 
-  useEffect(() => { load() }, [monthStart, monthEnd])
+  useEffect(() => { load() }, [monthStart, monthEnd, employee?.id])
 
   if (eventDetail) {
     return <AttendanceDetail type={eventDetail.type} attendance={eventDetail.attendance} shift={eventDetail.shift} onBack={() => setEventDetail(null)} />
@@ -71,11 +89,13 @@ export default function Absensi({ onBack, startNew, onToast }) {
     return <AbsensiForm onDone={() => { setShowForm(false); load() }} onCancel={() => setShowForm(false)} onToast={onToast} />
   }
 
-  const late = attendance.filter((a) => a.status === 'late').length
-  const noOut = attendance.filter((a) => a.clock_in && !a.clock_out).length
-  const noIn = attendance.filter((a) => !a.clock_in && a.clock_out).length
-  const absent = attendance.filter((a) => !a.clock_in && !a.clock_out).length
-  const early = attendance.filter(isEarlyClockOut).length
+  const today = todayStr()
+  const pastWorkDays = attendance.filter((a) => a.work_date <= today && !shiftByDate[a.work_date]?.is_day_off)
+  const late = pastWorkDays.filter((a) => a.status === 'late').length
+  const noOut = pastWorkDays.filter((a) => a.clock_in && !a.clock_out).length
+  const noIn = pastWorkDays.filter((a) => !a.clock_in && a.clock_out).length
+  const absent = pastWorkDays.filter((a) => !a.clock_in && !a.clock_out).length
+  const early = pastWorkDays.filter(isEarlyClockOut).length
 
   return (
     <div>
@@ -113,17 +133,20 @@ export default function Absensi({ onBack, startNew, onToast }) {
 
           {loading ? <p style={{ padding: 16, color: '#a39c94' }}>Memuat...</p> : attendance.length === 0 ? (
             <div className="empty-state"><h3>Tidak ada data</h3><p>Belum ada catatan absensi di bulan ini.</p></div>
-          ) : attendance.map((a) => (
-            <button key={a.id} className="attendance-row" style={{ width: '100%', border: 'none', cursor: 'pointer', textAlign: 'left' }} onClick={() => setDayDetail(a)}>
-              <div className={`date ${!a.clock_in ? 'libur' : ''}`}>
-                <b>{new Date(a.work_date).getDate()} {new Date(a.work_date).toLocaleDateString('id-ID', { month: 'short' })}</b>
-                <span>{a.clock_in ? 'Jam kerja' : 'Libur'}</span>
-              </div>
-              <div className="time">{a.clock_in ? new Date(a.clock_in).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : '-'}</div>
-              <div className="time">{a.clock_out ? new Date(a.clock_out).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : '-'}</div>
-              <ChevronRight size={18} className="chev" />
-            </button>
-          ))}
+          ) : attendance.map((a) => {
+            const isDayOff = !!shiftByDate[a.work_date]?.is_day_off
+            return (
+              <button key={a.id} className="attendance-row" style={{ width: '100%', border: 'none', cursor: 'pointer', textAlign: 'left' }} onClick={() => setDayDetail(a)}>
+                <div className={`date ${isDayOff ? 'libur' : ''}`}>
+                  <b>{new Date(a.work_date).getDate()} {new Date(a.work_date).toLocaleDateString('id-ID', { month: 'short' })}</b>
+                  <span>{isDayOff ? 'Libur' : 'Jam kerja'}</span>
+                </div>
+                <div className="time">{a.clock_in ? new Date(a.clock_in).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : '-'}</div>
+                <div className="time">{a.clock_out ? new Date(a.clock_out).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : '-'}</div>
+                <ChevronRight size={18} className="chev" />
+              </button>
+            )
+          })}
         </>
       )}
 

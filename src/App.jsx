@@ -101,9 +101,9 @@ function PageRouter({ page, employee, onBack, onToast }) {
     case 'presensi':
       return <PresensiOnline employee={employee} onBack={onBack} onToast={onToast} />
     case 'absensi':
-      return <Absensi onBack={onBack} onToast={onToast} />
+      return <Absensi employee={employee} onBack={onBack} onToast={onToast} />
     case 'absensi-new':
-      return <Absensi onBack={onBack} startNew onToast={onToast} />
+      return <Absensi employee={employee} onBack={onBack} startNew onToast={onToast} />
     case 'shift-new':
       return <ShiftChangeForm onBack={onBack} onToast={onToast} />
     case 'data-new':
