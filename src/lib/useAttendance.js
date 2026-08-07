@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { supabase } from './supabaseClient'
+import { todayStr } from './dateUtils'
 
 // Shared clock-in/out logic (camera capture + geolocation + RPC calls) used by
 // both the Beranda shift card and the dedicated Presensi Online page, so both
@@ -28,7 +29,7 @@ export function useAttendance(employee) {
   }
 
   async function uploadSelfie(blob, kind) {
-    const path = `${employee?.auth_user_id}/${new Date().toISOString().slice(0, 10)}-${kind}-${Date.now()}.jpg`
+    const path = `${employee?.auth_user_id}/${todayStr()}-${kind}-${Date.now()}.jpg`
     const { error: upErr } = await supabase.storage.from('attendance-photos').upload(path, blob, {
       contentType: 'image/jpeg', upsert: true,
     })

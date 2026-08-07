@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { ArrowLeft, Calendar, Filter, ScrollText } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
+import { todayStr } from '../lib/dateUtils'
 
 export default function Absensi({ onBack, startNew, onToast }) {
   const [tab, setTab] = useState('riwayat')
@@ -10,9 +11,7 @@ export default function Absensi({ onBack, startNew, onToast }) {
   const [shiftReqs, setShiftReqs] = useState([])
   const [loading, setLoading] = useState(true)
 
-  const monthStart = useMemo(() => {
-    const d = new Date(); d.setDate(1); return d.toISOString().slice(0, 10)
-  }, [])
+  const monthStart = useMemo(() => todayStr().slice(0, 8) + '01', [])
 
   const [shiftEndByDate, setShiftEndByDate] = useState({})
 

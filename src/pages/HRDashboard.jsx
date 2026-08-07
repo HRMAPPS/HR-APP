@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { ArrowLeft, Search, Check, X, Plus, Pencil, Trash2, Download, Upload, Users, ClipboardList, Wallet, CalendarDays, AlarmClock, Receipt, Bell, FileDown } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
+import { todayStr } from '../lib/dateUtils'
 
 const TABS = [
   { key: 'overview', label: 'Ringkasan', icon: Users },
@@ -271,7 +272,7 @@ function EmployeeForm({ row, employees, onClose, onSaved }) {
 // Absensi — semua karyawan, filter tanggal + cari nama
 // ---------------------------------------------------------------------
 function AttendanceTab({ onToast }) {
-  const today = new Date().toISOString().slice(0, 10)
+  const today = todayStr()
   const firstOfMonth = today.slice(0, 8) + '01'
   const [start, setStart] = useState(firstOfMonth)
   const [end, setEnd] = useState(today)
@@ -492,7 +493,7 @@ const TEMPLATE_COLUMNS = [
 
 async function downloadTemplate(employees) {
   const XLSX = await import('xlsx')
-  const base = { 'Periode (YYYY-MM)': new Date().toISOString().slice(0, 7), 'PTKP': 'TK/0', 'Badan Usaha': 'CV Napocut', 'Gaji Pokok': 5000000 }
+  const base = { 'Periode (YYYY-MM)': todayStr().slice(0, 7), 'PTKP': 'TK/0', 'Badan Usaha': 'CV Napocut', 'Gaji Pokok': 5000000 }
   PENDAPATAN_FIELDS.forEach(([label]) => { base[label] = 0 })
   POTONGAN_FIELDS.forEach(([label]) => { base[label] = 0 })
   const rows = employees.slice(0, 5).map((e) => ({
@@ -661,7 +662,7 @@ function PayslipTab({ employees, onToast }) {
 
 function PayslipForm({ row, employees, onClose, onSaved }) {
   const [form, setForm] = useState({
-    employee_id: row.employee_id || '', period: row.period ? row.period.slice(0, 7) : new Date().toISOString().slice(0, 7),
+    employee_id: row.employee_id || '', period: row.period ? row.period.slice(0, 7) : todayStr().slice(0, 7),
     basic_salary: row.basic_salary || '', allowances: row.allowances || '', deductions: row.deductions || '', notes: row.notes || '',
   })
   const [error, setError] = useState('')

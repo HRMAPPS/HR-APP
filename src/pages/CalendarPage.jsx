@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { ArrowLeft } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
+import { toDateStr, todayStr } from '../lib/dateUtils'
 
 const DOW = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab']
 
@@ -10,15 +11,15 @@ export default function CalendarPage({ onBack }) {
   const [selected, setSelected] = useState(new Date())
 
   useEffect(() => {
-    const start = new Date(cursor.getFullYear(), cursor.getMonth(), 1).toISOString().slice(0, 10)
-    const end = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 0).toISOString().slice(0, 10)
+    const start = toDateStr(new Date(cursor.getFullYear(), cursor.getMonth(), 1))
+    const end = toDateStr(new Date(cursor.getFullYear(), cursor.getMonth() + 1, 0))
     supabase.from('leave_requests').select('start_date,end_date').gte('start_date', start).lte('end_date', end)
       .then(({ data }) => {
         const set = new Set()
         for (const r of data || []) {
           let d = new Date(r.start_date)
           const e = new Date(r.end_date)
-          while (d <= e) { set.add(d.toISOString().slice(0, 10)); d.setDate(d.getDate() + 1) }
+          while (d <= e) { set.add(toDateStr(d)); d.setDate(d.getDate() + 1) }
         }
         setMarkedDays(set)
       })
@@ -27,7 +28,7 @@ export default function CalendarPage({ onBack }) {
   const year = cursor.getFullYear(), month = cursor.getMonth()
   const firstDow = new Date(year, month, 1).getDay()
   const daysInMonth = new Date(year, month + 1, 0).getDate()
-  const todayStr = new Date().toISOString().slice(0, 10)
+  const todayDateStr = todayStr()
 
   const cells = []
   for (let i = 0; i < firstDow; i++) cells.push(null)
@@ -51,7 +52,7 @@ export default function CalendarPage({ onBack }) {
         {cells.map((d, i) => {
           if (!d) return <div key={i} />
           const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`
-          const isToday = dateStr === todayStr
+          const isToday = dateStr === todayDateStr
           return (
             <div key={i} className={`cal-cell ${isToday ? 'today' : ''}`} onClick={() => setSelected(new Date(dateStr))}>
               {d}
