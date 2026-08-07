@@ -25,11 +25,13 @@ export default function Absensi({ onBack, startNew, onToast }) {
   const [monthYear, setMonthYear] = useState(todayParts[0])
   const [monthIndex, setMonthIndex] = useState(todayParts[1] - 1) // 0-based
 
-  const monthStart = useMemo(() => `${monthYear}-${pad2(monthIndex + 1)}-01`, [monthYear, monthIndex])
-  const monthEnd = useMemo(() => {
-    const lastDay = new Date(monthYear, monthIndex + 1, 0).getDate()
-    return `${monthYear}-${pad2(monthIndex + 1)}-${pad2(lastDay)}`
+  // Periode payroll: tanggal 25 bulan sebelumnya s.d. tanggal 24 di bulan
+  // yang dipilih (sama dengan cutoff yang dipakai di Slip Gaji).
+  const monthStart = useMemo(() => {
+    const d = new Date(monthYear, monthIndex - 1, 25)
+    return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`
   }, [monthYear, monthIndex])
+  const monthEnd = useMemo(() => `${monthYear}-${pad2(monthIndex + 1)}-24`, [monthYear, monthIndex])
 
   async function load() {
     setLoading(true)
@@ -96,6 +98,9 @@ export default function Absensi({ onBack, startNew, onToast }) {
               <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}><Calendar size={16} /> {MONTHS_ID[monthIndex]} {monthYear}</span>
               <ChevronRight size={16} style={{ transform: 'rotate(90deg)' }} />
             </button>
+            <div style={{ fontSize: 12, color: 'var(--text-muted)', margin: '6px 2px 0' }}>
+              Periode {new Date(monthStart).toLocaleDateString('id-ID', { day: '2-digit', month: 'short' })} - {new Date(monthEnd).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })}
+            </div>
           </div>
 
           <div className="stats-strip" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '14px 8px' }}>
