@@ -67,7 +67,7 @@ export default function Absensi({ employee, onBack, startNew, onToast }) {
       merged.push(existing || { id: `virtual-${dateStr}`, employee_id: employee.id, work_date: dateStr, clock_in: null, clock_out: null, status: null, _virtual: true })
       d.setDate(d.getDate() + 1)
     }
-    merged.sort((a, b) => (a.work_date < b.work_date ? 1 : -1))
+    merged.sort((a, b) => (a.work_date > b.work_date ? 1 : -1))
     setAttendance(merged)
     setLoading(false)
   }
