@@ -5,7 +5,7 @@ function initials(name) {
   return (name || '').split(' ').slice(0, 2).map((n) => n[0]).join('').toUpperCase()
 }
 
-export default function DesktopShell({ employee, active, onChange, onOpenAllApps, unread = 0, children }) {
+export default function DesktopShell({ employee, active, onChange, onOpenAllApps, unread = 0, wide, children }) {
   return (
     <div className="desktop-shell">
       <header className="desktop-topbar">
@@ -41,7 +41,7 @@ export default function DesktopShell({ employee, active, onChange, onOpenAllApps
         </nav>
 
         <main className="desktop-main">
-          <div className="desktop-main-inner">{children}</div>
+          <div className={wide ? 'desktop-main-inner-wide' : 'desktop-main-inner'}>{children}</div>
         </main>
       </div>
     </div>

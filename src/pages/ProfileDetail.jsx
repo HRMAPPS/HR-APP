@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
-import { ArrowLeft, Plus, Pencil, Trash2, FileText, Upload, Download, AlertTriangle } from 'lucide-react'
+import { ArrowLeft, Plus, Pencil, Trash2, FileText, Download, AlertTriangle } from 'lucide-react'
 import { useProfileDetail } from '../lib/useProfileDetail'
+import { supabase } from '../lib/supabaseClient'
 
 const SECTION_TITLES = {
   personal: 'Info Personal',
@@ -36,8 +37,8 @@ export default function ProfileDetail({ section, onBack, onToast }) {
           {section === 'education' && <EducationList profile={profile} onToast={onToast} />}
           {section === 'payroll' && <PayrollForm profile={profile} onToast={onToast} />}
           {section === 'additional' && <AdditionalForm profile={profile} onToast={onToast} />}
-          {section === 'files' && <FilesList profile={profile} onToast={onToast} />}
-          {section === 'warnings' && <WarningsList profile={profile} />}
+          {section === 'files' && <FilesList employeeId={profile.data.employee.id} onToast={onToast} />}
+          {section === 'warnings' && <WarningsList employeeId={profile.data.employee.id} />}
         </div>
       )}
     </div>
@@ -47,7 +48,7 @@ export default function ProfileDetail({ section, onBack, onToast }) {
 // ---------------------------------------------------------------------
 // Info personal
 // ---------------------------------------------------------------------
-function PersonalForm({ profile, onToast }) {
+export function PersonalForm({ profile, onToast }) {
   const e = profile.data.employee
   const [form, setForm] = useState({
     nik: e.nik || '', birth_place: e.birth_place || '', birth_date: e.birth_date || '',
@@ -109,7 +110,7 @@ function PersonalForm({ profile, onToast }) {
 // ---------------------------------------------------------------------
 // Info pekerjaan — read only, diatur oleh HR
 // ---------------------------------------------------------------------
-function JobView({ employee: e }) {
+export function JobView({ employee: e }) {
   const rows = [
     ['Kode karyawan', e.employee_code],
     ['Jabatan', e.position],
@@ -138,7 +139,7 @@ function JobView({ employee: e }) {
 // ---------------------------------------------------------------------
 // Info kontak darurat
 // ---------------------------------------------------------------------
-function EmergencyForm({ profile, onToast }) {
+export function EmergencyForm({ profile, onToast }) {
   const e = profile.data.employee
   const [form, setForm] = useState({
     name: e.emergency_contact_name || '', relation: e.emergency_contact_relation || '', phone: e.emergency_contact_phone || '',
@@ -167,7 +168,7 @@ function EmergencyForm({ profile, onToast }) {
 // ---------------------------------------------------------------------
 // Info keluarga — daftar bisa tambah/edit/hapus
 // ---------------------------------------------------------------------
-function FamilyList({ profile, onToast }) {
+export function FamilyList({ profile, onToast }) {
   const [editing, setEditing] = useState(null) // null = list, {} = new, {...row} = edit
 
   if (editing !== null) {
@@ -242,7 +243,7 @@ function FamilyForm({ row, onCancel, onSaved, profile }) {
 // ---------------------------------------------------------------------
 // Pendidikan dan pengalaman — daftar bisa tambah/edit/hapus
 // ---------------------------------------------------------------------
-function EducationList({ profile, onToast }) {
+export function EducationList({ profile, onToast }) {
   const [editing, setEditing] = useState(null)
 
   if (editing !== null) {
@@ -346,7 +347,7 @@ function EducationForm({ row, onCancel, onSaved, profile }) {
 // ---------------------------------------------------------------------
 // Info payroll
 // ---------------------------------------------------------------------
-function PayrollForm({ profile, onToast }) {
+export function PayrollForm({ profile, onToast }) {
   const e = profile.data.employee
   const [form, setForm] = useState({
     bank_name: e.bank_name || '', bank_account_number: e.bank_account_number || '', bank_account_holder: e.bank_account_holder || '',
@@ -383,7 +384,7 @@ function PayrollForm({ profile, onToast }) {
 // ---------------------------------------------------------------------
 // Info tambahan
 // ---------------------------------------------------------------------
-function AdditionalForm({ profile, onToast }) {
+export function AdditionalForm({ profile, onToast }) {
   const [notes, setNotes] = useState(profile.data.employee.additional_notes || '')
   const [error, setError] = useState('')
 
@@ -408,112 +409,107 @@ function AdditionalForm({ profile, onToast }) {
 }
 
 // ---------------------------------------------------------------------
-// File saya — dokumen milik karyawan (upload sendiri) + dokumen dari
-// perusahaan (company_files, hanya bisa dilihat/unduh)
+// File saya — upload & lihat file pribadi
 // ---------------------------------------------------------------------
-function FilesList({ profile, onToast }) {
-  const [error, setError] = useState('')
-  const myFiles = profile.data.files || []
-  const companyFiles = profile.data.company_files || []
+export function FilesList({ employeeId, onToast }) {
+  const [files, setFiles] = useState(null)
+  const [uploading, setUploading] = useState(false)
 
-  async function onPick(ev) {
-    const file = ev.target.files?.[0]
-    ev.target.value = ''
+  async function load() {
+    const { data } = await supabase.from('employee_files').select('*').eq('employee_id', employeeId).order('created_at', { ascending: false })
+    setFiles(data || [])
+  }
+
+  useEffect(() => { load() }, [])
+
+  async function handleUpload(e) {
+    const file = e.target.files?.[0]
+    e.target.value = ''
     if (!file) return
-    setError('')
-    if (file.size > 10 * 1024 * 1024) { setError('Ukuran file maksimal 10 MB'); return }
-    const r = await profile.uploadFile(file)
-    if (!r.ok) { setError(r.message); return }
-    onToast('File berhasil diunggah')
+    setUploading(true)
+    try {
+      const path = `${employeeId}/${Date.now()}-${file.name}`
+      const { error: upErr } = await supabase.storage.from('employee-files').upload(path, file)
+      if (upErr) throw upErr
+      const { data: pub } = supabase.storage.from('employee-files').getPublicUrl(path)
+      const { error: insErr } = await supabase.from('employee_files').insert({
+        employee_id: employeeId, file_name: file.name, file_url: pub.publicUrl,
+      })
+      if (insErr) throw insErr
+      onToast('File berhasil diunggah')
+      await load()
+    } catch (err) {
+      onToast(err.message || 'Gagal mengunggah file')
+    } finally {
+      setUploading(false)
+    }
   }
 
-  async function onDelete(id) {
-    const r = await profile.deleteFile(id)
-    if (!r.ok) { setError(r.message); return }
+  async function handleDelete(id) {
+    await supabase.from('employee_files').delete().eq('id', id)
     onToast('File dihapus')
+    load()
   }
+
+  if (files === null) return <div className="empty-state"><p>Memuat...</p></div>
 
   return (
     <div>
-      <strong style={{ fontSize: 15 }}>Dokumen saya</strong>
-      {myFiles.length === 0 ? (
-        <div className="empty-state" style={{ padding: '14px 0' }}><p>Belum ada file yang diunggah.</p></div>
-      ) : myFiles.map((f) => (
-        <div key={f.id} className="list-item">
-          <div className="info" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <FileText size={18} color="var(--text-muted)" />
-            <div>
+      {files.length === 0 ? (
+        <div className="empty-state"><p>Belum ada file yang diunggah.</p></div>
+      ) : (
+        files.map((f) => (
+          <div key={f.id} className="list-item">
+            <FileText size={20} color="#8a847c" />
+            <div className="info">
               <div className="name">{f.file_name}</div>
               <div className="sub">{new Date(f.created_at).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })}</div>
             </div>
-          </div>
-          <div className="actions">
-            <a href={f.file_url} target="_blank" rel="noreferrer"><Download size={17} /></a>
-            <button onClick={() => onDelete(f.id)}><Trash2 size={17} /></button>
-          </div>
-        </div>
-      ))}
-
-      {error && <p className="error-text">{error}</p>}
-
-      <label className="primary-btn" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 14, cursor: 'pointer' }}>
-        <Upload size={18} /> {profile.saving ? 'Mengunggah...' : 'Unggah file'}
-        <input type="file" onChange={onPick} disabled={profile.saving} style={{ display: 'none' }} />
-      </label>
-
-      {companyFiles.length > 0 && (
-        <>
-          <strong style={{ fontSize: 15, display: 'block', marginTop: 24 }}>Dokumen dari perusahaan</strong>
-          {companyFiles.map((f) => (
-            <div key={f.id} className="list-item">
-              <div className="info" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <FileText size={18} color="var(--text-muted)" />
-                <div>
-                  <div className="name">{f.title}</div>
-                  <div className="sub">{f.category || f.description || '-'}</div>
-                </div>
-              </div>
-              <div className="actions">
-                <a href={f.file_url} target="_blank" rel="noreferrer"><Download size={17} /></a>
-              </div>
+            <div className="actions">
+              <a href={f.file_url} target="_blank" rel="noreferrer"><Download size={17} /></a>
+              <button onClick={() => handleDelete(f.id)}><Trash2 size={17} /></button>
             </div>
-          ))}
-        </>
+          </div>
+        ))
       )}
+      <label className="primary-btn" style={{ marginTop: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, cursor: 'pointer' }}>
+        <Plus size={18} /> {uploading ? 'Mengunggah...' : 'Unggah file'}
+        <input type="file" onChange={handleUpload} disabled={uploading} style={{ display: 'none' }} />
+      </label>
     </div>
   )
 }
 
 // ---------------------------------------------------------------------
-// Peringatan — riwayat surat peringatan (SP), read only, diterbitkan HR
+// Peringatan — read only, diterbitkan oleh HR
 // ---------------------------------------------------------------------
-function WarningsList({ profile }) {
-  const warnings = profile.data.warnings || []
+export function WarningsList({ employeeId }) {
+  const [warnings, setWarnings] = useState(null)
+
+  useEffect(() => {
+    supabase.from('warnings').select('*').eq('employee_id', employeeId).order('issued_date', { ascending: false })
+      .then(({ data }) => setWarnings(data || []))
+  }, [employeeId])
+
+  if (warnings === null) return <div className="empty-state"><p>Memuat...</p></div>
 
   if (warnings.length === 0) {
-    return (
-      <div className="empty-state" style={{ padding: '14px 0' }}>
-        <p>Tidak ada peringatan. Pertahankan kinerja baik Anda 👍</p>
-      </div>
-    )
+    return <div className="empty-state"><p>Tidak ada peringatan. Pertahankan kinerja baik Anda!</p></div>
   }
 
   return (
     <div>
       {warnings.map((w) => (
-        <div key={w.id} style={{
-          border: '1px solid var(--border)', borderRadius: 14, padding: 14, marginBottom: 12,
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <AlertTriangle size={17} color="var(--red)" />
-            <strong style={{ fontSize: 14.5 }}>{w.level ? `${w.level} · ` : ''}{w.title}</strong>
+        <div key={w.id} style={{ border: '1px solid var(--border)', borderRadius: 12, padding: 14, marginBottom: 12 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+            <AlertTriangle size={17} color="#C0392B" />
+            <strong style={{ fontSize: 15 }}>{w.title}</strong>
+            <span style={{ marginLeft: 'auto', fontSize: 12, background: '#FBE1DD', color: '#C0392B', borderRadius: 6, padding: '2px 8px' }}>{w.level}</span>
           </div>
-          {w.description && (
-            <p style={{ fontSize: 13.5, color: 'var(--text-muted)', marginTop: 8, whiteSpace: 'pre-wrap' }}>{w.description}</p>
-          )}
-          <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 8 }}>
-            {w.issued_date && new Date(w.issued_date).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })}
-            {w.issued_by && <> · diterbitkan oleh {w.issued_by}</>}
+          {w.description && <p style={{ fontSize: 13.5, color: 'var(--text-muted)', margin: '4px 0' }}>{w.description}</p>}
+          <div style={{ fontSize: 12.5, color: '#a39c94' }}>
+            {new Date(w.issued_date).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })}
+            {w.issued_by && ` · ${w.issued_by}`}
           </div>
         </div>
       ))}

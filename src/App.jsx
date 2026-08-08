@@ -24,6 +24,7 @@ import InstallPrompt from './components/InstallPrompt'
 import DesktopShell from './components/DesktopShell'
 import { useIsDesktop } from './lib/useIsDesktop'
 import { ApprovalCategoryPage } from './components/ApprovalCenter'
+import DesktopProfile from './pages/DesktopProfile'
 
 export default function App() {
   const { isLoggedIn, loading, employee, signOut } = useAuth()
@@ -66,7 +67,10 @@ export default function App() {
       {tab === 'home' && <><InstallPrompt /><Home employee={employee} onNavigate={navigateTo} onOpenAllApps={() => setShowAllApps(true)} /></>}
       {tab === 'employees' && <Employees viewer={employee} />}
       {tab === 'inbox' && <Inbox employee={employee} onToast={flash} onNavigate={navigateTo} />}
-      {tab === 'account' && <Account employee={employee} onSignOut={signOut} onToast={flash} onNavigate={navigateTo} />}
+      {tab === 'account' && (isDesktop
+        ? <DesktopProfile employee={employee} onSignOut={signOut} onToast={flash} />
+        : <Account employee={employee} onSignOut={signOut} onToast={flash} onNavigate={navigateTo} />
+      )}
     </>
   )
 
@@ -85,7 +89,8 @@ export default function App() {
   if (isDesktop) {
     return (
       <>
-        <DesktopShell employee={employee} active={page ? null : tab} onChange={handleTabChange} onOpenAllApps={() => setShowAllApps(true)}>
+        <DesktopShell employee={employee} active={page ? null : tab} onChange={handleTabChange} onOpenAllApps={() => setShowAllApps(true)}
+          wide={!page && (tab === 'account' || tab === 'home')}>
           {content}
         </DesktopShell>
         {overlays}
