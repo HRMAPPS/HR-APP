@@ -52,46 +52,48 @@ export default function PresensiOnline({ employee, onBack, onToast }) {
 
       <div style={{ margin: '-46px 16px 0', background: '#fff', borderRadius: 18, padding: '18px 16px', boxShadow: '0 6px 18px rgba(0,0,0,.08)' }}>
         <div style={{ textAlign: 'center' }}>
-          {shift?.is_day_off ? (
+          {(!shift || shift?.is_day_off) ? (
             <>
-              <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>{shift.shift_name}</div>
-              <div style={{ fontWeight: 700, fontSize: 17, margin: '4px 0' }}>Hari libur</div>
+              <div style={{ fontWeight: 700, fontSize: 17, margin: '4px 0' }}>Tidak ada shift hari ini</div>
+              <div style={{ fontSize: 14, color: 'var(--text-muted)' }}>Selamat menikmati hari libur!</div>
             </>
-          ) : shift ? (
+          ) : (
             <>
               <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>{shift.shift_name}</div>
               <div style={{ fontWeight: 700, fontSize: 17, margin: '4px 0' }}>
                 {new Date(shift.work_date).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })} ({shift.start_time?.slice(0,5)} - {shift.end_time?.slice(0,5)})
               </div>
             </>
-          ) : (
-            <div style={{ fontWeight: 700, fontSize: 17, margin: '4px 0' }}>Belum ada jadwal</div>
           )}
         </div>
 
-        <div style={{
-          display: 'flex', alignItems: 'center', gap: 8, background: '#eef1fb', color: '#4356C4',
-          borderRadius: 10, padding: '10px 12px', fontSize: 13, margin: '14px 0',
-        }}>
-          <Info size={16} /> Foto selfie diperlukan untuk Clock In/Out
-        </div>
+        {shift && !shift.is_day_off && (
+          <>
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: 8, background: '#eef1fb', color: '#4356C4',
+              borderRadius: 10, padding: '10px 12px', fontSize: 13, margin: '14px 0',
+            }}>
+              <Info size={16} /> Foto selfie diperlukan untuk Clock In/Out
+            </div>
 
-        <div style={{ display: 'flex', gap: 12 }}>
-          <button
-            onClick={() => setCameraMode('in')}
-            disabled={busy || !!att?.clock_in}
-            style={presensiBtnStyle(busy || !!att?.clock_in)}
-          >
-            <LogIn size={17} /> Clock In
-          </button>
-          <button
-            onClick={() => setCameraMode('out')}
-            disabled={busy || !att?.clock_in || !!att?.clock_out}
-            style={presensiBtnStyle(busy || !att?.clock_in || !!att?.clock_out)}
-          >
-            <LogOut size={17} /> Clock Out
-          </button>
-        </div>
+            <div style={{ display: 'flex', gap: 12 }}>
+              <button
+                onClick={() => setCameraMode('in')}
+                disabled={busy || !!att?.clock_in}
+                style={presensiBtnStyle(busy || !!att?.clock_in)}
+              >
+                <LogIn size={17} /> Clock In
+              </button>
+              <button
+                onClick={() => setCameraMode('out')}
+                disabled={busy || !att?.clock_in || !!att?.clock_out}
+                style={presensiBtnStyle(busy || !att?.clock_in || !!att?.clock_out)}
+              >
+                <LogOut size={17} /> Clock Out
+              </button>
+            </div>
+          </>
+        )}
 
         {att?.clock_in && (
           <div style={{ textAlign: 'center', marginTop: 14, paddingTop: 14, borderTop: '1px solid var(--border)' }}>

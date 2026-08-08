@@ -47,35 +47,36 @@ export default function Home({ employee, onNavigate, onOpenAllApps }) {
           Jadwal shift untuk {todayLabel}
         </div>
         <div className="shift-card__body">
-          {shift?.is_day_off ? (
-            <div className="shift-card__role">Hari libur</div>
-          ) : shift ? (
+          {(!shift || shift?.is_day_off) ? (
+            <>
+              <div className="shift-card__role">Tidak ada shift hari ini</div>
+              <div className="shift-card__time">Selamat menikmati hari libur!</div>
+            </>
+          ) : (
             <>
               <div className="shift-card__role">{shift.shift_name}</div>
               <div className="shift-card__time">
                 {shift.start_time?.slice(0,5)} - {shift.end_time?.slice(0,5)}
               </div>
-            </>
-          ) : (
-            <div className="shift-card__role">Belum ada jadwal</div>
-          )}
 
-          <div className="clock-buttons">
-            <button onClick={() => setCameraMode('in')} disabled={busy || !!att?.clock_in}>
-              <LogIn size={18} /> Clock In
-            </button>
-            <button onClick={() => setCameraMode('out')} disabled={busy || !att?.clock_in || !!att?.clock_out}>
-              <LogOut size={18} /> Clock Out
-            </button>
-          </div>
-
-          {att?.clock_in && (
-            <div className="shift-card__status">
-              <div>
-                Anda telah berhasil clock in pada pukul {formatTime(att.clock_in)}
-                {att.clock_out && <> · clock out pukul {formatTime(att.clock_out)}</>}
+              <div className="clock-buttons">
+                <button onClick={() => setCameraMode('in')} disabled={busy || !!att?.clock_in}>
+                  <LogIn size={18} /> Clock In
+                </button>
+                <button onClick={() => setCameraMode('out')} disabled={busy || !att?.clock_in || !!att?.clock_out}>
+                  <LogOut size={18} /> Clock Out
+                </button>
               </div>
-            </div>
+
+              {att?.clock_in && (
+                <div className="shift-card__status">
+                  <div>
+                    Anda telah berhasil clock in pada pukul {formatTime(att.clock_in)}
+                    {att.clock_out && <> · clock out pukul {formatTime(att.clock_out)}</>}
+                  </div>
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>

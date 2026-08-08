@@ -59,7 +59,7 @@ export default function App() {
     <div className="app-shell">
       <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 8 }}>
         {page ? (
-          <PageRouter page={page} employee={employee} onBack={() => setPage(null)} onToast={flash} />
+          <PageRouter page={page} employee={employee} onBack={() => setPage(null)} onToast={flash} onNavigate={navigateTo} />
         ) : (
           <>
             {tab === 'home' && <><InstallPrompt /><Home employee={employee} onNavigate={navigateTo} onOpenAllApps={() => setShowAllApps(true)} /></>}
@@ -84,7 +84,7 @@ export default function App() {
   )
 }
 
-function PageRouter({ page, employee, onBack, onToast }) {
+function PageRouter({ page, employee, onBack, onToast, onNavigate }) {
   switch (page) {
     case 'reimbursement':
       return <Reimbursement onBack={onBack} onToast={onToast} />
@@ -101,9 +101,9 @@ function PageRouter({ page, employee, onBack, onToast }) {
     case 'presensi':
       return <PresensiOnline employee={employee} onBack={onBack} onToast={onToast} />
     case 'absensi':
-      return <Absensi employee={employee} onBack={onBack} onToast={onToast} />
+      return <Absensi employee={employee} onBack={onBack} onToast={onToast} onNavigate={onNavigate} />
     case 'absensi-new':
-      return <Absensi employee={employee} onBack={onBack} startNew onToast={onToast} />
+      return <Absensi employee={employee} onBack={onBack} startNew onToast={onToast} onNavigate={onNavigate} />
     case 'shift-new':
       return <ShiftChangeForm onBack={onBack} onToast={onToast} />
     case 'data-new':
