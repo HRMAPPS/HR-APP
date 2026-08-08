@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import {
   ChevronRight, ArrowLeft, Search, Check, X, Receipt, CalendarDays, MapPin,
   AlarmClock, RefreshCw, UserCircle, FileText, Target, ListChecks, CheckSquare, UserPlus, FolderInput,
+  ClipboardCheck, Filter,
 } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
 
@@ -115,10 +116,11 @@ function ApprovalList({ category, onBack, onOpen, onToast }) {
 
   return (
     <div>
-      <div className="page-header">
-        <button className="back-btn" onClick={onBack}><ArrowLeft size={22} /></button>
-        <h1>{category.label}</h1>
-        <span style={{ width: 22 }} />
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '16px' }}>
+        <button className="icon-btn" onClick={onBack} style={{ padding: 4 }}><ArrowLeft size={22} /></button>
+        <h1 style={{ flex: 1, fontSize: 20, fontWeight: 700, margin: 0 }}>{category.label}</h1>
+        <button className="icon-btn" style={{ padding: 4 }}><ClipboardCheck size={21} color="#5b554f" /></button>
+        <button className="icon-btn" style={{ padding: 4 }}><Filter size={20} color="#5b554f" /></button>
       </div>
 
       <div className="search-box">
