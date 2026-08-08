@@ -21,10 +21,13 @@ import OrgChart from './pages/OrgChart'
 import HRDashboard from './pages/HRDashboard'
 import SlipGaji from './pages/SlipGaji'
 import InstallPrompt from './components/InstallPrompt'
+import DesktopShell from './components/DesktopShell'
+import { useIsDesktop } from './lib/useIsDesktop'
 import { ApprovalCategoryPage } from './components/ApprovalCenter'
 
 export default function App() {
   const { isLoggedIn, loading, employee, signOut } = useAuth()
+  const isDesktop = useIsDesktop()
   const [tab, setTab] = useState('home')
   const [page, setPage] = useState(null) // full-screen page overlay, e.g. 'reimbursement'
   const [showAllApps, setShowAllApps] = useState(false)
@@ -56,31 +59,49 @@ export default function App() {
     return <div className="app-shell"><Login /></div>
   }
 
-  return (
-    <div className="app-shell">
-      <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 8 }}>
-        {page ? (
-          <PageRouter page={page} employee={employee} onBack={() => setPage(null)} onToast={flash} onNavigate={navigateTo} />
-        ) : (
-          <>
-            {tab === 'home' && <><InstallPrompt /><Home employee={employee} onNavigate={navigateTo} onOpenAllApps={() => setShowAllApps(true)} /></>}
-            {tab === 'employees' && <Employees viewer={employee} />}
-            {tab === 'inbox' && <Inbox employee={employee} onToast={flash} onNavigate={navigateTo} />}
-            {tab === 'account' && <Account employee={employee} onSignOut={signOut} onToast={flash} onNavigate={navigateTo} />}
-          </>
-        )}
-      </div>
+  const content = page ? (
+    <PageRouter page={page} employee={employee} onBack={() => setPage(null)} onToast={flash} onNavigate={navigateTo} />
+  ) : (
+    <>
+      {tab === 'home' && <><InstallPrompt /><Home employee={employee} onNavigate={navigateTo} onOpenAllApps={() => setShowAllApps(true)} /></>}
+      {tab === 'employees' && <Employees viewer={employee} />}
+      {tab === 'inbox' && <Inbox employee={employee} onToast={flash} onNavigate={navigateTo} />}
+      {tab === 'account' && <Account employee={employee} onSignOut={signOut} onToast={flash} onNavigate={navigateTo} />}
+    </>
+  )
 
-      {!page && <BottomNav active={tab} onChange={handleTabChange} />}
-
+  const overlays = (
+    <>
       {showAllApps && (
         <AllAppsSheet onClose={() => setShowAllApps(false)} onNavigate={navigateTo} onToast={flash} employee={employee} />
       )}
       {showRequestSheet && (
         <RequestSheet onClose={() => setShowRequestSheet(false)} onNavigate={navigateTo} />
       )}
-
       {toast && <div className="toast">{toast}</div>}
+    </>
+  )
+
+  if (isDesktop) {
+    return (
+      <>
+        <DesktopShell employee={employee} active={page ? null : tab} onChange={handleTabChange} onOpenAllApps={() => setShowAllApps(true)}>
+          {content}
+        </DesktopShell>
+        {overlays}
+      </>
+    )
+  }
+
+  return (
+    <div className="app-shell">
+      <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 8 }}>
+        {content}
+      </div>
+
+      {!page && <BottomNav active={tab} onChange={handleTabChange} />}
+
+      {overlays}
     </div>
   )
 }

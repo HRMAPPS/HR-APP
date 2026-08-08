@@ -1,6 +1,6 @@
 import { Home, Users, Plus, Bell, User } from 'lucide-react'
 
-const TABS = [
+export const TABS = [
   { key: 'home', label: 'Beranda', icon: Home },
   { key: 'employees', label: 'Karyawan', icon: Users },
   { key: 'request', label: 'Pengajuan', icon: Plus },
