@@ -24,8 +24,7 @@ const CATEGORIES = [
 const CAT_ICON_BG = '#EAF1FB'
 const CAT_ICON_FG = '#3B6ECF'
 
-export default function ApprovalCenter({ employee, onToast, onCountsChange }) {
-  const [view, setView] = useState({ screen: 'categories' })
+export default function ApprovalCenter({ onToast, onCountsChange, onOpenCategory }) {
   const [counts, setCounts] = useState({})
 
   async function loadCounts() {
@@ -37,29 +36,6 @@ export default function ApprovalCenter({ employee, onToast, onCountsChange }) {
   }
   useEffect(() => { loadCounts() }, [])
 
-  if (view.screen === 'detail') {
-    return (
-      <ApprovalDetail
-        table={view.table} id={view.id}
-        onBack={() => setView({ screen: 'list', table: view.table })}
-        onToast={onToast}
-        onDecided={() => { loadCounts() }}
-      />
-    )
-  }
-
-  if (view.screen === 'list') {
-    const cat = CATEGORIES.find((c) => c.key === view.table)
-    return (
-      <ApprovalList
-        category={cat}
-        onBack={() => setView({ screen: 'categories' })}
-        onOpen={(id) => setView({ screen: 'detail', table: view.table, id })}
-        onToast={onToast}
-      />
-    )
-  }
-
   return (
     <div>
       {CATEGORIES.map((c) => {
@@ -67,7 +43,7 @@ export default function ApprovalCenter({ employee, onToast, onCountsChange }) {
         const count = counts[c.key]
         return (
           <button key={c.key} className="menu-row" style={{ borderTop: '1px solid var(--border)' }}
-            onClick={() => c.noBacking ? onToast?.(`${c.label} segera hadir`) : setView({ screen: 'list', table: c.key })}>
+            onClick={() => c.noBacking ? onToast?.(`${c.label} segera hadir`) : onOpenCategory(c.key)}>
             <span style={{
               width: 34, height: 34, borderRadius: 9, background: CAT_ICON_BG, color: CAT_ICON_FG,
               display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
@@ -85,6 +61,33 @@ export default function ApprovalCenter({ employee, onToast, onCountsChange }) {
         )
       })}
     </div>
+  )
+}
+
+// Halaman penuh (lewat App-level routing, bukan nested di tab Inbox) supaya
+// header "Inbox" dan bottom nav ikut hilang saat masuk ke satu kategori.
+export function ApprovalCategoryPage({ categoryKey, onBack, onToast }) {
+  const [view, setView] = useState({ screen: 'list' })
+  const category = CATEGORIES.find((c) => c.key === categoryKey)
+
+  if (view.screen === 'detail') {
+    return (
+      <ApprovalDetail
+        table={categoryKey} id={view.id}
+        onBack={() => setView({ screen: 'list' })}
+        onToast={onToast}
+        onDecided={() => {}}
+      />
+    )
+  }
+
+  return (
+    <ApprovalList
+      category={category}
+      onBack={onBack}
+      onOpen={(id) => setView({ screen: 'detail', id })}
+      onToast={onToast}
+    />
   )
 }
 

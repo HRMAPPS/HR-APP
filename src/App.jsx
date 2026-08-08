@@ -21,6 +21,7 @@ import OrgChart from './pages/OrgChart'
 import HRDashboard from './pages/HRDashboard'
 import SlipGaji from './pages/SlipGaji'
 import InstallPrompt from './components/InstallPrompt'
+import { ApprovalCategoryPage } from './components/ApprovalCenter'
 
 export default function App() {
   const { isLoggedIn, loading, employee, signOut } = useAuth()
@@ -64,7 +65,7 @@ export default function App() {
           <>
             {tab === 'home' && <><InstallPrompt /><Home employee={employee} onNavigate={navigateTo} onOpenAllApps={() => setShowAllApps(true)} /></>}
             {tab === 'employees' && <Employees viewer={employee} />}
-            {tab === 'inbox' && <Inbox employee={employee} onToast={flash} />}
+            {tab === 'inbox' && <Inbox employee={employee} onToast={flash} onNavigate={navigateTo} />}
             {tab === 'account' && <Account employee={employee} onSignOut={signOut} onToast={flash} onNavigate={navigateTo} />}
           </>
         )}
@@ -85,6 +86,9 @@ export default function App() {
 }
 
 function PageRouter({ page, employee, onBack, onToast, onNavigate }) {
+  if (page?.startsWith('approval:')) {
+    return <ApprovalCategoryPage categoryKey={page.replace('approval:', '')} onBack={onBack} onToast={onToast} />
+  }
   switch (page) {
     case 'reimbursement':
       return <Reimbursement onBack={onBack} onToast={onToast} />

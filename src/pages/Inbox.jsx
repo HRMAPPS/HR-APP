@@ -7,7 +7,7 @@ function initials(name) {
   return (name || '?').split(' ').slice(0, 2).map((n) => n[0]).join('').toUpperCase()
 }
 
-export default function Inbox({ employee, onToast }) {
+export default function Inbox({ employee, onToast, onNavigate }) {
   const [tab, setTab] = useState('notifikasi')
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
@@ -65,7 +65,7 @@ export default function Inbox({ employee, onToast }) {
       )}
 
       {tab === 'approval' && (
-        <ApprovalCenter employee={employee} onToast={onToast} onCountsChange={setApprovalCount} />
+        <ApprovalCenter onToast={onToast} onCountsChange={setApprovalCount} onOpenCategory={(key) => onNavigate?.(`approval:${key}`)} />
       )}
     </div>
   )
