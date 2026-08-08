@@ -92,18 +92,26 @@ function initials(name) {
 }
 
 function ApprovalList({ category, onBack, onOpen, onToast }) {
-  const [status, setStatus] = useState('pending')
   const [rows, setRows] = useState(null)
   const [query, setQuery] = useState('')
 
   async function load() {
-    const { data, error } = await supabase.rpc('get_my_approvals', { p_status: status || null })
+    const { data, error } = await supabase.rpc('get_my_approvals', { p_status: null })
     if (error) { onToast?.(error.message); return }
     setRows((data || []).filter((r) => r.category === category.key))
   }
-  useEffect(() => { load() }, [status])
+  useEffect(() => { load() }, [])
 
   const filtered = (rows || []).filter((r) => r.requester_name?.toLowerCase().includes(query.toLowerCase()))
+
+  // Kelompokkan per tanggal pengajuan (created_at), seperti referensi.
+  const groups = []
+  for (const r of filtered) {
+    const dayKey = new Date(r.created_at).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })
+    let g = groups.find((g) => g.dayKey === dayKey)
+    if (!g) { g = { dayKey, items: [] }; groups.push(g) }
+    g.items.push(r)
+  }
 
   return (
     <div>
@@ -118,32 +126,81 @@ function ApprovalList({ category, onBack, onOpen, onToast }) {
         <input placeholder="Cari..." value={query} onChange={(e) => setQuery(e.target.value)} />
       </div>
 
-      <div className="tabs" style={{ paddingTop: 0 }}>
-        {[['pending', 'Pengajuan'], ['', 'Semua']].map(([v, l]) => (
-          <button key={v} className={status === v ? 'active' : ''} onClick={() => setStatus(v)}>{l}</button>
-        ))}
-      </div>
-
       {rows === null ? (
         <div className="empty-state"><p>Memuat...</p></div>
       ) : filtered.length === 0 ? (
         <div className="empty-state"><h3>Tidak ada pengajuan</h3><p>Pengajuan yang perlu Anda tinjau akan tampil di sini.</p></div>
       ) : (
-        filtered.map((r) => (
-          <button key={r.id} className="list-item" style={{ width: '100%', border: 'none', textAlign: 'left', cursor: 'pointer' }}
-            onClick={() => onOpen(r.id)}>
-            <div className="avatar">{initials(r.requester_name)}</div>
-            <div className="info">
-              <div className="name">{r.requester_name}</div>
-              <div className="sub">{category.label} untuk {r.summary}</div>
-              {r.reason && <div className="sub" style={{ fontStyle: 'italic' }}>Alasan: {r.reason}</div>}
-            </div>
-            <StatusPill status={r.status} />
-          </button>
+        groups.map((g) => (
+          <div key={g.dayKey}>
+            <div style={{ fontSize: 12.5, color: 'var(--text-muted)', padding: '14px 16px 6px' }}>{g.dayKey}</div>
+            {g.items.map((r) => (
+              <button key={r.id} onClick={() => onOpen(r.id)} style={{
+                width: '100%', display: 'block', textAlign: 'left', cursor: 'pointer', background: '#fff', border: 'none',
+                borderRadius: 14, margin: '0 16px 10px', padding: 14, boxShadow: 'var(--shadow-sm)',
+              }}>
+                <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+                  <div className="avatar" style={{ width: 36, height: 36, fontSize: 12 }}>{initials(r.requester_name)}</div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontWeight: 600, fontSize: 15 }}>{r.requester_name}</div>
+                    <div style={{ fontSize: 13.5, color: 'var(--text-muted)', marginTop: 2 }}>{titleFor(category.key, r)}</div>
+                    <ul style={{ margin: '6px 0 0', padding: '0 0 0 16px', fontSize: 13.5, color: 'var(--text-muted)' }}>
+                      {bulletsFor(category.key, r).map((b, i) => <li key={i}>{b}</li>)}
+                    </ul>
+                    <div style={{ marginTop: 8 }}><StatusPill status={r.status} /></div>
+                  </div>
+                </div>
+              </button>
+            ))}
+          </div>
         ))
       )}
     </div>
   )
+}
+
+function titleFor(category, r) {
+  const d = r.details || {}
+  switch (category) {
+    case 'leave_requests': return `Pengajuan cuti untuk ${d.type_name || 'Cuti'}`
+    case 'overtime_requests': return `Pengajuan lembur untuk ${fmtDay(d.work_date)}`
+    case 'reimbursement_requests': return `Pengajuan reimbursement untuk ${d.category_name || 'Reimbursement'}`
+    case 'shift_change_requests': return `Pengajuan ubah shift untuk ${fmtDay(d.work_date)}`
+    case 'absence_requests': return `Pengajuan presensi untuk ${fmtDay(d.work_date)}`
+    default: return ''
+  }
+}
+
+function bulletsFor(category, r) {
+  const d = r.details || {}
+  const lines = []
+  switch (category) {
+    case 'leave_requests':
+      lines.push(d.start_date === d.end_date
+        ? `${fmtDay(d.start_date)} (${d.total_days} hari)`
+        : `${fmtDay(d.start_date)} - ${fmtDay(d.end_date)} (${d.total_days} hari)`)
+      break
+    case 'overtime_requests':
+      lines.push(`Jam: ${d.start_time?.slice(0, 5)} - ${d.end_time?.slice(0, 5)}`)
+      break
+    case 'reimbursement_requests':
+      lines.push(`Jumlah: Rp ${Number(d.amount || 0).toLocaleString('id-ID')}`)
+      break
+    case 'shift_change_requests':
+      lines.push(`${d.from_shift_name || '-'} menjadi ${d.to_is_day_off ? 'Off' : (d.to_shift_name || '-')}`)
+      break
+    case 'absence_requests':
+      if (d.requested_clock_in || d.requested_clock_out) {
+        lines.push(`Usulan: ${d.requested_clock_in?.slice(0, 5) || '-'} - ${d.requested_clock_out?.slice(0, 5) || '-'}`)
+      }
+      break
+  }
+  if (r.reason) lines.push(`Alasan: ${r.reason}`)
+  return lines
+}
+
+function fmtDay(d) {
+  return d ? new Date(d).toLocaleDateString('id-ID', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' }) : '-'
 }
 
 function StatusPill({ status }) {
