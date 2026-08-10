@@ -41,7 +41,7 @@ export default function DesktopShell({ employee, active, onChange, onOpenAllApps
         </nav>
 
         <main className="desktop-main">
-          <div className={wide === 'chart' ? 'desktop-main-inner-chart' : wide ? 'desktop-main-inner-wide' : 'desktop-main-inner'}>{children}</div>
+          <div className={wide === 'full' ? 'desktop-main-inner-full' : wide === 'chart' ? 'desktop-main-inner-chart' : wide ? 'desktop-main-inner-wide' : 'desktop-main-inner'}>{children}</div>
         </main>
       </div>
     </div>
