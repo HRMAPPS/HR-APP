@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { ArrowLeft, Search, Phone, Mail, MessageCircle } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
+import { useIsDesktop } from '../lib/useIsDesktop'
 
 function initials(name) {
   return (name || '').split(' ').slice(0, 2).map((n) => n[0]).join('').toUpperCase()
@@ -19,6 +20,7 @@ export default function Employees({ viewer }) {
   const [count, setCount] = useState(0)
   const [loading, setLoading] = useState(true)
   const [selected, setSelected] = useState(null)
+  const isDesktop = useIsDesktop()
 
   const isHr = viewer?.role === 'hr' || viewer?.role === 'admin'
 
@@ -64,34 +66,68 @@ export default function Employees({ viewer }) {
             <p>Coba kata kunci pencarian lain.</p>
           </div>
         )}
-        {list.map((emp) => (
-          <div key={emp.id} className="list-item">
-            <button onClick={() => setSelected(emp)} style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1, minWidth: 0, background: 'none', border: 'none', textAlign: 'left', cursor: 'pointer', padding: 0 }}>
-              <div className="avatar">{initials(emp.full_name)}</div>
-              <div className="info">
-                <div className="name">{emp.full_name}</div>
-                <div className="sub">{emp.position || '-'}</div>
+        {!loading && list.length > 0 && (isDesktop ? (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 14, padding: '4px 16px 16px' }}>
+            {list.map((emp) => (
+              <div key={emp.id} style={{ background: '#fff', borderRadius: 14, padding: 16, boxShadow: 'var(--shadow-sm)' }}>
+                <button onClick={() => setSelected(emp)} style={{ display: 'flex', alignItems: 'center', gap: 12, width: '100%', background: 'none', border: 'none', textAlign: 'left', cursor: 'pointer', padding: 0, marginBottom: 12 }}>
+                  <div className="avatar" style={{ width: 44, height: 44 }}>{initials(emp.full_name)}</div>
+                  <div className="info">
+                    <div className="name">{emp.full_name}</div>
+                    <div className="sub">{emp.position || '-'}</div>
+                  </div>
+                </button>
+                <div style={{ display: 'flex', gap: 8, borderTop: '1px solid var(--border)', paddingTop: 10 }}>
+                  {isHr && (
+                    <a href={emp.phone ? `tel:${emp.phone}` : undefined} title="Telepon" style={{
+                      flex: 1, display: 'flex', justifyContent: 'center', padding: 7, borderRadius: 8, background: '#f7f4f0',
+                      color: 'var(--blue)', opacity: emp.phone ? 1 : 0.35, pointerEvents: emp.phone ? 'auto' : 'none',
+                    }}><Phone size={16} /></a>
+                  )}
+                  <a href={emp.email ? `mailto:${emp.email}` : undefined} title="Email" style={{
+                    flex: 1, display: 'flex', justifyContent: 'center', padding: 7, borderRadius: 8, background: '#f7f4f0',
+                    color: 'var(--blue)', opacity: emp.email ? 1 : 0.35, pointerEvents: emp.email ? 'auto' : 'none',
+                  }}><Mail size={16} /></a>
+                  {isHr && (
+                    <a href={emp.phone ? waLink(emp.phone) : undefined} target="_blank" rel="noreferrer" title="WhatsApp" style={{
+                      flex: 1, display: 'flex', justifyContent: 'center', padding: 7, borderRadius: 8, background: '#f7f4f0',
+                      color: 'var(--blue)', opacity: emp.phone ? 1 : 0.35, pointerEvents: emp.phone ? 'auto' : 'none',
+                    }}><MessageCircle size={16} /></a>
+                  )}
+                </div>
               </div>
-            </button>
-            <div className="actions">
-              {isHr && (
-                <a href={emp.phone ? `tel:${emp.phone}` : undefined} title="Telepon"
-                  style={{ opacity: emp.phone ? 1 : 0.35, pointerEvents: emp.phone ? 'auto' : 'none' }}>
-                  <Phone size={18} />
-                </a>
-              )}
-              <a href={emp.email ? `mailto:${emp.email}` : undefined} title="Email"
-                style={{ opacity: emp.email ? 1 : 0.35, pointerEvents: emp.email ? 'auto' : 'none' }}>
-                <Mail size={18} />
-              </a>
-              {isHr && (
-                <a href={emp.phone ? waLink(emp.phone) : undefined} target="_blank" rel="noreferrer" title="WhatsApp"
-                  style={{ opacity: emp.phone ? 1 : 0.35, pointerEvents: emp.phone ? 'auto' : 'none' }}>
-                  <MessageCircle size={18} />
-                </a>
-              )}
-            </div>
+            ))}
           </div>
+        ) : (
+          list.map((emp) => (
+            <div key={emp.id} className="list-item">
+              <button onClick={() => setSelected(emp)} style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1, minWidth: 0, background: 'none', border: 'none', textAlign: 'left', cursor: 'pointer', padding: 0 }}>
+                <div className="avatar">{initials(emp.full_name)}</div>
+                <div className="info">
+                  <div className="name">{emp.full_name}</div>
+                  <div className="sub">{emp.position || '-'}</div>
+                </div>
+              </button>
+              <div className="actions">
+                {isHr && (
+                  <a href={emp.phone ? `tel:${emp.phone}` : undefined} title="Telepon"
+                    style={{ opacity: emp.phone ? 1 : 0.35, pointerEvents: emp.phone ? 'auto' : 'none' }}>
+                    <Phone size={18} />
+                  </a>
+                )}
+                <a href={emp.email ? `mailto:${emp.email}` : undefined} title="Email"
+                  style={{ opacity: emp.email ? 1 : 0.35, pointerEvents: emp.email ? 'auto' : 'none' }}>
+                  <Mail size={18} />
+                </a>
+                {isHr && (
+                  <a href={emp.phone ? waLink(emp.phone) : undefined} target="_blank" rel="noreferrer" title="WhatsApp"
+                    style={{ opacity: emp.phone ? 1 : 0.35, pointerEvents: emp.phone ? 'auto' : 'none' }}>
+                    <MessageCircle size={18} />
+                  </a>
+                )}
+              </div>
+            </div>
+          ))
         ))}
       </div>
     </div>
@@ -107,7 +143,7 @@ function EmployeeDetail({ emp, isHr, onBack }) {
   ]
 
   return (
-    <div>
+    <div style={{ maxWidth: 480, margin: '0 auto' }}>
       <div style={{ padding: '16px 16px 0' }}>
         <button className="icon-btn" onClick={onBack}><ArrowLeft size={22} /></button>
       </div>

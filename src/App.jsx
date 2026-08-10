@@ -90,7 +90,7 @@ export default function App() {
     return (
       <>
         <DesktopShell employee={employee} active={page ? null : tab} onChange={handleTabChange} onOpenAllApps={() => setShowAllApps(true)}
-          wide={!page && (tab === 'account' || tab === 'home')}>
+          wide={!page && (tab === 'account' || tab === 'home' || tab === 'employees')}>
           {content}
         </DesktopShell>
         {overlays}
