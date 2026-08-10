@@ -1,10 +1,27 @@
 import { useEffect, useState } from 'react'
-import { ArrowLeft, Search, Phone, Mail, MessageCircle, ChevronUp, ChevronDown, List, Network, SlidersHorizontal } from 'lucide-react'
+import { ArrowLeft, Search, Phone, Mail, MessageCircle, ChevronUp, ChevronDown, ChevronsUpDown, List, Network, Columns3, User } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
 import { useIsDesktop } from '../lib/useIsDesktop'
 
 function initials(name) {
   return (name || '').split(' ').slice(0, 2).map((n) => n[0]).join('').toUpperCase()
+}
+
+// Directory avatar: real photo if the employee has one, otherwise a
+// neutral gray silhouette placeholder — matches the reference layout
+// instead of a colored initials badge.
+function DirAvatar({ url, size = 30 }) {
+  if (url) {
+    return <img src={url} alt="" style={{ width: size, height: size, borderRadius: '50%', objectFit: 'cover', flexShrink: 0, background: '#eee' }} />
+  }
+  return (
+    <span style={{
+      width: size, height: size, borderRadius: '50%', flexShrink: 0, background: '#eef0f2', color: '#9aa1a8',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+    }}>
+      <User size={Math.round(size * 0.55)} />
+    </span>
+  )
 }
 
 function waLink(phone) {
@@ -80,7 +97,7 @@ export default function Employees({ viewer, onNavigate }) {
           </button>
           <div style={{ flex: 1 }} />
           <button style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', display: 'flex' }} title="Columns">
-            <SlidersHorizontal size={17} />
+            <Columns3 size={17} />
           </button>
           <div className="search-box" style={{ margin: 0, width: 220 }}>
             <Search size={16} />
@@ -96,7 +113,7 @@ export default function Employees({ viewer, onNavigate }) {
                 fontSize: 12.5, fontWeight: 700, color: 'var(--text)', textAlign: 'left', padding: 0,
               }}>
                 {c.label}
-                {sort.key === c.key ? (sort.dir === 'asc' ? <ChevronUp size={13} /> : <ChevronDown size={13} />) : <ChevronDown size={13} color="#ccc" />}
+                {sort.key === c.key ? (sort.dir === 'asc' ? <ChevronUp size={13} color="var(--blue)" /> : <ChevronDown size={13} color="var(--blue)" />) : <ChevronsUpDown size={13} color="#ccc" />}
               </button>
             ))}
           </div>
@@ -107,12 +124,12 @@ export default function Employees({ viewer, onNavigate }) {
             <div className="empty-state"><h3>Tidak ada karyawan</h3><p>Coba kata kunci pencarian lain.</p></div>
           ) : (
             list.map((emp) => (
-              <button key={emp.id} onClick={() => setSelected(emp)} style={{
-                display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1.4fr 1.6fr', width: '100%', padding: '11px 16px',
+              <button key={emp.id} onClick={() => setSelected(emp)} className="emp-row" style={{
+                display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1.4fr 1.6fr', width: '100%', padding: '13px 16px',
                 borderBottom: '1px solid #f1ece6', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', alignItems: 'center',
               }}>
                 <span style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <span className="avatar" style={{ width: 30, height: 30, fontSize: 11 }}>{initials(emp.full_name)}</span>
+                  <DirAvatar url={emp.avatar_url} />
                   <span style={{ fontSize: 13.5, color: 'var(--blue)', fontWeight: 600 }}>{emp.full_name}</span>
                 </span>
                 <span style={{ fontSize: 13.5 }}>{emp.employee_code || '-'}</span>
