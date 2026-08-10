@@ -135,6 +135,18 @@ button:active:not(:disabled){ transform: translateY(1px) scale(.98); }
 .org-node .badge .name{ font-weight: 700; font-size: 12.5px; line-height: 1.25; }
 .org-node .badge .role{ font-size: 11px; opacity: .9; margin-top: 2px; }
 
+/* desktop variant: bigger nodes, more breathing room, so a typical
+   org chart fits without needing to scroll like it does on mobile */
+.org-tree-desktop, .org-tree-desktop ul{ padding-top: 36px; }
+.org-tree-desktop { padding-top: 0; }
+.org-tree-desktop li{ padding: 36px 22px 0; }
+.org-tree-desktop li::before, .org-tree-desktop li::after{ height: 36px; }
+.org-tree-desktop ul::before{ height: 36px; }
+.org-tree-desktop .org-node .circle{ width: 72px; height: 72px; font-size: 19px; }
+.org-tree-desktop .org-node .badge{ min-width: 168px; padding: 20px 18px 12px; margin-top: -16px; }
+.org-tree-desktop .org-node .badge .name{ font-size: 14px; }
+.org-tree-desktop .org-node .badge .role{ font-size: 12px; }
+
 /* ---------- top bar ---------- */
 .topbar{
   display:flex; align-items:center; justify-content:space-between;

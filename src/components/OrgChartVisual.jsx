@@ -38,7 +38,7 @@ function Node({ person, depth, childrenByManager }) {
   )
 }
 
-export default function OrgChartVisual({ employees }) {
+export default function OrgChartVisual({ employees, isDesktop }) {
   const childrenByManager = {}
   for (const e of employees) {
     if (e.manager_id) {
@@ -53,8 +53,8 @@ export default function OrgChartVisual({ employees }) {
   }
 
   return (
-    <div style={{ overflowX: 'auto', padding: '30px 20px' }}>
-      <ul className="org-tree">
+    <div style={{ overflowX: 'auto', padding: isDesktop ? '44px 40px' : '30px 20px' }}>
+      <ul className={isDesktop ? 'org-tree org-tree-desktop' : 'org-tree'}>
         {roots.map((r) => (
           <Node key={r.id} person={r} depth={0} childrenByManager={childrenByManager} />
         ))}

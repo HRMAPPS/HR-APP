@@ -2,8 +2,10 @@ import { useEffect, useState } from 'react'
 import { ArrowLeft, ChevronDown, ChevronRight, Plus, Pencil, Trash2, Users, User, List, Network } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
 import OrgChartVisual from '../components/OrgChartVisual'
+import { useIsDesktop } from '../lib/useIsDesktop'
 
 export default function OrgChart({ onBack, onToast }) {
+  const isDesktop = useIsDesktop()
   const [data, setData] = useState(null)
   const [expanded, setExpanded] = useState({})
   const [editingDept, setEditingDept] = useState(null)   // null closed, {} new, {...} edit
@@ -46,7 +48,7 @@ export default function OrgChart({ onBack, onToast }) {
         </button>
       </div>
 
-      {view === 'chart' && <OrgChartVisual employees={employees} />}
+      {view === 'chart' && <OrgChartVisual employees={employees} isDesktop={isDesktop} />}
 
       {view === 'list' && (
       <div className="form-page">
