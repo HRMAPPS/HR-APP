@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'react'
-import { ArrowLeft, ChevronDown, ChevronRight, Plus, Pencil, Trash2, Users, User } from 'lucide-react'
+import { ArrowLeft, ChevronDown, ChevronRight, Plus, Pencil, Trash2, Users, User, List, Network } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
+import OrgChartVisual from '../components/OrgChartVisual'
 
 export default function OrgChart({ onBack, onToast }) {
   const [data, setData] = useState(null)
   const [expanded, setExpanded] = useState({})
   const [editingDept, setEditingDept] = useState(null)   // null closed, {} new, {...} edit
   const [editingEmp, setEditingEmp] = useState(null)      // employee being reassigned
+  const [view, setView] = useState('chart') // 'chart' | 'list'
 
   async function load() {
     const { data: result, error } = await supabase.rpc('get_org_chart')
@@ -34,6 +36,19 @@ export default function OrgChart({ onBack, onToast }) {
   return (
     <div>
       <Header onBack={onBack} />
+
+      <div className="tabs" style={{ padding: '10px 16px 0' }}>
+        <button className={view === 'chart' ? 'active' : ''} onClick={() => setView('chart')} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <Network size={15} /> Chart
+        </button>
+        <button className={view === 'list' ? 'active' : ''} onClick={() => setView('list')} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <List size={15} /> Kelola
+        </button>
+      </div>
+
+      {view === 'chart' && <OrgChartVisual employees={employees} />}
+
+      {view === 'list' && (
       <div className="form-page">
         {departments.length === 0 && (
           <div className="empty-state"><p>Belum ada departemen. Mulai dengan menambah departemen pertama.</p></div>
@@ -70,6 +85,7 @@ export default function OrgChart({ onBack, onToast }) {
           <Plus size={18} /> Tambah departemen
         </button>
       </div>
+      )}
 
       {editingDept !== null && (
         <DeptForm
