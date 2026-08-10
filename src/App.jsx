@@ -65,7 +65,7 @@ export default function App() {
   ) : (
     <>
       {tab === 'home' && <><InstallPrompt /><Home employee={employee} onNavigate={navigateTo} onOpenAllApps={() => setShowAllApps(true)} /></>}
-      {tab === 'employees' && <Employees viewer={employee} />}
+      {tab === 'employees' && <Employees viewer={employee} onNavigate={navigateTo} />}
       {tab === 'inbox' && <Inbox employee={employee} onToast={flash} onNavigate={navigateTo} />}
       {tab === 'account' && (isDesktop
         ? <DesktopProfile employee={employee} onSignOut={signOut} onToast={flash} />
