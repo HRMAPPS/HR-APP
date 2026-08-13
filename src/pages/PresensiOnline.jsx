@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { ArrowLeft, LogIn, LogOut, ChevronRight, Info } from 'lucide-react'
+import { ArrowLeft, LogIn, LogOut, ChevronRight, Info, MapPin, MapPinOff } from 'lucide-react'
 import { useAttendance } from '../lib/useAttendance'
 import CameraCapture from '../components/CameraCapture'
 import AttendanceDetail from '../components/AttendanceDetail'
@@ -10,7 +10,7 @@ function formatTime(iso) {
 }
 
 export default function PresensiOnline({ employee, onBack, onToast }) {
-  const { data, busy, cameraMode, setCameraMode, handleCapture } = useAttendance(employee)
+  const { data, busy, cameraMode, setCameraMode, handleCapture, locationStatus } = useAttendance(employee)
   const [now, setNow] = useState(new Date())
   const [detailType, setDetailType] = useState(null) // 'in' | 'out' | null
 
@@ -75,6 +75,19 @@ export default function PresensiOnline({ employee, onBack, onToast }) {
             }}>
               <Info size={16} /> Foto selfie diperlukan untuk Clock In/Out
             </div>
+
+            {locationStatus && (
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: 8, borderRadius: 10, padding: '10px 12px', fontSize: 13, marginBottom: 14,
+                background: locationStatus.withinRadius ? '#E1F3EA' : '#FBE1DD',
+                color: locationStatus.withinRadius ? '#1E8E5A' : '#C0392B',
+              }}>
+                {locationStatus.withinRadius ? <MapPin size={16} /> : <MapPinOff size={16} />}
+                {locationStatus.withinRadius
+                  ? `Anda dalam radius ${locationStatus.nearestName} (±${Math.round(locationStatus.distance)} m)`
+                  : `Anda ${Math.round(locationStatus.distance)} m dari ${locationStatus.nearestName}, di luar radius ${locationStatus.radius} m`}
+              </div>
+            )}
 
             <div style={{ display: 'flex', gap: 12 }}>
               <button

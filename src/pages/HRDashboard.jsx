@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { ArrowLeft, Search, Check, X, Plus, Pencil, Trash2, Download, Upload, Users, ClipboardList, Wallet, CalendarDays, AlarmClock, Receipt, Bell, FileDown, CalendarClock } from 'lucide-react'
+import { ArrowLeft, Search, Check, X, Plus, Pencil, Trash2, Download, Upload, Users, ClipboardList, Wallet, CalendarDays, AlarmClock, Receipt, Bell, FileDown, CalendarClock, MapPin, Crosshair } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
 import { todayStr } from '../lib/dateUtils'
 
@@ -7,6 +7,7 @@ const TABS = [
   { key: 'overview', label: 'Ringkasan', icon: Users },
   { key: 'karyawan', label: 'Karyawan', icon: Users },
   { key: 'shift', label: 'Shift', icon: CalendarClock },
+  { key: 'lokasi', label: 'Lokasi', icon: MapPin },
   { key: 'attendance', label: 'Absensi', icon: ClipboardList },
   { key: 'leave', label: 'Cuti', icon: CalendarDays },
   { key: 'overtime', label: 'Lembur', icon: AlarmClock },
@@ -43,6 +44,7 @@ export default function HRDashboard({ onBack, onToast }) {
       {tab === 'overview' && <OverviewTab onToast={onToast} onGo={setTab} />}
       {tab === 'karyawan' && <KaryawanTab employees={employees} onReload={loadEmployees} onToast={onToast} />}
       {tab === 'shift' && <ShiftTab employees={employees} onToast={onToast} />}
+      {tab === 'lokasi' && <LocationTab onToast={onToast} />}
       {tab === 'attendance' && <AttendanceTab onToast={onToast} />}
       {tab === 'leave' && <LeaveTab onToast={onToast} />}
       {tab === 'overtime' && <OvertimeTab onToast={onToast} />}
@@ -397,6 +399,124 @@ function ShiftForm({ row, onClose, onSaved }) {
             <div className="field" style={{ flex: 1 }}><label>Jam mulai</label><input type="time" value={form.start_time} onChange={(e) => setForm((f) => ({ ...f, start_time: e.target.value }))} /></div>
             <div className="field" style={{ flex: 1 }}><label>Jam selesai</label><input type="time" value={form.end_time} onChange={(e) => setForm((f) => ({ ...f, end_time: e.target.value }))} /></div>
           </div>
+          {error && <p className="error-text">{error}</p>}
+          <button className="primary-btn" disabled={saving}>{saving ? 'Menyimpan...' : 'Simpan'}</button>
+        </form>
+      </div>
+    </div>
+  )
+}
+
+function LocationTab({ onToast }) {
+  const [locations, setLocations] = useState(null)
+  const [editing, setEditing] = useState(null)
+
+  async function load() {
+    const { data, error } = await supabase.rpc('get_attendance_locations')
+    if (error) { onToast(error.message); return }
+    setLocations(data || [])
+  }
+  useEffect(() => { load() }, [])
+
+  async function remove(id) {
+    if (!confirm('Hapus lokasi ini? Karyawan tidak akan dibatasi radius lokasi ini lagi.')) return
+    const { error } = await supabase.rpc('delete_location_hr', { p_id: id })
+    if (error) { onToast(error.message); return }
+    onToast('Lokasi dihapus')
+    load()
+  }
+
+  return (
+    <div className="form-page">
+      <div style={{
+        display: 'flex', alignItems: 'flex-start', gap: 8, background: '#eef1fb', color: '#4356C4',
+        borderRadius: 10, padding: '10px 12px', fontSize: 13, marginBottom: 14,
+      }}>
+        <MapPin size={16} style={{ flexShrink: 0, marginTop: 1 }} />
+        Karyawan hanya bisa clock in/out dalam radius dari salah satu lokasi di bawah. Kalau belum ada lokasi ditambahkan, absen tidak dibatasi lokasi sama sekali.
+      </div>
+
+      <button className="primary-btn" style={{ marginBottom: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }} onClick={() => setEditing({})}>
+        <Plus size={18} /> Tambah lokasi
+      </button>
+
+      {locations === null ? (
+        <div className="empty-state"><p>Memuat...</p></div>
+      ) : locations.length === 0 ? (
+        <div className="empty-state"><p>Belum ada lokasi absen. Tambah dulu, misalnya "Kantor Pusat".</p></div>
+      ) : (
+        locations.map((l) => (
+          <div key={l.id} className="list-item">
+            <div className="info">
+              <div className="name">{l.name}</div>
+              <div className="sub">Radius {l.radius_meters} m · {Number(l.lat).toFixed(5)}, {Number(l.lng).toFixed(5)}</div>
+            </div>
+            <div className="actions">
+              <button onClick={() => setEditing(l)}><Pencil size={17} /></button>
+              <button onClick={() => remove(l.id)}><Trash2 size={17} /></button>
+            </div>
+          </div>
+        ))
+      )}
+
+      {editing !== null && (
+        <LocationForm row={editing} onClose={() => setEditing(null)} onSaved={(msg) => { setEditing(null); load(); onToast(msg) }} />
+      )}
+    </div>
+  )
+}
+
+function LocationForm({ row, onClose, onSaved }) {
+  const [form, setForm] = useState({
+    name: row.name || '', lat: row.lat ?? '', lng: row.lng ?? '', radius_meters: row.radius_meters ?? 100,
+  })
+  const [error, setError] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [locating, setLocating] = useState(false)
+
+  function useMyLocation() {
+    if (!navigator.geolocation) { setError('Perangkat ini tidak mendukung deteksi lokasi'); return }
+    setLocating(true)
+    navigator.geolocation.getCurrentPosition(
+      (pos) => { setForm((f) => ({ ...f, lat: pos.coords.latitude, lng: pos.coords.longitude })); setLocating(false) },
+      () => { setError('Gagal mendapatkan lokasi. Izinkan akses lokasi di browser.'); setLocating(false) },
+      { enableHighAccuracy: true, timeout: 8000 }
+    )
+  }
+
+  async function submit(ev) {
+    ev.preventDefault()
+    setError('')
+    if (!form.name.trim()) { setError('Nama lokasi wajib diisi'); return }
+    if (form.lat === '' || form.lng === '') { setError('Koordinat wajib diisi'); return }
+    setSaving(true)
+    const { error } = await supabase.rpc('upsert_location_hr', {
+      p_id: row.id || null, p_name: form.name, p_lat: Number(form.lat), p_lng: Number(form.lng),
+      p_radius_meters: Number(form.radius_meters) || 100,
+    })
+    setSaving(false)
+    if (error) { setError(error.message); return }
+    onSaved(row.id ? 'Lokasi diperbarui' : 'Lokasi ditambahkan')
+  }
+
+  return (
+    <div className="sheet-overlay" onClick={onClose}>
+      <div className="sheet" onClick={(e) => e.stopPropagation()}>
+        <div className="sheet-handle" />
+        <div className="sheet-title-row"><h3>{row.id ? 'Edit Lokasi' : 'Tambah Lokasi'}</h3></div>
+        <form onSubmit={submit}>
+          <div className="field"><label>Nama lokasi</label><input value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} placeholder="mis. Kantor Pusat" /></div>
+          <div style={{ display: 'flex', gap: 12 }}>
+            <div className="field" style={{ flex: 1 }}><label>Latitude</label><input type="number" step="any" value={form.lat} onChange={(e) => setForm((f) => ({ ...f, lat: e.target.value }))} placeholder="-6.200000" /></div>
+            <div className="field" style={{ flex: 1 }}><label>Longitude</label><input type="number" step="any" value={form.lng} onChange={(e) => setForm((f) => ({ ...f, lng: e.target.value }))} placeholder="106.816666" /></div>
+          </div>
+          <button type="button" onClick={useMyLocation} disabled={locating} style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, width: '100%', marginBottom: 14,
+            background: '#eef1fb', color: 'var(--blue)', border: 'none', borderRadius: 10, padding: '10px', fontSize: 13.5, fontWeight: 600, cursor: 'pointer',
+          }}>
+            <Crosshair size={16} /> {locating ? 'Mendeteksi lokasi...' : 'Gunakan lokasi saya sekarang'}
+          </button>
+          <div className="field"><label>Radius (meter)</label><input type="number" min="10" value={form.radius_meters} onChange={(e) => setForm((f) => ({ ...f, radius_meters: e.target.value }))} /></div>
           {error && <p className="error-text">{error}</p>}
           <button className="primary-btn" disabled={saving}>{saving ? 'Menyimpan...' : 'Simpan'}</button>
         </form>

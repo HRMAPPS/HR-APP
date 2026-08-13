@@ -2,6 +2,15 @@ import { useEffect, useState } from 'react'
 import { supabase } from './supabaseClient'
 import { todayStr } from './dateUtils'
 
+function haversineMeters(lat1, lng1, lat2, lng2) {
+  const R = 6371000
+  const toRad = (d) => (d * Math.PI) / 180
+  const dLat = toRad(lat2 - lat1)
+  const dLng = toRad(lng2 - lng1)
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+}
+
 // Shared clock-in/out logic (camera capture + geolocation + RPC calls) used by
 // both the Beranda shift card and the dedicated Presensi Online page, so both
 // screens always reflect the same "already clocked in today" state.
@@ -9,6 +18,10 @@ export function useAttendance(employee) {
   const [data, setData] = useState(null)
   const [busy, setBusy] = useState(false)
   const [cameraMode, setCameraMode] = useState(null) // 'in' | 'out' | null
+  // Client-side hint only — the server (check_attendance_radius inside
+  // clock_in/clock_out) is the actual source of truth and always
+  // re-validates on submit, so this is purely informational UX.
+  const [locationStatus, setLocationStatus] = useState(null) // { withinRadius, distance, nearestName, radius } | null
 
   async function load() {
     const { data: home, error } = await supabase.rpc('get_home_data')
@@ -16,6 +29,25 @@ export function useAttendance(employee) {
   }
 
   useEffect(() => { load() }, [])
+
+  useEffect(() => {
+    let cancelled = false
+    async function checkLocation() {
+      const { data: locations, error } = await supabase.rpc('get_attendance_locations')
+      if (error || !locations?.length || !navigator.geolocation) return
+      navigator.geolocation.getCurrentPosition((pos) => {
+        if (cancelled) return
+        let nearest = null
+        for (const l of locations) {
+          const distance = haversineMeters(pos.coords.latitude, pos.coords.longitude, l.lat, l.lng)
+          if (!nearest || distance < nearest.distance) nearest = { name: l.name, distance, radius: l.radius_meters }
+        }
+        if (nearest) setLocationStatus({ withinRadius: nearest.distance <= nearest.radius, distance: nearest.distance, nearestName: nearest.name, radius: nearest.radius })
+      }, () => {}, { enableHighAccuracy: true, timeout: 8000 })
+    }
+    checkLocation()
+    return () => { cancelled = true }
+  }, [])
 
   function withGeolocation() {
     return new Promise((resolve) => {
@@ -63,5 +95,5 @@ export function useAttendance(employee) {
     }
   }
 
-  return { data, busy, cameraMode, setCameraMode, handleCapture, load }
+  return { data, busy, cameraMode, setCameraMode, handleCapture, load, locationStatus }
 }
