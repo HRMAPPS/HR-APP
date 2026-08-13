@@ -7,7 +7,7 @@ function initials(name) {
   return (name || '?').split(' ').slice(0, 2).map((n) => n[0]).join('').toUpperCase()
 }
 
-export default function Inbox({ employee, onToast, onNavigate }) {
+export default function Inbox({ employee, onToast, onNavigate, onRead }) {
   const [tab, setTab] = useState('notifikasi')
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
@@ -29,6 +29,7 @@ export default function Inbox({ employee, onToast, onNavigate }) {
   async function markRead(id) {
     await supabase.from('notifications').update({ is_read: true }).eq('id', id)
     load()
+    onRead?.()
   }
 
   return (

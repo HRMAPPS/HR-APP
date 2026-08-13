@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useAuth } from './lib/useAuth'
+import { supabase } from './lib/supabaseClient'
 import BottomNav from './components/BottomNav'
 import AllAppsSheet from './components/AllAppsSheet'
 import RequestSheet from './components/RequestSheet'
@@ -35,6 +36,18 @@ export default function App() {
   const [showAllApps, setShowAllApps] = useState(false)
   const [showRequestSheet, setShowRequestSheet] = useState(false)
   const [toast, setToast] = useState('')
+  const [unreadCount, setUnreadCount] = useState(0)
+
+  async function loadUnread() {
+    if (!employee) return
+    const { data, error } = await supabase.rpc('get_unread_notifications_count')
+    if (!error) setUnreadCount(data || 0)
+  }
+
+  // Refresh on login/employee-link, and again whenever the person leaves
+  // the Inbox tab (covers notifications they just read while in there).
+  useEffect(() => { loadUnread() }, [employee?.id])
+  useEffect(() => { if (tab !== 'inbox') loadUnread() }, [tab])
 
   function flash(msg) {
     setToast(msg)
@@ -71,7 +84,7 @@ export default function App() {
     <>
       {tab === 'home' && <><InstallPrompt /><Home employee={employee} onNavigate={navigateTo} onOpenAllApps={() => setShowAllApps(true)} /></>}
       {tab === 'employees' && <Employees viewer={employee} onNavigate={navigateTo} />}
-      {tab === 'inbox' && <Inbox employee={employee} onToast={flash} onNavigate={navigateTo} />}
+      {tab === 'inbox' && <Inbox employee={employee} onToast={flash} onNavigate={navigateTo} onRead={loadUnread} />}
       {tab === 'account' && (isDesktop
         ? <DesktopProfile employee={employee} onSignOut={signOut} onToast={flash} />
         : <Account employee={employee} onSignOut={signOut} onToast={flash} onNavigate={navigateTo} />
@@ -95,7 +108,7 @@ export default function App() {
     return (
       <>
         <DesktopShell employee={employee} active={page ? null : tab} onChange={handleTabChange} onOpenAllApps={() => setShowAllApps(true)}
-          onSignOut={signOut} onToast={flash}
+          onSignOut={signOut} onToast={flash} unread={unreadCount}
           wide={!page && tab === 'employees' ? 'full' : !page && (tab === 'account' || tab === 'home') ? true : page === 'org-chart' ? 'chart' : false}>
           {content}
         </DesktopShell>
@@ -110,7 +123,7 @@ export default function App() {
         {content}
       </div>
 
-      {!page && <BottomNav active={tab} onChange={handleTabChange} />}
+      {!page && <BottomNav active={tab} onChange={handleTabChange} unread={unreadCount} />}
 
       {overlays}
     </div>
