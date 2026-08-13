@@ -254,7 +254,11 @@ function EmployeeForm({ row, employees, onClose, onSaved }) {
         <div className="sheet-handle" />
         <div className="sheet-title-row"><h3>{row.id ? 'Edit Karyawan' : 'Tambah Karyawan'}</h3></div>
         <form onSubmit={submit}>
-          <div className="field"><label>Kode karyawan</label><input value={form.employee_code} onChange={(e) => setForm((f) => ({ ...f, employee_code: e.target.value }))} disabled={!!row.id} /></div>
+          <div className="field">
+            <label>Kode karyawan</label>
+            <input value={form.employee_code} onChange={(e) => setForm((f) => ({ ...f, employee_code: e.target.value }))} disabled={!!row.id} required={!row.id} />
+            {!row.id && <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>Kode ini akan diminta ke karyawan saat mereka membuat akun login sendiri di halaman "Buat Akun" — pastikan unik dan sampaikan ke karyawan yang bersangkutan.</p>}
+          </div>
           <div className="field"><label>Nama lengkap</label><input value={form.full_name} onChange={(e) => setForm((f) => ({ ...f, full_name: e.target.value }))} /></div>
           <div className="field"><label>Jabatan</label><input value={form.position} onChange={(e) => setForm((f) => ({ ...f, position: e.target.value }))} /></div>
           <div className="field"><label>Departemen (teks)</label><input value={form.department} onChange={(e) => setForm((f) => ({ ...f, department: e.target.value }))} /></div>
