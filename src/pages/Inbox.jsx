@@ -3,6 +3,8 @@ import { ChevronRight, User } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
 import ApprovalCenter from '../components/ApprovalCenter'
 
+const APPROVAL_TABLES = ['leave_requests', 'overtime_requests', 'reimbursement_requests', 'shift_change_requests', 'absence_requests']
+
 function initials(name) {
   return (name || '?').split(' ').slice(0, 2).map((n) => n[0]).join('').toUpperCase()
 }
@@ -15,21 +17,31 @@ export default function Inbox({ employee, onToast, onNavigate, onRead }) {
 
   async function load() {
     setLoading(true)
-    const { data: notif } = await supabase
-      .from('notifications')
-      .select('*')
-      .order('created_at', { ascending: false })
-      .limit(50)
+    const [{ data: notif }, { data: counts }] = await Promise.all([
+      supabase.from('notifications').select('*').order('created_at', { ascending: false }).limit(50),
+      supabase.rpc('get_approval_counts'),
+    ])
     setItems(notif || [])
+    // Fetched here (not just inside ApprovalCenter) so the "(1)" tab label
+    // is correct immediately on open, not only after switching tabs.
+    setApprovalCount(Object.values(counts || {}).reduce((a, b) => a + b, 0))
     setLoading(false)
   }
 
   useEffect(() => { load() }, [employee?.id])
 
-  async function markRead(id) {
-    await supabase.from('notifications').update({ is_read: true }).eq('id', id)
-    load()
-    onRead?.()
+  async function openNotification(n) {
+    if (!n.is_read) {
+      await supabase.from('notifications').update({ is_read: true }).eq('id', n.id)
+      load()
+      onRead?.()
+    }
+    // Only "needs approval" notifications (has related_table/related_id
+    // pointing at a request) have somewhere to navigate to — "Slip Gaji
+    // Tersedia" etc. are informational only and stay put.
+    if (n.related_table && APPROVAL_TABLES.includes(n.related_table) && n.related_id) {
+      onNavigate?.(`approval:${n.related_table}:${n.related_id}`)
+    }
   }
 
   return (
@@ -49,7 +61,7 @@ export default function Inbox({ employee, onToast, onNavigate, onRead }) {
           <div className="empty-state"><h3>Belum ada notifikasi</h3><p>Notifikasi Anda akan tampil di sini.</p></div>
         ) : items.map((n) => (
           <button key={n.id} className="list-item" style={{ width: '100%', border: 'none', textAlign: 'left', cursor: 'pointer' }}
-            onClick={() => !n.is_read && markRead(n.id)}>
+            onClick={() => openNotification(n)}>
             <div className="avatar" style={{ color: '#9a938c' }}>
               {n.actor_name ? initials(n.actor_name) : <User size={18} />}
             </div>
