@@ -4,6 +4,7 @@ import BottomNav from './components/BottomNav'
 import AllAppsSheet from './components/AllAppsSheet'
 import RequestSheet from './components/RequestSheet'
 import Login from './pages/Login'
+import LinkAccount from './pages/LinkAccount'
 import Home from './pages/Home'
 import Employees from './pages/Employees'
 import Inbox from './pages/Inbox'
@@ -27,7 +28,7 @@ import { ApprovalCategoryPage } from './components/ApprovalCenter'
 import DesktopProfile from './pages/DesktopProfile'
 
 export default function App() {
-  const { isLoggedIn, loading, employee, signOut } = useAuth()
+  const { isLoggedIn, loading, employee, signOut, refreshEmployee } = useAuth()
   const isDesktop = useIsDesktop()
   const [tab, setTab] = useState('home')
   const [page, setPage] = useState(null) // full-screen page overlay, e.g. 'reimbursement'
@@ -60,6 +61,10 @@ export default function App() {
     return <div className="app-shell"><Login /></div>
   }
 
+  if (!employee) {
+    return <div className="app-shell"><LinkAccount onLinked={refreshEmployee} onSignOut={signOut} /></div>
+  }
+
   const content = page ? (
     <PageRouter page={page} employee={employee} onBack={() => setPage(null)} onToast={flash} onNavigate={navigateTo} />
   ) : (
@@ -90,6 +95,7 @@ export default function App() {
     return (
       <>
         <DesktopShell employee={employee} active={page ? null : tab} onChange={handleTabChange} onOpenAllApps={() => setShowAllApps(true)}
+          onSignOut={signOut} onToast={flash}
           wide={!page && tab === 'employees' ? 'full' : !page && (tab === 'account' || tab === 'home') ? true : page === 'org-chart' ? 'chart' : false}>
           {content}
         </DesktopShell>
