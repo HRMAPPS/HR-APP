@@ -132,7 +132,11 @@ export default function App() {
 
 function PageRouter({ page, employee, onBack, onToast, onNavigate }) {
   if (page?.startsWith('approval:')) {
-    return <ApprovalCategoryPage categoryKey={page.replace('approval:', '')} onBack={onBack} onToast={onToast} />
+    // Two formats: 'approval:<category>' (from the category list) and
+    // 'approval:<category>:<requestId>' (from clicking a notification,
+    // which should jump straight to that request's detail).
+    const [, categoryKey, requestId] = page.split(':')
+    return <ApprovalCategoryPage categoryKey={categoryKey} initialId={requestId} onBack={onBack} onToast={onToast} />
   }
   switch (page) {
     case 'reimbursement':

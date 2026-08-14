@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import {
   ChevronRight, ArrowLeft, Search, Check, X, Receipt, CalendarDays, MapPin,
   AlarmClock, RefreshCw, UserCircle, FileText, Target, ListChecks, CheckSquare, UserPlus, FolderInput,
+  ClipboardCheck, Filter,
 } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
 
@@ -23,8 +24,7 @@ const CATEGORIES = [
 const CAT_ICON_BG = '#EAF1FB'
 const CAT_ICON_FG = '#3B6ECF'
 
-export default function ApprovalCenter({ employee, onToast, onCountsChange }) {
-  const [view, setView] = useState({ screen: 'categories' })
+export default function ApprovalCenter({ onToast, onCountsChange, onOpenCategory }) {
   const [counts, setCounts] = useState({})
 
   async function loadCounts() {
@@ -36,29 +36,6 @@ export default function ApprovalCenter({ employee, onToast, onCountsChange }) {
   }
   useEffect(() => { loadCounts() }, [])
 
-  if (view.screen === 'detail') {
-    return (
-      <ApprovalDetail
-        table={view.table} id={view.id}
-        onBack={() => setView({ screen: 'list', table: view.table })}
-        onToast={onToast}
-        onDecided={() => { loadCounts() }}
-      />
-    )
-  }
-
-  if (view.screen === 'list') {
-    const cat = CATEGORIES.find((c) => c.key === view.table)
-    return (
-      <ApprovalList
-        category={cat}
-        onBack={() => setView({ screen: 'categories' })}
-        onOpen={(id) => setView({ screen: 'detail', table: view.table, id })}
-        onToast={onToast}
-      />
-    )
-  }
-
   return (
     <div>
       {CATEGORIES.map((c) => {
@@ -66,7 +43,7 @@ export default function ApprovalCenter({ employee, onToast, onCountsChange }) {
         const count = counts[c.key]
         return (
           <button key={c.key} className="menu-row" style={{ borderTop: '1px solid var(--border)' }}
-            onClick={() => c.noBacking ? onToast?.(`${c.label} segera hadir`) : setView({ screen: 'list', table: c.key })}>
+            onClick={() => c.noBacking ? onToast?.(`${c.label} segera hadir`) : onOpenCategory(c.key)}>
             <span style={{
               width: 34, height: 34, borderRadius: 9, background: CAT_ICON_BG, color: CAT_ICON_FG,
               display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
@@ -87,30 +64,77 @@ export default function ApprovalCenter({ employee, onToast, onCountsChange }) {
   )
 }
 
+// Halaman penuh (lewat App-level routing, bukan nested di tab Inbox) supaya
+// header "Inbox" dan bottom nav ikut hilang saat masuk ke satu kategori.
+export function ApprovalCategoryPage({ categoryKey, initialId, onBack, onToast }) {
+  const [view, setView] = useState(initialId ? { screen: 'detail', id: initialId } : { screen: 'list' })
+  const category = CATEGORIES.find((c) => c.key === categoryKey)
+
+  if (!category) {
+    // Guards against a malformed/unknown deep link instead of crashing
+    // on category.label below.
+    return (
+      <div>
+        <div className="page-header"><button className="back-btn" onClick={onBack}><ArrowLeft size={22} /></button><h1>Tidak ditemukan</h1><span style={{ width: 22 }} /></div>
+        <div className="empty-state"><p>Kategori pengajuan tidak dikenali.</p></div>
+      </div>
+    )
+  }
+
+  if (view.screen === 'detail') {
+    return (
+      <ApprovalDetail
+        table={categoryKey} id={view.id}
+        onBack={() => (initialId ? onBack() : setView({ screen: 'list' }))}
+        onToast={onToast}
+        onDecided={() => {}}
+      />
+    )
+  }
+
+  return (
+    <ApprovalList
+      category={category}
+      onBack={onBack}
+      onOpen={(id) => setView({ screen: 'detail', id })}
+      onToast={onToast}
+    />
+  )
+}
+
 function initials(name) {
   return (name || '?').split(' ').slice(0, 2).map((n) => n[0]).join('').toUpperCase()
 }
 
 function ApprovalList({ category, onBack, onOpen, onToast }) {
-  const [status, setStatus] = useState('pending')
   const [rows, setRows] = useState(null)
   const [query, setQuery] = useState('')
 
   async function load() {
-    const { data, error } = await supabase.rpc('get_my_approvals', { p_status: status || null })
+    const { data, error } = await supabase.rpc('get_my_approvals', { p_status: null })
     if (error) { onToast?.(error.message); return }
     setRows((data || []).filter((r) => r.category === category.key))
   }
-  useEffect(() => { load() }, [status])
+  useEffect(() => { load() }, [])
 
   const filtered = (rows || []).filter((r) => r.requester_name?.toLowerCase().includes(query.toLowerCase()))
 
+  // Kelompokkan per tanggal pengajuan (created_at), seperti referensi.
+  const groups = []
+  for (const r of filtered) {
+    const dayKey = new Date(r.created_at).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })
+    let g = groups.find((g) => g.dayKey === dayKey)
+    if (!g) { g = { dayKey, items: [] }; groups.push(g) }
+    g.items.push(r)
+  }
+
   return (
     <div>
-      <div className="page-header">
-        <button className="back-btn" onClick={onBack}><ArrowLeft size={22} /></button>
-        <h1>{category.label}</h1>
-        <span style={{ width: 22 }} />
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '16px' }}>
+        <button className="icon-btn" onClick={onBack} style={{ padding: 4 }}><ArrowLeft size={22} /></button>
+        <h1 style={{ flex: 1, fontSize: 20, fontWeight: 700, margin: 0 }}>{category.label}</h1>
+        <button className="icon-btn" style={{ padding: 4 }}><ClipboardCheck size={21} color="#5b554f" /></button>
+        <button className="icon-btn" style={{ padding: 4 }}><Filter size={20} color="#5b554f" /></button>
       </div>
 
       <div className="search-box">
@@ -118,32 +142,81 @@ function ApprovalList({ category, onBack, onOpen, onToast }) {
         <input placeholder="Cari..." value={query} onChange={(e) => setQuery(e.target.value)} />
       </div>
 
-      <div className="tabs" style={{ paddingTop: 0 }}>
-        {[['pending', 'Pengajuan'], ['', 'Semua']].map(([v, l]) => (
-          <button key={v} className={status === v ? 'active' : ''} onClick={() => setStatus(v)}>{l}</button>
-        ))}
-      </div>
-
       {rows === null ? (
         <div className="empty-state"><p>Memuat...</p></div>
       ) : filtered.length === 0 ? (
         <div className="empty-state"><h3>Tidak ada pengajuan</h3><p>Pengajuan yang perlu Anda tinjau akan tampil di sini.</p></div>
       ) : (
-        filtered.map((r) => (
-          <button key={r.id} className="list-item" style={{ width: '100%', border: 'none', textAlign: 'left', cursor: 'pointer' }}
-            onClick={() => onOpen(r.id)}>
-            <div className="avatar">{initials(r.requester_name)}</div>
-            <div className="info">
-              <div className="name">{r.requester_name}</div>
-              <div className="sub">{category.label} untuk {r.summary}</div>
-              {r.reason && <div className="sub" style={{ fontStyle: 'italic' }}>Alasan: {r.reason}</div>}
-            </div>
-            <StatusPill status={r.status} />
-          </button>
+        groups.map((g) => (
+          <div key={g.dayKey}>
+            <div style={{ fontSize: 12.5, color: 'var(--text-muted)', padding: '14px 16px 6px' }}>{g.dayKey}</div>
+            {g.items.map((r) => (
+              <button key={r.id} onClick={() => onOpen(r.id)} style={{
+                width: '100%', display: 'block', textAlign: 'left', cursor: 'pointer', background: '#fff', border: 'none',
+                borderRadius: 14, margin: '0 16px 10px', padding: 14, boxShadow: 'var(--shadow-sm)',
+              }}>
+                <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+                  <div className="avatar" style={{ width: 36, height: 36, fontSize: 12 }}>{initials(r.requester_name)}</div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontWeight: 600, fontSize: 15 }}>{r.requester_name}</div>
+                    <div style={{ fontSize: 13.5, color: 'var(--text-muted)', marginTop: 2 }}>{titleFor(category.key, r)}</div>
+                    <ul style={{ margin: '6px 0 0', padding: '0 0 0 16px', fontSize: 13.5, color: 'var(--text-muted)' }}>
+                      {bulletsFor(category.key, r).map((b, i) => <li key={i}>{b}</li>)}
+                    </ul>
+                    <div style={{ marginTop: 8 }}><StatusPill status={r.status} /></div>
+                  </div>
+                </div>
+              </button>
+            ))}
+          </div>
         ))
       )}
     </div>
   )
+}
+
+function titleFor(category, r) {
+  const d = r.details || {}
+  switch (category) {
+    case 'leave_requests': return `Pengajuan cuti untuk ${d.type_name || 'Cuti'}`
+    case 'overtime_requests': return `Pengajuan lembur untuk ${fmtDay(d.work_date)}`
+    case 'reimbursement_requests': return `Pengajuan reimbursement untuk ${d.category_name || 'Reimbursement'}`
+    case 'shift_change_requests': return `Pengajuan ubah shift untuk ${fmtDay(d.work_date)}`
+    case 'absence_requests': return `Pengajuan presensi untuk ${fmtDay(d.work_date)}`
+    default: return ''
+  }
+}
+
+function bulletsFor(category, r) {
+  const d = r.details || {}
+  const lines = []
+  switch (category) {
+    case 'leave_requests':
+      lines.push(d.start_date === d.end_date
+        ? `${fmtDay(d.start_date)} (${d.total_days} hari)`
+        : `${fmtDay(d.start_date)} - ${fmtDay(d.end_date)} (${d.total_days} hari)`)
+      break
+    case 'overtime_requests':
+      lines.push(`Jam: ${d.start_time?.slice(0, 5)} - ${d.end_time?.slice(0, 5)}`)
+      break
+    case 'reimbursement_requests':
+      lines.push(`Jumlah: Rp ${Number(d.amount || 0).toLocaleString('id-ID')}`)
+      break
+    case 'shift_change_requests':
+      lines.push(`${d.from_shift_name || '-'} menjadi ${d.to_is_day_off ? 'Off' : (d.to_shift_name || '-')}`)
+      break
+    case 'absence_requests':
+      if (d.requested_clock_in || d.requested_clock_out) {
+        lines.push(`Usulan: ${d.requested_clock_in?.slice(0, 5) || '-'} - ${d.requested_clock_out?.slice(0, 5) || '-'}`)
+      }
+      break
+  }
+  if (r.reason) lines.push(`Alasan: ${r.reason}`)
+  return lines
+}
+
+function fmtDay(d) {
+  return d ? new Date(d).toLocaleDateString('id-ID', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' }) : '-'
 }
 
 function StatusPill({ status }) {
