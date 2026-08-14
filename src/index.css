@@ -456,3 +456,18 @@ button:active:not(:disabled){ transform: translateY(1px) scale(.98); }
   background:#2c2c2c; color:#fff; padding:11px 20px; border-radius:30px; font-size:14px; z-index:60;
   box-shadow: 0 10px 26px rgba(0,0,0,.32);
 }
+
+/* ---------- desktop inbox notification cards ---------- */
+.approval-card{
+  background:#fff; border-radius: var(--radius-md); margin: 0 16px 12px; padding: 14px 16px;
+  box-shadow: var(--shadow-sm); border: none; cursor: pointer;
+}
+.approval-card .top-row{ display:flex; align-items:flex-start; gap:10px; }
+.approval-card .body{ flex:1; min-width:0; }
+.approval-card .name{ font-size:15px; }
+.approval-card .desc{ color:var(--text-muted); font-size:13.5px; margin-top:2px; }
+.approval-avatar-fallback{
+  width:40px; height:40px; border-radius:50%; flex-shrink:0;
+  background: linear-gradient(155deg, #f0e9df, #ddd2c4); color:#9a8f83;
+  display:flex; align-items:center; justify-content:center;
+}

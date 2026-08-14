@@ -109,7 +109,7 @@ export default function App() {
       <>
         <DesktopShell employee={employee} active={page ? null : tab} onChange={handleTabChange} onOpenAllApps={() => setShowAllApps(true)}
           onSignOut={signOut} onToast={flash} unread={unreadCount}
-          wide={!page && tab === 'employees' ? 'full' : !page && (tab === 'account' || tab === 'home') ? true : page === 'org-chart' ? 'chart' : false}>
+          wide={!page && tab === 'employees' ? 'full' : !page && (tab === 'account' || tab === 'home' || tab === 'inbox') ? true : page === 'org-chart' ? 'chart' : false}>
           {content}
         </DesktopShell>
         {overlays}

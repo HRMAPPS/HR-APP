@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react'
 import { ChevronRight, User } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
 import ApprovalCenter from '../components/ApprovalCenter'
+import DesktopInbox from '../components/DesktopInbox'
+import { useIsDesktop } from '../lib/useIsDesktop'
 
 const APPROVAL_TABLES = ['leave_requests', 'overtime_requests', 'reimbursement_requests', 'shift_change_requests', 'absence_requests']
 
@@ -10,6 +12,7 @@ function initials(name) {
 }
 
 export default function Inbox({ employee, onToast, onNavigate, onRead }) {
+  const isDesktop = useIsDesktop()
   const [tab, setTab] = useState('notifikasi')
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
@@ -29,6 +32,10 @@ export default function Inbox({ employee, onToast, onNavigate, onRead }) {
   }
 
   useEffect(() => { load() }, [employee?.id])
+
+  if (isDesktop) {
+    return <DesktopInbox employee={employee} onToast={onToast} onRead={onRead} />
+  }
 
   async function openNotification(n) {
     if (!n.is_read) {
