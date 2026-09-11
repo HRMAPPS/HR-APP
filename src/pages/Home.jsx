@@ -43,7 +43,7 @@ export default function Home({ employee, onNavigate, onOpenAllApps }) {
           mode={cameraMode}
           employee={employee}
           shift={shift}
-          onCapture={(blob, notes) => handleCapture(blob, (r) => flash(r.message), notes)}
+          onCapture={(blob, notes, faceDescriptor) => handleCapture(blob, (r) => flash(r.message), notes, faceDescriptor)}
           onClose={() => setCameraMode(null)}
         />
       )}

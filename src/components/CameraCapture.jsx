@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { X, MapPin, ChevronRight, AlignLeft } from 'lucide-react'
+import { loadFaceModels, extractFaceDescriptor } from '../lib/faceRecognition'
 
 function formatSchedule(shift) {
   if (!shift) return null
@@ -26,6 +27,8 @@ export default function CameraCapture({ mode, employee, shift, onCapture, onClos
   const [notes, setNotes] = useState('')
   const [coords, setCoords] = useState(null)
   const [submitting, setSubmitting] = useState(false)
+  const [modelsReady, setModelsReady] = useState(false)
+  const [faceError, setFaceError] = useState('')
 
   const title = mode === 'out' ? 'Clock Out' : 'Clock In'
   const scheduleText = formatSchedule(shift)
@@ -46,6 +49,9 @@ export default function CameraCapture({ mode, employee, shift, onCapture, onClos
       }
     }
     start()
+    loadFaceModels().then(() => setModelsReady(true)).catch(() => {
+      setFaceError('Gagal memuat model verifikasi wajah. Periksa koneksi internet.')
+    })
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (pos) => setCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
@@ -77,10 +83,21 @@ export default function CameraCapture({ mode, employee, shift, onCapture, onClos
   async function handleSubmit() {
     if (submitting || !ready || error) return
     setSubmitting(true)
+    setFaceError('')
+
+    // Detect the face on the live video before we freeze/stop the camera —
+    // this is what gets compared server-side against the enrolled face.
+    const descriptor = modelsReady ? await extractFaceDescriptor(videoRef.current) : null
+    if (modelsReady && !descriptor) {
+      setFaceError('Wajah tidak terdeteksi dengan jelas. Pastikan wajah terlihat penuh di dalam bingkai dan pencahayaan cukup, lalu coba lagi.')
+      setSubmitting(false)
+      return
+    }
+
     const blob = await captureBlob()
     streamRef.current?.getTracks().forEach((t) => t.stop())
     if (!blob) { setSubmitting(false); return }
-    onCapture(blob, notes.trim())
+    onCapture(blob, notes.trim(), descriptor)
   }
 
   function openLocation() {
@@ -148,13 +165,22 @@ export default function CameraCapture({ mode, employee, shift, onCapture, onClos
           <ChevronRight size={18} color="#ccc" />
         </button>
 
-        <button onClick={handleSubmit} disabled={!ready || !!error || submitting} style={{
+        {faceError && (
+          <div style={{
+            background: '#FBE1DD', color: '#C0392B', borderRadius: 10, padding: '10px 12px',
+            fontSize: 12.5, marginTop: 14,
+          }}>
+            {faceError}
+          </div>
+        )}
+
+        <button onClick={handleSubmit} disabled={!ready || !modelsReady || !!error || submitting} style={{
           width: '100%', marginTop: 18, background: 'var(--blue)', color: '#fff', border: 'none',
           borderRadius: 12, padding: '14px', fontWeight: 700, fontSize: 15.5,
-          cursor: (!ready || error || submitting) ? 'not-allowed' : 'pointer',
-          opacity: (!ready || error || submitting) ? 0.6 : 1,
+          cursor: (!ready || !modelsReady || error || submitting) ? 'not-allowed' : 'pointer',
+          opacity: (!ready || !modelsReady || error || submitting) ? 0.6 : 1,
         }}>
-          {submitting ? 'Mengirim...' : 'Kirim'}
+          {submitting ? 'Memverifikasi wajah...' : !modelsReady ? 'Menyiapkan verifikasi wajah...' : 'Kirim'}
         </button>
       </div>
     </div>

@@ -156,7 +156,7 @@ export default function PresensiOnline({ employee, onBack, onToast }) {
           mode={cameraMode}
           employee={employee}
           shift={shift}
-          onCapture={(blob, notes) => handleCapture(blob, (r) => onToast?.(r.message), notes)}
+          onCapture={(blob, notes, faceDescriptor) => handleCapture(blob, (r) => onToast?.(r.message), notes, faceDescriptor)}
           onClose={() => setCameraMode(null)}
         />
       )}

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ChevronRight, User, Briefcase, Flag, Users, GraduationCap, Wallet, Info, Folder, AlertTriangle, Lock } from 'lucide-react'
+import { ChevronRight, User, Briefcase, Flag, Users, GraduationCap, Wallet, Info, Folder, AlertTriangle, Lock, ScanFace } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
 
 const INFO_ROWS = [
@@ -45,6 +45,9 @@ export default function Account({ employee, onSignOut, onToast, onNavigate }) {
 
       <div className="menu-block">
         <h4>Pengaturan</h4>
+        <button className="menu-row" onClick={() => onNavigate('face-enrollment')}>
+          <ScanFace size={19} /> Daftarkan Wajah <ChevronRight size={18} className="chev" />
+        </button>
         <button className="menu-row" onClick={() => setShowPwd(true)}>
           <Lock size={19} /> Ubah kata sandi <ChevronRight size={18} className="chev" />
         </button>

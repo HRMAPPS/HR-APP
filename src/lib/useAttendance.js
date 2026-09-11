@@ -70,7 +70,7 @@ export function useAttendance(employee) {
     return pub.publicUrl
   }
 
-  async function handleCapture(blob, onDone, notes) {
+  async function handleCapture(blob, onDone, notes, faceDescriptor) {
     const kind = cameraMode
     setCameraMode(null)
     setBusy(true)
@@ -81,8 +81,13 @@ export function useAttendance(employee) {
         uploadSelfie(blob, kind),
       ])
       const rpcName = kind === 'in' ? 'clock_in' : 'clock_out'
+      // The server re-verifies this descriptor against the employee's
+      // enrolled face and rejects the request if there's no match — the
+      // client-side check in CameraCapture is only there for a fast, clear
+      // "face not detected" message before we even hit the network.
       const { error } = await supabase.rpc(rpcName, {
         p_lat: lat, p_lng: lng, p_photo_url: photoUrl, p_notes: notes || null,
+        p_face_descriptor: faceDescriptor || null,
       })
       if (error) throw error
       result = { ok: true, message: kind === 'in' ? 'Berhasil clock in' : 'Berhasil clock out' }
