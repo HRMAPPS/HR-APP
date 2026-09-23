@@ -11,3 +11,18 @@ export function toDateStr(date) {
 export function todayStr() {
   return toDateStr(new Date())
 }
+
+// Current hour in Jakarta time (0-23), independent of the device's local
+// timezone/clock settings — used to pick "Selamat pagi/siang/sore/malam".
+export function jakartaHour() {
+  return Number(new Date().toLocaleString('en-US', { timeZone: 'Asia/Jakarta', hour: 'numeric', hour12: false }))
+}
+
+// Indonesian time-of-day greeting, matching the reference app's copy.
+export function greetingID() {
+  const h = jakartaHour()
+  if (h < 11) return 'Selamat pagi'
+  if (h < 15) return 'Selamat siang'
+  if (h < 19) return 'Selamat sore'
+  return 'Selamat malam'
+}

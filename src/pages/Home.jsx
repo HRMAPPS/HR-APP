@@ -5,6 +5,7 @@ import { HOME_QUICK_APPS, ALL_APPS } from '../lib/menuConfig'
 import { useAttendance } from '../lib/useAttendance'
 import { useIsDesktop } from '../lib/useIsDesktop'
 import CameraCapture from '../components/CameraCapture'
+import { jakartaHour, greetingID } from '../lib/dateUtils'
 
 function formatTime(iso) {
   if (!iso) return null
@@ -67,7 +68,7 @@ export default function Home({ employee, onNavigate, onOpenAllApps }) {
   const todayLabel = today.toLocaleDateString('id-ID', {
     weekday: 'short', day: '2-digit', month: 'short', year: 'numeric'
   }).replace('.', '')
-  const hour = today.getHours()
+  const hour = jakartaHour()
   const greeting = hour < 11 ? 'Good morning' : hour < 15 ? 'Good afternoon' : hour < 19 ? 'Good evening' : 'Good night'
 
   const overlays = (
@@ -201,7 +202,7 @@ export default function Home({ employee, onNavigate, onOpenAllApps }) {
     <div>
       <div className="topbar">
         <div className="greeting">
-          Selamat pagi,
+          {greetingID()},
           <strong>{employee?.full_name || '...'}</strong>
         </div>
         <button className="icon-btn"><Gift size={24} color="#C0392B" /></button>

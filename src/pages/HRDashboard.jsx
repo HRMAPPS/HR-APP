@@ -14,6 +14,7 @@ const TABS = [
   { key: 'reimbursement', label: 'Reimburse', icon: Receipt },
   { key: 'correction', label: 'Koreksi Absen', icon: ClipboardList },
   { key: 'payslip', label: 'Slip Gaji', icon: Wallet },
+  { key: 'pengumuman', label: 'Pengumuman', icon: Bell },
 ]
 
 export default function HRDashboard({ onBack, onToast }) {
@@ -51,6 +52,7 @@ export default function HRDashboard({ onBack, onToast }) {
       {tab === 'reimbursement' && <ReimbursementTab onToast={onToast} />}
       {tab === 'correction' && <CorrectionTab onToast={onToast} />}
       {tab === 'payslip' && <PayslipTab employees={employees} onToast={onToast} />}
+      {tab === 'pengumuman' && <AnnouncementTab onToast={onToast} />}
     </div>
   )
 }
@@ -523,6 +525,106 @@ function LocationForm({ row, onClose, onSaved }) {
           <div className="field"><label>Radius (meter)</label><input type="number" min="10" value={form.radius_meters} onChange={(e) => setForm((f) => ({ ...f, radius_meters: e.target.value }))} /></div>
           {error && <p className="error-text">{error}</p>}
           <button className="primary-btn" disabled={saving}>{saving ? 'Menyimpan...' : 'Simpan'}</button>
+        </form>
+      </div>
+    </div>
+  )
+}
+
+// ---------------------------------------------------------------------
+// Pengumuman — HR/admin bikin, edit, hapus pengumuman untuk semua karyawan
+// (tampil di Beranda). Membaca langsung dari tabel `announcements` (RLS-nya
+// terbuka untuk dibaca semua orang); menulis lewat RPC upsert_announcement_hr
+// / delete_announcement_hr yang dibatasi is_hr() di sisi database.
+// ---------------------------------------------------------------------
+function AnnouncementTab({ onToast }) {
+  const [list, setList] = useState(null)
+  const [editing, setEditing] = useState(null)
+
+  async function load() {
+    const { data, error } = await supabase.from('announcements').select('*').order('published_at', { ascending: false })
+    if (error) { onToast(error.message); return }
+    setList(data || [])
+  }
+  useEffect(() => { load() }, [])
+
+  async function remove(id) {
+    if (!confirm('Hapus pengumuman ini?')) return
+    const { error } = await supabase.rpc('delete_announcement_hr', { p_id: id })
+    if (error) { onToast(error.message); return }
+    onToast('Pengumuman dihapus')
+    load()
+  }
+
+  return (
+    <div className="form-page">
+      <button className="primary-btn" style={{ marginBottom: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }} onClick={() => setEditing({})}>
+        <Plus size={18} /> Buat pengumuman
+      </button>
+
+      {list === null ? (
+        <div className="empty-state"><p>Memuat...</p></div>
+      ) : list.length === 0 ? (
+        <div className="empty-state"><p>Belum ada pengumuman. Buat yang pertama untuk ditampilkan di Beranda semua karyawan.</p></div>
+      ) : (
+        list.map((a) => (
+          <div key={a.id} className="list-item" style={{ alignItems: 'flex-start' }}>
+            <div className="info">
+              <div className="name">{a.title}</div>
+              {a.body && <div className="sub" style={{ marginTop: 3, whiteSpace: 'pre-wrap' }}>{a.body}</div>}
+              <div className="sub" style={{ marginTop: 6, fontSize: 11.5 }}>
+                {fmtDate(a.published_at)}{a.author ? ` · ${a.author}` : ''}
+              </div>
+            </div>
+            <div className="actions">
+              <button onClick={() => setEditing(a)}><Pencil size={17} /></button>
+              <button onClick={() => remove(a.id)}><Trash2 size={17} /></button>
+            </div>
+          </div>
+        ))
+      )}
+
+      {editing !== null && (
+        <AnnouncementForm row={editing} onClose={() => setEditing(null)} onSaved={(msg) => { setEditing(null); load(); onToast(msg) }} />
+      )}
+    </div>
+  )
+}
+
+function AnnouncementForm({ row, onClose, onSaved }) {
+  const [form, setForm] = useState({ title: row.title || '', body: row.body || '' })
+  const [error, setError] = useState('')
+  const [saving, setSaving] = useState(false)
+
+  async function submit(ev) {
+    ev.preventDefault()
+    setError('')
+    if (!form.title.trim()) { setError('Judul wajib diisi'); return }
+    setSaving(true)
+    const { error } = await supabase.rpc('upsert_announcement_hr', {
+      p_id: row.id || null, p_title: form.title, p_body: form.body || null,
+    })
+    setSaving(false)
+    if (error) { setError(error.message); return }
+    onSaved(row.id ? 'Pengumuman diperbarui' : 'Pengumuman diterbitkan')
+  }
+
+  return (
+    <div className="sheet-overlay" onClick={onClose}>
+      <div className="sheet" onClick={(e) => e.stopPropagation()}>
+        <div className="sheet-handle" />
+        <div className="sheet-title-row"><h3>{row.id ? 'Edit Pengumuman' : 'Buat Pengumuman'}</h3></div>
+        <form onSubmit={submit}>
+          <div className="field">
+            <label>Judul</label>
+            <input value={form.title} onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))} placeholder="mis. Libur Hari Raya" />
+          </div>
+          <div className="field">
+            <label>Isi (opsional)</label>
+            <textarea value={form.body} onChange={(e) => setForm((f) => ({ ...f, body: e.target.value }))} placeholder="Detail pengumuman..." />
+          </div>
+          {error && <p className="error-text">{error}</p>}
+          <button className="primary-btn" disabled={saving}>{saving ? 'Menyimpan...' : row.id ? 'Simpan' : 'Terbitkan'}</button>
         </form>
       </div>
     </div>
