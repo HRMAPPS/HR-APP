@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { ArrowLeft, Search, Check, X, Plus, Pencil, Trash2, Download, Upload, Users, ClipboardList, Wallet, CalendarDays, AlarmClock, Receipt, Bell, FileDown, CalendarClock, MapPin, Crosshair } from 'lucide-react'
+import { ArrowLeft, Search, Check, X, Plus, Pencil, Trash2, Download, Upload, Users, ClipboardList, Wallet, CalendarDays, AlarmClock, Receipt, Bell, FileDown, CalendarClock, MapPin, Crosshair, Paperclip } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
 import { todayStr } from '../lib/dateUtils'
 
@@ -575,6 +575,13 @@ function AnnouncementTab({ onToast }) {
               <div className="sub" style={{ marginTop: 6, fontSize: 11.5 }}>
                 {fmtDate(a.published_at)}{a.author ? ` · ${a.author}` : ''}
               </div>
+              {a.attachment_url && (
+                <a href={a.attachment_url} target="_blank" rel="noreferrer" style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 5, marginTop: 6, fontSize: 13, color: 'var(--blue)',
+                }}>
+                  <Paperclip size={13} /> {a.attachment_name || 'Lihat lampiran'}
+                </a>
+              )}
             </div>
             <div className="actions">
               <button onClick={() => setEditing(a)}><Pencil size={17} /></button>
@@ -593,6 +600,9 @@ function AnnouncementTab({ onToast }) {
 
 function AnnouncementForm({ row, onClose, onSaved }) {
   const [form, setForm] = useState({ title: row.title || '', body: row.body || '' })
+  const [attachmentUrl, setAttachmentUrl] = useState(row.attachment_url || null)
+  const [attachmentName, setAttachmentName] = useState(row.attachment_name || null)
+  const [file, setFile] = useState(null)
   const [error, setError] = useState('')
   const [saving, setSaving] = useState(false)
 
@@ -601,8 +611,21 @@ function AnnouncementForm({ row, onClose, onSaved }) {
     setError('')
     if (!form.title.trim()) { setError('Judul wajib diisi'); return }
     setSaving(true)
+
+    let finalUrl = attachmentUrl
+    let finalName = attachmentName
+    if (file) {
+      const path = `${Date.now()}-${file.name}`
+      const { error: upErr } = await supabase.storage.from('announcement-attachments').upload(path, file)
+      if (upErr) { setSaving(false); setError('Gagal unggah lampiran: ' + upErr.message); return }
+      const { data: pub } = supabase.storage.from('announcement-attachments').getPublicUrl(path)
+      finalUrl = pub.publicUrl
+      finalName = file.name
+    }
+
     const { error } = await supabase.rpc('upsert_announcement_hr', {
       p_id: row.id || null, p_title: form.title, p_body: form.body || null,
+      p_attachment_url: finalUrl, p_attachment_name: finalName,
     })
     setSaving(false)
     if (error) { setError(error.message); return }
@@ -622,6 +645,25 @@ function AnnouncementForm({ row, onClose, onSaved }) {
           <div className="field">
             <label>Isi (opsional)</label>
             <textarea value={form.body} onChange={(e) => setForm((f) => ({ ...f, body: e.target.value }))} placeholder="Detail pengumuman..." />
+          </div>
+          <div className="field">
+            <label>Lampiran (opsional)</label>
+            {attachmentUrl && !file ? (
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: 8, padding: '9px 12px',
+                border: '1px solid var(--border)', borderRadius: 10, fontSize: 13.5,
+              }}>
+                <Paperclip size={15} color="var(--text-muted)" />
+                <a href={attachmentUrl} target="_blank" rel="noreferrer" style={{ flex: 1, color: 'var(--blue)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {attachmentName || 'Lampiran saat ini'}
+                </a>
+                <button type="button" onClick={() => { setAttachmentUrl(null); setAttachmentName(null) }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', display: 'flex' }}>
+                  <X size={16} />
+                </button>
+              </div>
+            ) : (
+              <input type="file" onChange={(e) => setFile(e.target.files?.[0] || null)} />
+            )}
           </div>
           {error && <p className="error-text">{error}</p>}
           <button className="primary-btn" disabled={saving}>{saving ? 'Menyimpan...' : row.id ? 'Simpan' : 'Terbitkan'}</button>
