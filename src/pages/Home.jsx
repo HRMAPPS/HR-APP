@@ -11,16 +11,50 @@ function formatTime(iso) {
   return new Date(iso).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
 }
 
+function initials(name) {
+  return (name || '').split(' ').slice(0, 2).map((n) => n[0]).join('').toUpperCase()
+}
+
+// Small overlapping avatar row used by the "Laporan tim saya" card, one
+// circle per direct report (up to 4) plus a "+N" circle for the rest.
+function TeamAvatarStack({ team, size = 40 }) {
+  const shown = team.slice(0, 4)
+  const extra = team.length - shown.length
+  return (
+    <div style={{ display: 'flex' }}>
+      {shown.map((t, i) => (
+        <div key={t.id} style={{ marginLeft: i === 0 ? 0 : -10, border: '2px solid #fff', borderRadius: '50%' }}>
+          {t.avatar_url
+            ? <img src={t.avatar_url} alt="" style={{ width: size, height: size, borderRadius: '50%', objectFit: 'cover', display: 'block' }} />
+            : <div className="avatar" style={{ width: size, height: size, fontSize: 12 }}>{initials(t.full_name)}</div>}
+        </div>
+      ))}
+      {extra > 0 && (
+        <div style={{ marginLeft: -10, border: '2px solid #fff', borderRadius: '50%' }}>
+          <div className="avatar" style={{ width: size, height: size, fontSize: 12 }}>+{extra}</div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function Home({ employee, onNavigate, onOpenAllApps }) {
   const { data, busy, cameraMode, setCameraMode, handleCapture } = useAttendance(employee)
   const [toast, setToast] = useState('')
   const [announcements, setAnnouncements] = useState([])
+  const [team, setTeam] = useState([])
   const isDesktop = useIsDesktop()
 
   useEffect(() => {
     supabase.from('announcements').select('*').order('published_at', { ascending: false }).limit(3)
       .then(({ data }) => setAnnouncements(data || []))
   }, [])
+
+  useEffect(() => {
+    if (!employee?.id) return
+    supabase.from('employees').select('id, full_name, avatar_url').eq('manager_id', employee.id).order('full_name')
+      .then(({ data }) => setTeam(data || []))
+  }, [employee?.id])
 
   function flash(msg) {
     setToast(msg)
@@ -229,6 +263,16 @@ export default function Home({ employee, onNavigate, onOpenAllApps }) {
           )
         })}
       </div>
+
+      {team.length > 0 && (
+        <div className="section">
+          <div className="section-title">
+            <h2>Laporan tim saya</h2>
+            <a href="#" onClick={(e) => { e.preventDefault(); onNavigate('team-report') }}>Lihat aktivitas</a>
+          </div>
+          <TeamAvatarStack team={team} />
+        </div>
+      )}
 
       {announcements.length > 0 && (
         <div className="section">

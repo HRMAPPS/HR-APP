@@ -21,6 +21,7 @@ import CalendarPage from './pages/CalendarPage'
 import ProfileDetail from './pages/ProfileDetail'
 import OrgChart from './pages/OrgChart'
 import HRDashboard from './pages/HRDashboard'
+import TeamReport from './pages/TeamReport'
 import SlipGaji from './pages/SlipGaji'
 import FaceEnrollment from './pages/FaceEnrollment'
 import InstallPrompt from './components/InstallPrompt'
@@ -168,6 +169,8 @@ function PageRouter({ page, employee, onBack, onToast, onNavigate }) {
       return <OrgChart onBack={onBack} onToast={onToast} />
     case 'hr-dashboard':
       return <HRDashboard onBack={onBack} onToast={onToast} />
+    case 'team-report':
+      return <TeamReport employee={employee} onBack={onBack} />
     case 'slip-gaji':
       return <SlipGaji onBack={onBack} onToast={onToast} />
     case 'face-enrollment':
