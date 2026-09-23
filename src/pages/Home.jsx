@@ -1,57 +1,23 @@
 import { useEffect, useState } from 'react'
-import { Gift, LogIn, LogOut, User, ClipboardList, Building2, ChevronRight, Paperclip, Download } from 'lucide-react'
+import { Gift, LogIn, LogOut, User, ClipboardList, Building2, ChevronRight } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
 import { HOME_QUICK_APPS, ALL_APPS } from '../lib/menuConfig'
 import { useAttendance } from '../lib/useAttendance'
 import { useIsDesktop } from '../lib/useIsDesktop'
 import CameraCapture from '../components/CameraCapture'
-import Sheet from '../components/Sheet'
 import { jakartaHour, greetingID } from '../lib/dateUtils'
 
-// Bottom-sheet shown when an announcement is tapped: full body text plus
-// a downloadable attachment link when the announcement has one.
-function AnnouncementDetail({ announcement, onClose }) {
-  if (!announcement) return null
+// Small "Oleh <avatar> <name>" byline used under each announcement in
+// the list. Falls back to a generic person icon when there's no photo.
+function AnnouncementByline({ author, authorAvatarUrl }) {
+  if (!author) return null
   return (
-    <Sheet title={announcement.title} onClose={onClose}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-        {announcement.category && (
-          <span style={{
-            fontSize: 11.5, fontWeight: 600, color: 'var(--blue)', background: '#eef2ff',
-            borderRadius: 20, padding: '3px 10px',
-          }}>
-            {announcement.category}
-          </span>
-        )}
-      </div>
-      <div style={{ fontSize: 12.5, color: 'var(--text-muted)', margin: '6px 0 16px' }}>
-        {announcement.author && <>Oleh {announcement.author} · </>}
-        {new Date(announcement.published_at).toLocaleString('id-ID', {
-          day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit',
-        })}
-      </div>
-      <div style={{ fontSize: 14, lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>
-        {announcement.body}
-      </div>
-      {announcement.attachment_url && (
-        <a
-          href={announcement.attachment_url}
-          target="_blank"
-          rel="noreferrer"
-          download
-          style={{
-            display: 'flex', alignItems: 'center', gap: 10, marginTop: 20, padding: '12px 14px',
-            border: '1px solid var(--border)', borderRadius: 12, textDecoration: 'none', color: 'var(--text)',
-          }}
-        >
-          <Paperclip size={17} color="var(--text-muted)" />
-          <span style={{ flex: 1, fontSize: 13.5, fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            {announcement.attachment_name || 'Lampiran'}
-          </span>
-          <Download size={17} color="var(--text-muted)" />
-        </a>
-      )}
-    </Sheet>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4 }}>
+      {authorAvatarUrl
+        ? <img src={authorAvatarUrl} alt="" style={{ width: 20, height: 20, borderRadius: '50%', objectFit: 'cover' }} />
+        : <span className="avatar" style={{ width: 20, height: 20 }}><User size={11} /></span>}
+      <span style={{ fontSize: 12.5, color: '#a39c94' }}>{author}</span>
+    </div>
   )
 }
 
@@ -91,7 +57,6 @@ export default function Home({ employee, onNavigate, onOpenAllApps }) {
   const { data, busy, cameraMode, setCameraMode, handleCapture } = useAttendance(employee)
   const [toast, setToast] = useState('')
   const [announcements, setAnnouncements] = useState([])
-  const [openAnnouncement, setOpenAnnouncement] = useState(null)
   const [team, setTeam] = useState([])
   const isDesktop = useIsDesktop()
 
@@ -133,9 +98,6 @@ export default function Home({ employee, onNavigate, onOpenAllApps }) {
       )}
       {busy && !cameraMode && <div className="toast">Memproses absensi...</div>}
       {toast && <div className="toast">{toast}</div>}
-      {openAnnouncement && (
-        <AnnouncementDetail announcement={openAnnouncement} onClose={() => setOpenAnnouncement(null)} />
-      )}
     </>
   )
 
@@ -237,14 +199,14 @@ export default function Home({ employee, onNavigate, onOpenAllApps }) {
             ) : announcements.map((a) => (
               <div
                 key={a.id}
-                onClick={() => setOpenAnnouncement(a)}
+                onClick={() => onNavigate(`announcement:${a.id}`)}
                 style={{ padding: '10px 0', borderTop: '1px solid #f1ece6', cursor: 'pointer' }}
               >
                 <div style={{ fontSize: 13.5, fontWeight: 600 }}>{a.title}</div>
                 <div style={{ fontSize: 11.5, color: '#a39c94', marginTop: 2 }}>
                   {new Date(a.published_at).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })}
-                  {a.attachment_url && <> · <Paperclip size={11} style={{ verticalAlign: -1 }} /></>}
                 </div>
+                <AnnouncementByline author={a.author} authorAvatarUrl={a.author_avatar_url} />
               </div>
             ))}
           </div>
@@ -341,7 +303,7 @@ export default function Home({ employee, onNavigate, onOpenAllApps }) {
           {announcements.map((a) => (
             <div
               key={a.id}
-              onClick={() => setOpenAnnouncement(a)}
+              onClick={() => onNavigate(`announcement:${a.id}`)}
               style={{ padding: '10px 0', borderTop: '1px solid #f1ece6', cursor: 'pointer' }}
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10 }}>
@@ -350,11 +312,7 @@ export default function Home({ employee, onNavigate, onOpenAllApps }) {
                   {new Date(a.published_at).toLocaleDateString('id-ID', { day: '2-digit', month: 'short' })}
                 </span>
               </div>
-              {a.attachment_url && (
-                <div style={{ fontSize: 11.5, color: '#a39c94', marginTop: 3, display: 'flex', alignItems: 'center', gap: 4 }}>
-                  <Paperclip size={11} /> {a.attachment_name || 'Lampiran'}
-                </div>
-              )}
+              <AnnouncementByline author={a.author} authorAvatarUrl={a.author_avatar_url} />
             </div>
           ))}
         </div>

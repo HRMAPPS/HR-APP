@@ -19,6 +19,7 @@ import ShiftChangeForm from './pages/ShiftChangeForm'
 import DataChangeForm from './pages/DataChangeForm'
 import CalendarPage from './pages/CalendarPage'
 import ProfileDetail from './pages/ProfileDetail'
+import AnnouncementDetail from './pages/AnnouncementDetail'
 import OrgChart from './pages/OrgChart'
 import HRDashboard from './pages/HRDashboard'
 import TeamReport from './pages/TeamReport'
@@ -139,6 +140,10 @@ function PageRouter({ page, employee, onBack, onToast, onNavigate }) {
     // which should jump straight to that request's detail).
     const [, categoryKey, requestId] = page.split(':')
     return <ApprovalCategoryPage categoryKey={categoryKey} initialId={requestId} onBack={onBack} onToast={onToast} />
+  }
+  if (page?.startsWith('announcement:')) {
+    const [, id] = page.split(':')
+    return <AnnouncementDetail id={id} onBack={onBack} />
   }
   switch (page) {
     case 'reimbursement':
