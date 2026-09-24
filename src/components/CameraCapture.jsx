@@ -18,13 +18,13 @@ function formatSchedule(shift) {
 // match the reference app: red header, shift info card, live camera with a
 // face-position guide, and a bottom sheet with an optional note, a "lihat
 // lokasi" row, and a single Kirim button that captures + submits in one tap.
-export default function CameraCapture({ mode, employee, shift, onCapture, onClose }) {
+export default function CameraCapture({ mode, employee, shift, initialNotes, onCapture, onClose }) {
   const videoRef = useRef(null)
   const canvasRef = useRef(null)
   const streamRef = useRef(null)
   const [error, setError] = useState('')
   const [ready, setReady] = useState(false)
-  const [notes, setNotes] = useState('')
+  const [notes, setNotes] = useState(initialNotes || '')
   const [coords, setCoords] = useState(null)
   const [submitting, setSubmitting] = useState(false)
   const [modelsReady, setModelsReady] = useState(false)

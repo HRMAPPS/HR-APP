@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react'
 import { ArrowLeft, LogIn, LogOut, ChevronRight, Info, MapPin, MapPinOff } from 'lucide-react'
 import { useAttendance } from '../lib/useAttendance'
 import { useIsDesktop } from '../lib/useIsDesktop'
-import { ALL_APPS } from '../lib/menuConfig'
 import CameraCapture from '../components/CameraCapture'
 import AttendanceDetail from '../components/AttendanceDetail'
 
@@ -15,6 +14,7 @@ export default function PresensiOnline({ employee, onBack, onToast, onNavigate }
   const { data, busy, cameraMode, setCameraMode, handleCapture, locationStatus } = useAttendance(employee)
   const [now, setNow] = useState(new Date())
   const [detailType, setDetailType] = useState(null) // 'in' | 'out' | null
+  const [notes, setNotes] = useState('')
   const isDesktop = useIsDesktop()
 
   useEffect(() => {
@@ -41,7 +41,8 @@ export default function PresensiOnline({ employee, onBack, onToast, onNavigate }
       mode={cameraMode}
       employee={employee}
       shift={shift}
-      onCapture={(blob, notes, faceDescriptor) => handleCapture(blob, (r) => onToast?.(r.message), notes, faceDescriptor)}
+      initialNotes={notes}
+      onCapture={(blob, capturedNotes, faceDescriptor) => handleCapture(blob, (r) => onToast?.(r.message), capturedNotes, faceDescriptor)}
       onClose={() => setCameraMode(null)}
     />
   )
@@ -51,141 +52,135 @@ export default function PresensiOnline({ employee, onBack, onToast, onNavigate }
       <div>
         <h1 style={{ fontSize: 26, margin: '4px 0 24px' }}>Live Attendance</h1>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: 20, alignItems: 'start' }}>
-          <div style={{ background: '#fff', borderRadius: 16, padding: 28, boxShadow: 'var(--shadow-sm)', maxWidth: 480 }}>
-            <div style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: 34, fontWeight: 700 }}>
-                {now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
-              </div>
-              <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 4 }}>
-                {now.toLocaleDateString('id-ID', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' }).replace('.', '')}
-              </div>
+        <div style={{ background: '#fff', borderRadius: 16, padding: 28, boxShadow: 'var(--shadow-sm)', maxWidth: 500 }}>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: 34, fontWeight: 700 }}>
+              {now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
             </div>
-
-            <div style={{ borderTop: '1px solid var(--border)', marginTop: 20, paddingTop: 20, textAlign: 'center' }}>
-              {(!shift || shift?.is_day_off) ? (
-                <>
-                  <div style={{ fontWeight: 700, fontSize: 16, margin: '4px 0' }}>Tidak ada shift hari ini</div>
-                  <div style={{ fontSize: 13.5, color: 'var(--text-muted)' }}>Selamat menikmati hari libur!</div>
-                </>
-              ) : (
-                <>
-                  <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>
-                    Schedule, {new Date(shift.work_date).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })}
-                  </div>
-                  <div style={{ fontWeight: 700, fontSize: 16, margin: '4px 0' }}>{shift.shift_name}</div>
-                  <div style={{ fontSize: 13.5, color: 'var(--text-muted)' }}>
-                    {shift.start_time?.slice(0, 5)} - {shift.end_time?.slice(0, 5)}
-                  </div>
-                </>
-              )}
-            </div>
-
-            {shift && !shift.is_day_off && (
-              <>
-                <div style={{
-                  display: 'flex', alignItems: 'center', gap: 8, background: '#eef1fb', color: '#4356C4',
-                  borderRadius: 10, padding: '10px 12px', fontSize: 13, margin: '18px 0 0',
-                }}>
-                  <Info size={16} /> Foto selfie diperlukan untuk Clock In/Out
-                </div>
-
-                {locationStatus && (
-                  <div style={{
-                    display: 'flex', alignItems: 'center', gap: 8, borderRadius: 10, padding: '10px 12px', fontSize: 13, margin: '10px 0 0',
-                    background: locationStatus.withinRadius ? '#E1F3EA' : '#FBE1DD',
-                    color: locationStatus.withinRadius ? '#1E8E5A' : '#C0392B',
-                  }}>
-                    {locationStatus.withinRadius ? <MapPin size={16} /> : <MapPinOff size={16} />}
-                    {locationStatus.withinRadius
-                      ? `Anda dalam radius ${locationStatus.nearestName} (±${Math.round(locationStatus.distance)} m)`
-                      : `Anda ${Math.round(locationStatus.distance)} m dari ${locationStatus.nearestName}, di luar radius ${locationStatus.radius} m`}
-                  </div>
-                )}
-
-                <div style={{ display: 'flex', gap: 12, marginTop: 18 }}>
-                  <button
-                    onClick={() => setCameraMode('in')}
-                    disabled={busy || !!att?.clock_in}
-                    style={presensiBtnStyle(busy || !!att?.clock_in)}
-                  >
-                    <LogIn size={17} /> Clock In
-                  </button>
-                  <button
-                    onClick={() => setCameraMode('out')}
-                    disabled={busy || !att?.clock_in || !!att?.clock_out}
-                    style={presensiBtnStyle(busy || !att?.clock_in || !!att?.clock_out)}
-                  >
-                    <LogOut size={17} /> Clock Out
-                  </button>
-                </div>
-              </>
-            )}
-
-            {att?.clock_in && (
-              <div style={{ textAlign: 'center', marginTop: 16, paddingTop: 16, borderTop: '1px solid var(--border)' }}>
-                <div style={{ fontSize: 13.5, color: 'var(--text-muted)' }}>
-                  Anda telah berhasil clock in pada pukul {formatTime(att.clock_in)}
-                  {att.clock_out && <> · clock out pukul {formatTime(att.clock_out)}</>}
-                </div>
-              </div>
-            )}
-
-            <div style={{ marginTop: 28 }}>
-              <strong style={{ fontSize: 15 }}>Attendance log</strong>
-              {!att?.clock_in && !att?.clock_out ? (
-                <p style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 10 }}>Belum ada aktivitas absensi hari ini.</p>
-              ) : (
-                <div style={{ marginTop: 6 }}>
-                  {att?.clock_in && (
-                    <div onClick={() => setDetailType('in')} style={{
-                      display: 'flex', alignItems: 'center', gap: 14, padding: '12px 0', borderTop: '1px solid #f1ece6', cursor: 'pointer',
-                    }}>
-                      <div style={{ minWidth: 70 }}>
-                        <div style={{ fontWeight: 600, fontSize: 14 }}>{formatTime(att.clock_in)}</div>
-                        <div style={{ fontSize: 11.5, color: 'var(--text-muted)' }}>
-                          {new Date(att.clock_in).toLocaleDateString('id-ID', { day: '2-digit', month: 'short' })}
-                        </div>
-                      </div>
-                      <div style={{ flex: 1, fontSize: 13.5 }}>Clock In</div>
-                      <span style={{ fontSize: 13, color: 'var(--blue)' }}>Detail</span>
-                    </div>
-                  )}
-                  {att?.clock_out && (
-                    <div onClick={() => setDetailType('out')} style={{
-                      display: 'flex', alignItems: 'center', gap: 14, padding: '12px 0', borderTop: '1px solid #f1ece6', cursor: 'pointer',
-                    }}>
-                      <div style={{ minWidth: 70 }}>
-                        <div style={{ fontWeight: 600, fontSize: 14 }}>{formatTime(att.clock_out)}</div>
-                        <div style={{ fontSize: 11.5, color: 'var(--text-muted)' }}>
-                          {new Date(att.clock_out).toLocaleDateString('id-ID', { day: '2-digit', month: 'short' })}
-                        </div>
-                      </div>
-                      <div style={{ flex: 1, fontSize: 13.5 }}>Clock Out</div>
-                      <span style={{ fontSize: 13, color: 'var(--blue)' }}>Detail</span>
-                    </div>
-                  )}
-                </div>
-              )}
+            <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 4 }}>
+              {now.toLocaleDateString('id-ID', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' }).replace('.', '')}
             </div>
           </div>
 
-          <div style={{ background: '#fff', borderRadius: 16, padding: 20, boxShadow: 'var(--shadow-sm)' }}>
-            <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 14 }}>Applications</div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14 }}>
-              {ALL_APPS.filter((a) => a.key !== 'semua').slice(0, 9).map((app) => {
-                const Icon = app.icon
-                return (
-                  <button key={app.key} className="quick-item" style={{ padding: 0 }}
-                    onClick={() => app.page ? onNavigate?.(app.page) : onToast?.(`${app.label} segera hadir`)}>
-                    <span className="ic" style={{ background: app.bg, color: app.fg, width: 42, height: 42 }}>
-                      <Icon size={19} />
-                    </span>
-                    <span style={{ fontSize: 11 }}>{app.label}</span>
-                  </button>
-                )
-              })}
+          <div style={{ borderTop: '1px solid var(--border)', marginTop: 20, paddingTop: 20, textAlign: 'center' }}>
+            {(!shift || shift?.is_day_off) ? (
+              <>
+                <div style={{ fontWeight: 700, fontSize: 16, margin: '4px 0' }}>Tidak ada shift hari ini</div>
+                <div style={{ fontSize: 13.5, color: 'var(--text-muted)' }}>Selamat menikmati hari libur!</div>
+              </>
+            ) : (
+              <>
+                <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>
+                  Schedule, {new Date(shift.work_date).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })}
+                </div>
+                <div style={{ fontWeight: 700, fontSize: 16, margin: '4px 0' }}>{shift.shift_name}</div>
+                <div style={{ fontSize: 13.5, color: 'var(--text-muted)' }}>
+                  {shift.start_time?.slice(0, 5)} - {shift.end_time?.slice(0, 5)}
+                </div>
+              </>
+            )}
+          </div>
+
+          {shift && !shift.is_day_off && (
+            <>
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: 8, background: '#eef1fb', color: '#4356C4',
+                borderRadius: 10, padding: '10px 12px', fontSize: 13, margin: '18px 0 0',
+              }}>
+                <Info size={16} /> Foto selfie diperlukan untuk Clock In/Out
+              </div>
+
+              {locationStatus && (
+                <div style={{
+                  display: 'flex', alignItems: 'center', gap: 8, borderRadius: 10, padding: '10px 12px', fontSize: 13, margin: '10px 0 0',
+                  background: locationStatus.withinRadius ? '#E1F3EA' : '#FBE1DD',
+                  color: locationStatus.withinRadius ? '#1E8E5A' : '#C0392B',
+                }}>
+                  {locationStatus.withinRadius ? <MapPin size={16} /> : <MapPinOff size={16} />}
+                  {locationStatus.withinRadius
+                    ? `Anda dalam radius ${locationStatus.nearestName} (±${Math.round(locationStatus.distance)} m)`
+                    : `Anda ${Math.round(locationStatus.distance)} m dari ${locationStatus.nearestName}, di luar radius ${locationStatus.radius} m`}
+                </div>
+              )}
+
+              <div style={{ marginTop: 18 }}>
+                <label style={{ fontSize: 13, fontWeight: 600, display: 'block', marginBottom: 6 }}>Catatan (opsional)</label>
+                <textarea
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  placeholder="Tulis catatan..."
+                  rows={3}
+                  style={{
+                    width: '100%', border: '1px solid var(--border)', borderRadius: 10, padding: '10px 12px',
+                    fontSize: 13.5, fontFamily: 'inherit', resize: 'vertical',
+                  }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', gap: 12, marginTop: 14 }}>
+                <button
+                  onClick={() => setCameraMode('in')}
+                  disabled={busy || !!att?.clock_in}
+                  style={presensiBtnStyle(busy || !!att?.clock_in)}
+                >
+                  <LogIn size={17} /> Clock In
+                </button>
+                <button
+                  onClick={() => setCameraMode('out')}
+                  disabled={busy || !att?.clock_in || !!att?.clock_out}
+                  style={presensiBtnStyle(busy || !att?.clock_in || !!att?.clock_out)}
+                >
+                  <LogOut size={17} /> Clock Out
+                </button>
+              </div>
+            </>
+          )}
+
+          {att?.clock_in && (
+            <div style={{ textAlign: 'center', marginTop: 16, paddingTop: 16, borderTop: '1px solid var(--border)' }}>
+              <div style={{ fontSize: 13.5, color: 'var(--text-muted)' }}>
+                Anda telah berhasil clock in pada pukul {formatTime(att.clock_in)}
+                {att.clock_out && <> · clock out pukul {formatTime(att.clock_out)}</>}
+              </div>
             </div>
+          )}
+
+          <div style={{ marginTop: 28 }}>
+            <strong style={{ fontSize: 15 }}>Attendance log</strong>
+            {!att?.clock_in && !att?.clock_out ? (
+              <p style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 10 }}>Belum ada aktivitas absensi hari ini.</p>
+            ) : (
+              <div style={{ marginTop: 6 }}>
+                {att?.clock_in && (
+                  <div onClick={() => setDetailType('in')} style={{
+                    display: 'flex', alignItems: 'center', gap: 14, padding: '12px 0', borderTop: '1px solid #f1ece6', cursor: 'pointer',
+                  }}>
+                    <div style={{ minWidth: 70 }}>
+                      <div style={{ fontWeight: 600, fontSize: 14 }}>{formatTime(att.clock_in)}</div>
+                      <div style={{ fontSize: 11.5, color: 'var(--text-muted)' }}>
+                        {new Date(att.clock_in).toLocaleDateString('id-ID', { day: '2-digit', month: 'short' })}
+                      </div>
+                    </div>
+                    <div style={{ flex: 1, fontSize: 13.5 }}>Clock In</div>
+                    <span style={{ fontSize: 13, color: 'var(--blue)' }}>Detail</span>
+                  </div>
+                )}
+                {att?.clock_out && (
+                  <div onClick={() => setDetailType('out')} style={{
+                    display: 'flex', alignItems: 'center', gap: 14, padding: '12px 0', borderTop: '1px solid #f1ece6', cursor: 'pointer',
+                  }}>
+                    <div style={{ minWidth: 70 }}>
+                      <div style={{ fontWeight: 600, fontSize: 14 }}>{formatTime(att.clock_out)}</div>
+                      <div style={{ fontSize: 11.5, color: 'var(--text-muted)' }}>
+                        {new Date(att.clock_out).toLocaleDateString('id-ID', { day: '2-digit', month: 'short' })}
+                      </div>
+                    </div>
+                    <div style={{ flex: 1, fontSize: 13.5 }}>Clock Out</div>
+                    <span style={{ fontSize: 13, color: 'var(--blue)' }}>Detail</span>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
 
