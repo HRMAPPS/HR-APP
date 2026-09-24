@@ -61,7 +61,7 @@ export default function Home({ employee, onNavigate, onOpenAllApps }) {
   const isDesktop = useIsDesktop()
 
   useEffect(() => {
-    supabase.from('announcements').select('*').order('published_at', { ascending: false }).limit(3)
+    supabase.from('announcements').select('*').order('published_at', { ascending: false }).limit(5)
       .then(({ data }) => setAnnouncements(data || []))
   }, [])
 
@@ -124,7 +124,7 @@ export default function Home({ employee, onNavigate, onOpenAllApps }) {
           ))}
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '260px 1fr 260px', gap: 20, alignItems: 'start' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '260px 1fr 300px', gap: 20, alignItems: 'start' }}>
           <div style={{ background: '#fff', borderRadius: 16, padding: 20, boxShadow: 'var(--shadow-sm)' }}>
             <div style={{ fontWeight: 700, marginBottom: 14 }}>Quick Links</div>
             {[
@@ -138,6 +138,53 @@ export default function Home({ employee, onNavigate, onOpenAllApps }) {
               }}>
                 <Icon size={16} color="var(--text-muted)" /> {label}
               </button>
+            ))}
+          </div>
+
+          <div style={{ background: '#fff', borderRadius: 16, padding: 20, boxShadow: 'var(--shadow-sm)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+              <div style={{ fontWeight: 700, fontSize: 15 }}>Announcement</div>
+              <a href="#" style={{ fontSize: 13, color: 'var(--blue)', textDecoration: 'none' }}>Lihat semua</a>
+            </div>
+            {announcements.length === 0 ? (
+              <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>Belum ada pengumuman.</p>
+            ) : announcements.map((a) => (
+              <div
+                key={a.id}
+                onClick={() => onNavigate(`announcement:${a.id}`)}
+                style={{ display: 'flex', gap: 12, padding: '16px 0', borderTop: '1px solid #f1ece6', cursor: 'pointer' }}
+              >
+                {a.author_avatar_url
+                  ? <img src={a.author_avatar_url} alt="" style={{ width: 40, height: 40, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />
+                  : <span className="avatar" style={{ width: 40, height: 40, flexShrink: 0 }}><User size={18} /></span>}
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10 }}>
+                    <span style={{ fontWeight: 600, fontSize: 13.5 }}>{a.author || 'napocut'}</span>
+                    <span style={{ fontSize: 12, color: '#a39c94', whiteSpace: 'nowrap' }}>
+                      {new Date(a.published_at).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })}
+                    </span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, marginTop: 6 }}>
+                    <strong style={{ fontSize: 14.5 }}>{a.title}</strong>
+                    {a.category && (
+                      <span style={{
+                        fontSize: 11, fontWeight: 600, color: 'var(--blue)', background: '#eef2ff',
+                        borderRadius: 20, padding: '2px 10px', whiteSpace: 'nowrap', height: 'fit-content',
+                      }}>
+                        {a.category}
+                      </span>
+                    )}
+                  </div>
+                  {a.body && (
+                    <p style={{
+                      fontSize: 13, color: 'var(--text-muted)', marginTop: 6, lineHeight: 1.5,
+                      display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden',
+                    }}>
+                      {a.body}
+                    </p>
+                  )}
+                </div>
+              </div>
             ))}
           </div>
 
@@ -175,8 +222,8 @@ export default function Home({ employee, onNavigate, onOpenAllApps }) {
 
             <div style={{ padding: '18px 16px' }}>
               <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 10 }}>Applications</div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14 }}>
-                {ALL_APPS.filter((a) => a.key !== 'semua').slice(0, 8).map((app) => {
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14 }}>
+                {ALL_APPS.filter((a) => a.key !== 'semua').slice(0, 9).map((app) => {
                   const Icon = app.icon
                   return (
                     <button key={app.key} className="quick-item" style={{ padding: 0 }}
@@ -190,25 +237,6 @@ export default function Home({ employee, onNavigate, onOpenAllApps }) {
                 })}
               </div>
             </div>
-          </div>
-
-          <div style={{ background: '#fff', borderRadius: 16, padding: 20, boxShadow: 'var(--shadow-sm)' }}>
-            <div style={{ fontWeight: 700, marginBottom: 14 }}>Announcement</div>
-            {announcements.length === 0 ? (
-              <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>Belum ada pengumuman.</p>
-            ) : announcements.map((a) => (
-              <div
-                key={a.id}
-                onClick={() => onNavigate(`announcement:${a.id}`)}
-                style={{ padding: '10px 0', borderTop: '1px solid #f1ece6', cursor: 'pointer' }}
-              >
-                <div style={{ fontSize: 13.5, fontWeight: 600 }}>{a.title}</div>
-                <div style={{ fontSize: 11.5, color: '#a39c94', marginTop: 2 }}>
-                  {new Date(a.published_at).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })}
-                </div>
-                <AnnouncementByline author={a.author} authorAvatarUrl={a.author_avatar_url} />
-              </div>
-            ))}
           </div>
         </div>
 
