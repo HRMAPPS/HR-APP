@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react'
-import { ArrowLeft, Search, Check, X, Plus, Pencil, Trash2, Download, Upload, Users, ClipboardList, Wallet, CalendarDays, AlarmClock, Receipt, Bell, FileDown, CalendarClock, MapPin, Crosshair, Paperclip } from 'lucide-react'
+import { ArrowLeft, Search, Check, X, Plus, Pencil, Trash2, Download, Upload, Users, ClipboardList, Wallet, CalendarDays, AlarmClock, Receipt, Bell, FileDown, CalendarClock, MapPin, Crosshair, Paperclip, Copy } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
 import { todayStr } from '../lib/dateUtils'
+import { useIsDesktop } from '../lib/useIsDesktop'
+import { linkifyText } from '../lib/linkify'
 
 const TABS = [
   { key: 'overview', label: 'Ringkasan', icon: Users },
@@ -20,6 +22,7 @@ const TABS = [
 export default function HRDashboard({ onBack, onToast }) {
   const [tab, setTab] = useState('overview')
   const [employees, setEmployees] = useState([])
+  const isDesktop = useIsDesktop()
 
   async function loadEmployees() {
     const { data, error } = await supabase.rpc('get_hr_employees')
@@ -30,13 +33,22 @@ export default function HRDashboard({ onBack, onToast }) {
 
   return (
     <div>
-      <div className="page-header">
-        <button className="back-btn" onClick={onBack}><ArrowLeft size={22} /></button>
-        <h1>HR Dashboard</h1>
-        <span style={{ width: 22 }} />
-      </div>
+      {isDesktop ? (
+        <h1 style={{ fontSize: 26, margin: '4px 0 4px' }}>HR Dashboard</h1>
+      ) : (
+        <div className="page-header">
+          <button className="back-btn" onClick={onBack}><ArrowLeft size={22} /></button>
+          <h1>HR Dashboard</h1>
+          <span style={{ width: 22 }} />
+        </div>
+      )}
 
-      <div className="tabs" style={{ overflowX: 'auto', whiteSpace: 'nowrap', flexWrap: 'nowrap' }}>
+      <div
+        className="tabs"
+        style={isDesktop
+          ? { flexWrap: 'wrap', rowGap: 4, padding: '4px 0 14px', borderBottom: '1px solid var(--border)', marginBottom: 22 }
+          : { overflowX: 'auto', whiteSpace: 'nowrap', flexWrap: 'nowrap' }}
+      >
         {TABS.map((t) => (
           <button key={t.key} className={tab === t.key ? 'active' : ''} onClick={() => setTab(t.key)}>{t.label}</button>
         ))}
@@ -52,7 +64,7 @@ export default function HRDashboard({ onBack, onToast }) {
       {tab === 'reimbursement' && <ReimbursementTab onToast={onToast} />}
       {tab === 'correction' && <CorrectionTab onToast={onToast} />}
       {tab === 'payslip' && <PayslipTab employees={employees} onToast={onToast} />}
-      {tab === 'pengumuman' && <AnnouncementTab onToast={onToast} />}
+      {tab === 'pengumuman' && <AnnouncementTab onToast={onToast} isDesktop={isDesktop} />}
     </div>
   )
 }
@@ -537,7 +549,7 @@ function LocationForm({ row, onClose, onSaved }) {
 // terbuka untuk dibaca semua orang); menulis lewat RPC upsert_announcement_hr
 // / delete_announcement_hr yang dibatasi is_hr() di sisi database.
 // ---------------------------------------------------------------------
-function AnnouncementTab({ onToast }) {
+function AnnouncementTab({ onToast, isDesktop }) {
   const [list, setList] = useState(null)
   const [editing, setEditing] = useState(null)
 
@@ -556,9 +568,18 @@ function AnnouncementTab({ onToast }) {
     load()
   }
 
+  function copyText(a) {
+    navigator.clipboard.writeText(`${a.title}\n\n${a.body || ''}`.trim())
+    onToast('Pengumuman disalin')
+  }
+
   return (
     <div className="form-page">
-      <button className="primary-btn" style={{ marginBottom: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }} onClick={() => setEditing({})}>
+      <button
+        className="primary-btn"
+        style={{ marginBottom: 18, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, ...(isDesktop ? { maxWidth: 260 } : {}) }}
+        onClick={() => setEditing({})}
+      >
         <Plus size={18} /> Buat pengumuman
       </button>
 
@@ -566,11 +587,62 @@ function AnnouncementTab({ onToast }) {
         <div className="empty-state"><p>Memuat...</p></div>
       ) : list.length === 0 ? (
         <div className="empty-state"><p>Belum ada pengumuman. Buat yang pertama untuk ditampilkan di Beranda semua karyawan.</p></div>
+      ) : isDesktop ? (
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, alignItems: 'start' }}>
+          {list.map((a) => (
+            <div key={a.id} style={{ background: '#fff', border: '1px solid var(--border)', borderRadius: 14, padding: 18 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10 }}>
+                <div>
+                  <div style={{ fontWeight: 700, fontSize: 15.5 }}>{a.title}</div>
+                  {a.category && (
+                    <span style={{
+                      display: 'inline-block', fontSize: 11, fontWeight: 600, color: 'var(--blue)', background: '#eef2ff',
+                      borderRadius: 20, padding: '2px 10px', marginTop: 6,
+                    }}>
+                      {a.category}
+                    </span>
+                  )}
+                </div>
+                <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
+                  <button onClick={() => copyText(a)} title="Salin" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: 6 }}><Copy size={16} /></button>
+                  <button onClick={() => setEditing(a)} title="Edit" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: 6 }}><Pencil size={16} /></button>
+                  <button onClick={() => remove(a.id)} title="Hapus" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: 6 }}><Trash2 size={16} /></button>
+                </div>
+              </div>
+
+              {a.body && (
+                <p style={{ fontSize: 13.5, color: 'var(--text-muted)', marginTop: 10, lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>
+                  {linkifyText(a.body)}
+                </p>
+              )}
+
+              {a.attachment_url && (
+                <a href={a.attachment_url} target="_blank" rel="noreferrer" style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 5, marginTop: 10, fontSize: 12.5, color: 'var(--blue)', textDecoration: 'none',
+                }}>
+                  <Paperclip size={13} /> {a.attachment_name || 'Lihat lampiran'}
+                </a>
+              )}
+
+              <div style={{ fontSize: 11.5, color: 'var(--text-muted)', marginTop: 14, paddingTop: 10, borderTop: '1px solid var(--border)' }}>
+                {fmtDate(a.published_at)}{a.author ? ` · ${a.author}` : ''}
+              </div>
+            </div>
+          ))}
+        </div>
       ) : (
         list.map((a) => (
           <div key={a.id} className="list-item" style={{ alignItems: 'flex-start' }}>
             <div className="info">
               <div className="name">{a.title}</div>
+              {a.category && (
+                <span style={{
+                  display: 'inline-block', fontSize: 10.5, fontWeight: 600, color: 'var(--blue)', background: '#eef2ff',
+                  borderRadius: 20, padding: '1px 8px', marginTop: 4,
+                }}>
+                  {a.category}
+                </span>
+              )}
               {a.body && <div className="sub" style={{ marginTop: 3, whiteSpace: 'pre-wrap' }}>{a.body}</div>}
               <div className="sub" style={{ marginTop: 6, fontSize: 11.5 }}>
                 {fmtDate(a.published_at)}{a.author ? ` · ${a.author}` : ''}
