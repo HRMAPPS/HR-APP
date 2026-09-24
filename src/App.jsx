@@ -159,7 +159,7 @@ function PageRouter({ page, employee, onBack, onToast, onNavigate }) {
     case 'lembur-new':
       return <Lembur onBack={onBack} startNew onToast={onToast} />
     case 'presensi':
-      return <PresensiOnline employee={employee} onBack={onBack} onToast={onToast} />
+      return <PresensiOnline employee={employee} onBack={onBack} onToast={onToast} onNavigate={onNavigate} />
     case 'absensi':
       return <Absensi employee={employee} onBack={onBack} onToast={onToast} onNavigate={onNavigate} />
     case 'absensi-new':

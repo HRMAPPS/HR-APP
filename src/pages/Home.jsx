@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Gift, LogIn, LogOut, User, ClipboardList, Building2, ChevronRight } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
-import { HOME_QUICK_APPS, ALL_APPS } from '../lib/menuConfig'
+import { HOME_QUICK_APPS } from '../lib/menuConfig'
 import { useAttendance } from '../lib/useAttendance'
 import { useIsDesktop } from '../lib/useIsDesktop'
 import CameraCapture from '../components/CameraCapture'
@@ -124,7 +124,7 @@ export default function Home({ employee, onNavigate, onOpenAllApps }) {
           ))}
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '260px 1fr 300px', gap: 20, alignItems: 'start' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '260px 1fr', gap: 20, alignItems: 'start' }}>
           <div style={{ background: '#fff', borderRadius: 16, padding: 20, boxShadow: 'var(--shadow-sm)' }}>
             <div style={{ fontWeight: 700, marginBottom: 14 }}>Quick Links</div>
             {[
@@ -186,57 +186,6 @@ export default function Home({ employee, onNavigate, onOpenAllApps }) {
                 </div>
               </div>
             ))}
-          </div>
-
-          <div className="shift-card" style={{ margin: 0 }}>
-            <div className="shift-card__header">Jadwal shift untuk {todayLabel}</div>
-            <div className="shift-card__body">
-              {(!shift || shift?.is_day_off) ? (
-                <>
-                  <div className="shift-card__role">Tidak ada shift hari ini</div>
-                  <div className="shift-card__time">Selamat menikmati hari libur!</div>
-                </>
-              ) : (
-                <>
-                  <div className="shift-card__role">{shift.shift_name}</div>
-                  <div className="shift-card__time">{shift.start_time?.slice(0,5)} - {shift.end_time?.slice(0,5)}</div>
-                  <div className="clock-buttons">
-                    <button onClick={() => setCameraMode('in')} disabled={busy || !!att?.clock_in}>
-                      <LogIn size={18} /> Clock In
-                    </button>
-                    <button onClick={() => setCameraMode('out')} disabled={busy || !att?.clock_in || !!att?.clock_out}>
-                      <LogOut size={18} /> Clock Out
-                    </button>
-                  </div>
-                  {att?.clock_in && (
-                    <div className="shift-card__status">
-                      <div>
-                        Anda telah berhasil clock in pada pukul {formatTime(att.clock_in)}
-                        {att.clock_out && <> · clock out pukul {formatTime(att.clock_out)}</>}
-                      </div>
-                    </div>
-                  )}
-                </>
-              )}
-            </div>
-
-            <div style={{ padding: '18px 16px' }}>
-              <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 10 }}>Applications</div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14 }}>
-                {ALL_APPS.filter((a) => a.key !== 'semua').slice(0, 9).map((app) => {
-                  const Icon = app.icon
-                  return (
-                    <button key={app.key} className="quick-item" style={{ padding: 0 }}
-                      onClick={() => app.page ? onNavigate(app.page) : flash(`${app.label} segera hadir`)}>
-                      <span className="ic" style={{ background: app.bg, color: app.fg, width: 42, height: 42 }}>
-                        <Icon size={19} />
-                      </span>
-                      <span style={{ fontSize: 11 }}>{app.label}</span>
-                    </button>
-                  )
-                })}
-              </div>
-            </div>
           </div>
         </div>
 
