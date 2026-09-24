@@ -599,7 +599,7 @@ function AnnouncementTab({ onToast }) {
 }
 
 function AnnouncementForm({ row, onClose, onSaved }) {
-  const [form, setForm] = useState({ title: row.title || '', body: row.body || '' })
+  const [form, setForm] = useState({ title: row.title || '', body: row.body || '', category: row.category && row.category !== 'Uncategorized' ? row.category : '' })
   const [attachmentUrl, setAttachmentUrl] = useState(row.attachment_url || null)
   const [attachmentName, setAttachmentName] = useState(row.attachment_name || null)
   const [file, setFile] = useState(null)
@@ -625,6 +625,7 @@ function AnnouncementForm({ row, onClose, onSaved }) {
 
     const { error } = await supabase.rpc('upsert_announcement_hr', {
       p_id: row.id || null, p_title: form.title, p_body: form.body || null,
+      p_category: form.category.trim() || 'Uncategorized',
       p_attachment_url: finalUrl, p_attachment_name: finalName,
     })
     setSaving(false)
@@ -645,6 +646,23 @@ function AnnouncementForm({ row, onClose, onSaved }) {
           <div className="field">
             <label>Isi (opsional)</label>
             <textarea value={form.body} onChange={(e) => setForm((f) => ({ ...f, body: e.target.value }))} placeholder="Detail pengumuman..." />
+          </div>
+          <div className="field">
+            <label>Kategori (opsional)</label>
+            <input
+              list="announcement-category-options"
+              value={form.category}
+              onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}
+              placeholder="Uncategorized"
+            />
+            <datalist id="announcement-category-options">
+              <option value="Uncategorized" />
+              <option value="Kajian Rutin" />
+              <option value="Sports Day" />
+              <option value="Libur" />
+              <option value="Pengumuman Umum" />
+              <option value="HR Update" />
+            </datalist>
           </div>
           <div className="field">
             <label>Lampiran (opsional)</label>
