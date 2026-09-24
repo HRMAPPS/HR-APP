@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { ArrowLeft, User, FileText } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
+import { linkifyText } from '../lib/linkify'
 
 // Full-page announcement view, opened from the "Pengumuman" lists on
 // Home. Shows the full body text and, when present, a downloadable
@@ -59,7 +60,7 @@ export default function AnnouncementDetail({ id, onBack }) {
 
           <div style={{ background: '#fff', borderRadius: '22px 22px 0 0', padding: '24px 18px', minHeight: '55vh' }}>
             {a.body && (
-              <div style={{ fontSize: 14.5, lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>{a.body}</div>
+              <div style={{ fontSize: 14.5, lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>{linkifyText(a.body)}</div>
             )}
 
             {a.attachment_url && (

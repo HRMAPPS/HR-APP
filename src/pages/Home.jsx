@@ -6,6 +6,7 @@ import { useAttendance } from '../lib/useAttendance'
 import { useIsDesktop } from '../lib/useIsDesktop'
 import CameraCapture from '../components/CameraCapture'
 import { jakartaHour, greetingID } from '../lib/dateUtils'
+import { linkifyText } from '../lib/linkify'
 
 // Small "Oleh <avatar> <name>" byline used under each announcement in
 // the list. Falls back to a generic person icon when there's no photo.
@@ -177,10 +178,9 @@ export default function Home({ employee, onNavigate, onOpenAllApps }) {
                   </div>
                   {a.body && (
                     <p style={{
-                      fontSize: 13, color: 'var(--text-muted)', marginTop: 6, lineHeight: 1.5,
-                      display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden',
+                      fontSize: 13, color: 'var(--text-muted)', marginTop: 6, lineHeight: 1.5, whiteSpace: 'pre-wrap',
                     }}>
-                      {a.body}
+                      {linkifyText(a.body)}
                     </p>
                   )}
                 </div>
