@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Gift, LogIn, LogOut, User, ClipboardList, Building2, ChevronRight } from 'lucide-react'
+import { Gift, LogIn, LogOut, User, ClipboardList, Building2, ChevronRight, Paperclip, Copy } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
 import { HOME_QUICK_APPS } from '../lib/menuConfig'
 import { useAttendance } from '../lib/useAttendance'
@@ -152,8 +152,10 @@ export default function Home({ employee, onNavigate, onOpenAllApps }) {
             ) : announcements.map((a) => (
               <div
                 key={a.id}
-                onClick={() => onNavigate(`announcement:${a.id}`)}
-                style={{ display: 'flex', gap: 12, padding: '16px 0', borderTop: '1px solid #f1ece6', cursor: 'pointer' }}
+                style={{
+                  display: 'flex', gap: 12, padding: 16, border: '1px solid var(--border)',
+                  borderRadius: 12, marginBottom: 14,
+                }}
               >
                 {a.author_avatar_url
                   ? <img src={a.author_avatar_url} alt="" style={{ width: 40, height: 40, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />
@@ -161,9 +163,21 @@ export default function Home({ employee, onNavigate, onOpenAllApps }) {
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10 }}>
                     <span style={{ fontWeight: 600, fontSize: 13.5 }}>{a.author || 'napocut'}</span>
-                    <span style={{ fontSize: 12, color: '#a39c94', whiteSpace: 'nowrap' }}>
-                      {new Date(a.published_at).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })}
-                    </span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
+                      <span style={{ fontSize: 12, color: '#a39c94', whiteSpace: 'nowrap' }}>
+                        {new Date(a.published_at).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })}
+                      </span>
+                      <button
+                        onClick={() => {
+                          navigator.clipboard.writeText(`${a.title}\n\n${a.body || ''}`.trim())
+                          flash('Pengumuman disalin')
+                        }}
+                        title="Salin pengumuman"
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', display: 'flex', padding: 2 }}
+                      >
+                        <Copy size={15} />
+                      </button>
+                    </div>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, marginTop: 6 }}>
                     <strong style={{ fontSize: 14.5 }}>{a.title}</strong>
@@ -182,6 +196,20 @@ export default function Home({ employee, onNavigate, onOpenAllApps }) {
                     }}>
                       {linkifyText(a.body)}
                     </p>
+                  )}
+                  {a.attachment_url && (
+                    <a
+                      href={a.attachment_url}
+                      target="_blank"
+                      rel="noreferrer"
+                      download
+                      style={{
+                        display: 'inline-flex', alignItems: 'center', gap: 6, marginTop: 10, fontSize: 12.5,
+                        color: 'var(--blue)', textDecoration: 'none',
+                      }}
+                    >
+                      <Paperclip size={13} /> {a.attachment_name || 'Lampiran'}
+                    </a>
                   )}
                 </div>
               </div>
