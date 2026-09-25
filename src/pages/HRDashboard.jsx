@@ -54,17 +54,19 @@ export default function HRDashboard({ onBack, onToast }) {
         ))}
       </div>
 
-      {tab === 'overview' && <OverviewTab onToast={onToast} onGo={setTab} />}
-      {tab === 'karyawan' && <KaryawanTab employees={employees} onReload={loadEmployees} onToast={onToast} />}
-      {tab === 'shift' && <ShiftTab employees={employees} onToast={onToast} />}
-      {tab === 'lokasi' && <LocationTab onToast={onToast} />}
-      {tab === 'attendance' && <AttendanceTab onToast={onToast} />}
-      {tab === 'leave' && <LeaveTab onToast={onToast} />}
-      {tab === 'overtime' && <OvertimeTab onToast={onToast} />}
-      {tab === 'reimbursement' && <ReimbursementTab onToast={onToast} />}
-      {tab === 'correction' && <CorrectionTab onToast={onToast} />}
-      {tab === 'payslip' && <PayslipTab employees={employees} onToast={onToast} />}
-      {tab === 'pengumuman' && <AnnouncementTab onToast={onToast} isDesktop={isDesktop} />}
+      <div style={isDesktop ? { maxWidth: 920 } : undefined}>
+        {tab === 'overview' && <OverviewTab onToast={onToast} onGo={setTab} isDesktop={isDesktop} />}
+        {tab === 'karyawan' && <KaryawanTab employees={employees} onReload={loadEmployees} onToast={onToast} isDesktop={isDesktop} />}
+        {tab === 'shift' && <ShiftTab employees={employees} onToast={onToast} isDesktop={isDesktop} />}
+        {tab === 'lokasi' && <LocationTab onToast={onToast} isDesktop={isDesktop} />}
+        {tab === 'attendance' && <AttendanceTab onToast={onToast} isDesktop={isDesktop} />}
+        {tab === 'leave' && <LeaveTab onToast={onToast} isDesktop={isDesktop} />}
+        {tab === 'overtime' && <OvertimeTab onToast={onToast} isDesktop={isDesktop} />}
+        {tab === 'reimbursement' && <ReimbursementTab onToast={onToast} isDesktop={isDesktop} />}
+        {tab === 'correction' && <CorrectionTab onToast={onToast} isDesktop={isDesktop} />}
+        {tab === 'payslip' && <PayslipTab employees={employees} onToast={onToast} isDesktop={isDesktop} />}
+        {tab === 'pengumuman' && <AnnouncementTab onToast={onToast} isDesktop={isDesktop} />}
+      </div>
     </div>
   )
 }
@@ -102,14 +104,14 @@ async function exportToExcel(filename, sheetName, rows, columns) {
   XLSX.writeFile(wb, filename)
 }
 
-function ExportButton({ onClick, label = 'Export Excel' }) {
+function ExportButton({ onClick, label = 'Export Excel', style }) {
   return (
     <button
       onClick={onClick}
       style={{
         display: 'flex', alignItems: 'center', gap: 6, background: '#fff', border: '1px solid var(--border)',
         borderRadius: 10, padding: '8px 12px', fontSize: 13, fontWeight: 600, color: 'var(--text)', cursor: 'pointer',
-        boxShadow: 'var(--shadow-xs)', marginBottom: 14,
+        boxShadow: 'var(--shadow-xs)', marginBottom: 14, ...style,
       }}
     >
       <FileDown size={15} /> {label}
@@ -120,7 +122,7 @@ function ExportButton({ onClick, label = 'Export Excel' }) {
 // ---------------------------------------------------------------------
 // Ringkasan — angka penting untuk HR
 // ---------------------------------------------------------------------
-function OverviewTab({ onToast, onGo }) {
+function OverviewTab({ onToast, onGo, isDesktop }) {
   const [stats, setStats] = useState(null)
 
   useEffect(() => {
@@ -142,7 +144,7 @@ function OverviewTab({ onToast, onGo }) {
 
   return (
     <div className="form-page">
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? 'repeat(5, 1fr)' : '1fr 1fr', gap: 12 }}>
         {cards.map((c) => (
           <button key={c.label} onClick={() => onGo(c.go)} style={{
             textAlign: 'left', background: '#fff', border: 'none', borderRadius: 14, padding: 16,
@@ -160,7 +162,7 @@ function OverviewTab({ onToast, onGo }) {
 // ---------------------------------------------------------------------
 // Karyawan — kelola roster (tambah, edit, nonaktifkan, ubah role)
 // ---------------------------------------------------------------------
-function KaryawanTab({ employees, onReload, onToast }) {
+function KaryawanTab({ employees, onReload, onToast, isDesktop }) {
   const [query, setQuery] = useState('')
   const [editing, setEditing] = useState(null) // null closed, {} new, {...} edit
 
@@ -170,20 +172,39 @@ function KaryawanTab({ employees, onReload, onToast }) {
 
   return (
     <div className="form-page">
-      <div className="search-box" style={{ margin: '0 0 14px' }}>
-        <Search size={16} />
-        <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Cari nama / kode karyawan..."
-          style={{ border: 'none', outline: 'none', background: 'none', flex: 1, fontSize: 14.5 }} />
-      </div>
+      {isDesktop ? (
+        <div style={{ display: 'flex', gap: 10, marginBottom: 14, alignItems: 'center' }}>
+          <div className="search-box" style={{ margin: 0, flex: 1 }}>
+            <Search size={16} />
+            <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Cari nama / kode karyawan..."
+              style={{ border: 'none', outline: 'none', background: 'none', flex: 1, fontSize: 14.5 }} />
+          </div>
+          <button className="primary-btn" style={{ width: 'auto', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: 8, padding: '11px 18px' }} onClick={() => setEditing({})}>
+            <Plus size={18} /> Tambah karyawan
+          </button>
+          <ExportButton style={{ marginBottom: 0, flexShrink: 0 }} onClick={() => exportToExcel('data-karyawan.xlsx', 'Karyawan', filtered, [
+            ['Kode Karyawan', 'employee_code'], ['Nama', 'full_name'], ['Jabatan', 'position'], ['Departemen', 'department'],
+            ['Role', 'role'], ['Status', (r) => r.employment_status || 'active'], ['No HP', 'phone'], ['Email', 'email'],
+          ])} />
+        </div>
+      ) : (
+        <>
+          <div className="search-box" style={{ margin: '0 0 14px' }}>
+            <Search size={16} />
+            <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Cari nama / kode karyawan..."
+              style={{ border: 'none', outline: 'none', background: 'none', flex: 1, fontSize: 14.5 }} />
+          </div>
 
-      <button className="primary-btn" style={{ marginBottom: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }} onClick={() => setEditing({})}>
-        <Plus size={18} /> Tambah karyawan
-      </button>
+          <button className="primary-btn" style={{ marginBottom: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }} onClick={() => setEditing({})}>
+            <Plus size={18} /> Tambah karyawan
+          </button>
 
-      <ExportButton onClick={() => exportToExcel('data-karyawan.xlsx', 'Karyawan', filtered, [
-        ['Kode Karyawan', 'employee_code'], ['Nama', 'full_name'], ['Jabatan', 'position'], ['Departemen', 'department'],
-        ['Role', 'role'], ['Status', (r) => r.employment_status || 'active'], ['No HP', 'phone'], ['Email', 'email'],
-      ])} />
+          <ExportButton onClick={() => exportToExcel('data-karyawan.xlsx', 'Karyawan', filtered, [
+            ['Kode Karyawan', 'employee_code'], ['Nama', 'full_name'], ['Jabatan', 'position'], ['Departemen', 'department'],
+            ['Role', 'role'], ['Status', (r) => r.employment_status || 'active'], ['No HP', 'phone'], ['Email', 'email'],
+          ])} />
+        </>
+      )}
 
       {filtered.map((e) => (
         <div key={e.id} className="list-item">
@@ -342,7 +363,7 @@ const DOW_OPTIONS = [
   ['1', 'Sen'], ['2', 'Sel'], ['3', 'Rab'], ['4', 'Kam'], ['5', 'Jum'], ['6', 'Sab'], ['0', 'Min'],
 ]
 
-function ShiftTab({ employees, onToast }) {
+function ShiftTab({ employees, onToast, isDesktop }) {
   const [sub, setSub] = useState('jadwal') // 'jadwal' | 'jenis'
   const [shifts, setShifts] = useState([])
   const [editingShift, setEditingShift] = useState(null)
@@ -363,7 +384,11 @@ function ShiftTab({ employees, onToast }) {
 
       {sub === 'jenis' && (
         <div>
-          <button className="primary-btn" style={{ marginBottom: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }} onClick={() => setEditingShift({})}>
+          <button
+            className="primary-btn"
+            style={{ marginBottom: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, ...(isDesktop ? { maxWidth: 260 } : {}) }}
+            onClick={() => setEditingShift({})}
+          >
             <Plus size={18} /> Tambah jenis shift
           </button>
           {shifts.length === 0 ? (
@@ -385,7 +410,7 @@ function ShiftTab({ employees, onToast }) {
         </div>
       )}
 
-      {sub === 'jadwal' && <ScheduleManager employees={employees} shifts={shifts} onToast={onToast} />}
+      {sub === 'jadwal' && <ScheduleManager employees={employees} shifts={shifts} onToast={onToast} isDesktop={isDesktop} />}
     </div>
   )
 }
@@ -425,7 +450,7 @@ function ShiftForm({ row, onClose, onSaved }) {
   )
 }
 
-function LocationTab({ onToast }) {
+function LocationTab({ onToast, isDesktop }) {
   const [locations, setLocations] = useState(null)
   const [editing, setEditing] = useState(null)
 
@@ -454,7 +479,11 @@ function LocationTab({ onToast }) {
         Karyawan hanya bisa clock in/out dalam radius dari salah satu lokasi di bawah. Kalau belum ada lokasi ditambahkan, absen tidak dibatasi lokasi sama sekali.
       </div>
 
-      <button className="primary-btn" style={{ marginBottom: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }} onClick={() => setEditing({})}>
+      <button
+        className="primary-btn"
+        style={{ marginBottom: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, ...(isDesktop ? { maxWidth: 260 } : {}) }}
+        onClick={() => setEditing({})}
+      >
         <Plus size={18} /> Tambah lokasi
       </button>
 
@@ -763,7 +792,7 @@ function AnnouncementForm({ row, onClose, onSaved }) {
   )
 }
 
-function ScheduleManager({ employees, shifts, onToast }) {
+function ScheduleManager({ employees, shifts, onToast, isDesktop }) {
   const [start, setStart] = useState(todayStr())
   const [end, setEnd] = useState(() => { const d = new Date(todayStr()); d.setDate(d.getDate() + 6); return d.toISOString().slice(0, 10) })
   const [rows, setRows] = useState(null)
@@ -791,7 +820,11 @@ function ScheduleManager({ employees, shifts, onToast }) {
         <div className="field" style={{ flex: 1, margin: 0 }}><label>Sampai</label><input type="date" value={end} onChange={(e) => setEnd(e.target.value)} /></div>
       </div>
 
-      <button className="primary-btn" style={{ marginBottom: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }} onClick={() => setShowBulk(true)}>
+      <button
+        className="primary-btn"
+        style={{ marginBottom: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, ...(isDesktop ? { maxWidth: 260 } : {}) }}
+        onClick={() => setShowBulk(true)}
+      >
         <Plus size={18} /> Atur Jadwal (massal)
       </button>
 
@@ -1250,7 +1283,7 @@ function parseTemplateRows(rawRows) {
   }).filter((r) => r.employee_code && r.period)
 }
 
-function PayslipTab({ employees, onToast }) {
+function PayslipTab({ employees, onToast, isDesktop }) {
   const [rows, setRows] = useState(null)
   const [editing, setEditing] = useState(null) // null closed, {} new, {...} edit
   const [importing, setImporting] = useState(false)
@@ -1331,7 +1364,7 @@ function PayslipTab({ employees, onToast }) {
 
       <button
         className="primary-btn"
-        style={{ marginBottom: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
+        style={{ marginBottom: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, ...(isDesktop ? { maxWidth: 260 } : {}) }}
         onClick={() => setEditing({})}
       >
         <Plus size={18} /> Input manual
