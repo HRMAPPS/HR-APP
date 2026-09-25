@@ -94,7 +94,7 @@ button:active:not(:disabled){ transform: translateY(1px) scale(.98); }
 .desktop-sidebar button:hover{ background: #f3f0ec; }
 .desktop-sidebar button.active{ background: #eef1fb; color: var(--blue); }
 .desktop-main{ flex: 1; overflow-y: auto; padding: 28px 24px; }
-.desktop-main-inner{ max-width: 480px; margin: 0 auto; background: var(--bg); border-radius: 18px; overflow: hidden; box-shadow: var(--shadow-md); }
+.desktop-main-inner{ max-width: 560px; margin: 0 auto; background: var(--bg); border-radius: 18px; overflow: hidden; box-shadow: var(--shadow-md); }
 .desktop-main-inner-wide{ max-width: 1040px; margin: 0 auto; }
 /* extra-wide variant for content that genuinely needs the room, like
    the org chart tree — wider than -wide so typical structures fit
@@ -103,6 +103,27 @@ button:active:not(:disabled){ transform: translateY(1px) scale(.98); }
 /* full-bleed variant for data tables (Employees directory) — fills
    the available desktop-main area instead of capping at a fixed width */
 .desktop-main-inner-full{ width: 100%; background: var(--bg); border-radius: 18px; overflow: hidden; box-shadow: var(--shadow-md); }
+
+/* Every mobile "page" (Cuti, Lembur, Reimbursement, Presensi koreksi, etc.)
+   shares the same .page-header / .fab-bottom-btn building blocks. Rather
+   than rewriting each page for desktop individually, retarget those shared
+   blocks when they're rendered inside the desktop shell: drop the mobile
+   colored bar in favor of a plain left-aligned title, and turn the
+   sticky bottom-nav-aware floating action button into a normal inline
+   button so it stops overlapping list content that had no bottom nav to
+   clear on desktop. */
+.desktop-main .page-header{
+  position: static; background: none; color: var(--text); box-shadow: none;
+  padding: 0 0 22px;
+}
+.desktop-main .page-header .back-btn{ color: var(--text-muted); }
+.desktop-main .page-header .back-btn:hover{ background: rgba(0,0,0,.06); }
+.desktop-main .page-header .back-btn:active{ background: rgba(0,0,0,.1); }
+.desktop-main .page-header h1{ font-size: 24px; text-align: left; }
+
+.desktop-main .fab-bottom-btn{
+  position: static; width: auto; max-width: 240px; margin: 0 0 16px;
+}
 
 .emp-row:hover{ background: #faf8f5; }
 
