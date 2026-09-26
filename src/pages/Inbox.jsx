@@ -34,7 +34,7 @@ export default function Inbox({ employee, onToast, onNavigate, onRead }) {
   useEffect(() => { load() }, [employee?.id])
 
   if (isDesktop) {
-    return <DesktopInbox employee={employee} onToast={onToast} onRead={onRead} />
+    return <DesktopInbox employee={employee} onToast={onToast} onRead={onRead} onNavigate={onNavigate} />
   }
 
   async function openNotification(n) {
@@ -43,11 +43,14 @@ export default function Inbox({ employee, onToast, onNavigate, onRead }) {
       load()
       onRead?.()
     }
-    // Only "needs approval" notifications (has related_table/related_id
-    // pointing at a request) have somewhere to navigate to — "Slip Gaji
-    // Tersedia" etc. are informational only and stay put.
+    // "Needs approval" notifications (leave/overtime/etc.) jump straight
+    // to that request's detail. Informational ones like "Slip Gaji
+    // Tersedia" have no specific request to open, but still point
+    // somewhere useful — the Slip Gaji page — instead of doing nothing.
     if (n.related_table && APPROVAL_TABLES.includes(n.related_table) && n.related_id) {
       onNavigate?.(`approval:${n.related_table}:${n.related_id}`)
+    } else if (n.related_table === 'payslips') {
+      onNavigate?.('slip-gaji')
     }
   }
 

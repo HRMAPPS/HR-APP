@@ -49,7 +49,7 @@ function NotificationList({ items, loading, onOpen }) {
 // ApprovalCategoryPage as-is for categories, so list/detail/timeline/
 // approve-reject behavior stays identical to what mobile already has —
 // only the surrounding layout differs.
-export default function DesktopInbox({ employee, onToast, onRead }) {
+export default function DesktopInbox({ employee, onToast, onRead, onNavigate }) {
   const [folder, setFolder] = useState('notifikasi')
   const [openId, setOpenId] = useState(null)
   const [items, setItems] = useState([])
@@ -72,6 +72,8 @@ export default function DesktopInbox({ employee, onToast, onRead }) {
     if (n.related_table && APPROVAL_TABLES.includes(n.related_table) && n.related_id) {
       setFolder(n.related_table)
       setOpenId(n.related_id)
+    } else if (n.related_table === 'payslips') {
+      onNavigate?.('slip-gaji')
     }
   }
 
