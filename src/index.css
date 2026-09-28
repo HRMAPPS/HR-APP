@@ -573,6 +573,71 @@ button:active:not(:disabled){ transform: translateY(1px) scale(.98); }
 .cal-group-head.sel{ color:var(--blue); }
 .cal-detail-line{ display:flex; align-items:center; gap:10px; padding:8px 0; font-size:15px; color:var(--text); }
 
+/* ---------- calendar (desktop) ---------- */
+.dcal{ background: var(--bg); min-height: 100%; }
+.dcal-banner{ background: linear-gradient(120deg, #2a2a2e 0%, #48484f 100%); color:#fff; padding: 44px 8% 40px; }
+.dcal-banner h1{ margin:0; font-size:36px; font-weight:400; letter-spacing:-.01em; }
+.dcal-banner p{ margin:10px 0 0; font-size:12.5px; letter-spacing:.14em; text-transform:uppercase; font-weight:700; opacity:.85; }
+.dcal-wrap{ max-width: 1120px; margin: 0 auto; padding: 32px 24px 48px; }
+.dcal-actions{ display:flex; justify-content:flex-end; margin-bottom: 18px; }
+.dcal-outline-btn{ background:none; border:2px solid #77706a; color:#4b4541; font-weight:700; font-size:11.5px; letter-spacing:.14em; padding:12px 20px; border-radius:10px; cursor:pointer; }
+.dcal-outline-btn:hover{ background:#fff; }
+.dcal-card{ display:grid; grid-template-columns: 1.4fr 1fr; min-height: 520px; box-shadow: var(--shadow-md); border-radius: 6px; overflow:hidden; }
+.dcal-left{ background:#ececec; padding: 26px 30px 18px; display:flex; flex-direction:column; }
+.dcal-nav{ display:flex; align-items:center; justify-content:space-between; margin-bottom: 20px; }
+.dcal-year{ background:none; border:none; font-size:15px; color:#333; cursor:pointer; padding:6px 10px; border-radius:8px; }
+.dcal-year:hover{ background: rgba(0,0,0,.06); }
+.dcal-month{ display:flex; align-items:center; gap:14px; }
+.dcal-month strong{ font-size:21px; font-weight:600; min-width:190px; text-align:center; }
+.dcal-month button{ background:none; border:none; cursor:pointer; padding:6px; border-radius:50%; color:#222; display:flex; }
+.dcal-month button:hover{ background: rgba(0,0,0,.08); }
+.dcal-grid{ display:grid; grid-template-columns:repeat(7,1fr); row-gap: 6px; flex:1; align-content:start; }
+.dcal-dow{ text-align:center; font-weight:700; font-size:14px; padding: 8px 0 14px; }
+.dcal-dow.sun{ color:#d21f2b; }
+.dcal-cell{
+  height:54px; display:flex; align-items:center; justify-content:center; background:none; border:none; cursor:pointer;
+  font-size:15px; font-family:inherit; color:#222; position:relative;
+}
+.dcal-cell{ isolation:isolate; }
+.dcal-cell::before{ content:''; position:absolute; width:38px; height:38px; border-radius:50%; z-index:-1; }
+.dcal-cell.has{ color:#2e9e5b; font-weight:700; }
+.dcal-cell.red{ color:#d21f2b; font-weight:600; }
+.dcal-cell.out{ color:#b9b9b9; font-weight:400; }
+.dcal-cell.today::before{ background:#b3b3b3; }
+.dcal-cell.today{ color:#fff; font-weight:700; }
+.dcal-cell.picked::before{ background:#96101c; }
+.dcal-cell.picked{ color:#fff; font-weight:700; }
+.dcal-cell:not(.picked):not(.today):hover::before{ background: rgba(0,0,0,.07); }
+.dcal-foot{ display:flex; align-items:center; justify-content:space-between; margin-top:10px; }
+.dcal-legend{ display:flex; gap:16px; font-size:12.5px; color:#555; }
+.dcal-legend i{ display:inline-block; width:9px; height:9px; border-radius:50%; margin-right:6px; }
+.dcal-today-btn{ background:#96101c; color:#fff; border:none; border-radius:6px; padding:7px 12px; font-size:11px; font-weight:700; cursor:pointer; }
+.dcal-today-btn:hover{ background:#7d0d18; }
+
+.dcal-right{ background:#96101c; color:#fff; padding: 34px 30px 22px; display:flex; flex-direction:column; }
+.dcal-right h2{ margin:0 0 26px; text-align:center; font-weight:400; font-size:18px; }
+.dcal-tabs{ display:flex; justify-content:space-between; border-bottom:1px solid rgba(255,255,255,.25); }
+.dcal-tabs button{
+  background:none; border:none; color:rgba(255,255,255,.6); font-size:11px; font-weight:700; letter-spacing:.1em;
+  text-transform:uppercase; padding: 0 2px 14px; cursor:pointer; border-bottom:2px solid transparent; margin-bottom:-1px;
+}
+.dcal-tabs button:hover{ color:#fff; }
+.dcal-tabs button.active{ color:#fff; border-color:#fff; }
+.dcal-picked{ display:flex; align-items:center; justify-content:space-between; margin-top:14px; font-size:13px; background: rgba(255,255,255,.12); padding:8px 12px; border-radius:8px; }
+.dcal-picked button{ background:none; border:none; color:#fff; text-decoration:underline; cursor:pointer; display:flex; align-items:center; gap:4px; font-size:12.5px; }
+.dcal-list{ flex:1; padding-top:16px; }
+.dcal-item{ display:block; width:100%; text-align:left; background:none; border:none; color:#fff; padding:10px 4px; cursor:pointer; border-radius:8px; font-family:inherit; }
+.dcal-item:hover{ background: rgba(255,255,255,.1); }
+.dcal-item b{ display:block; font-style:italic; font-size:15px; margin-bottom:4px; }
+.dcal-item span{ font-size:14px; opacity:.95; }
+.dcal-empty{ text-align:center; opacity:.8; margin-top:40px; font-size:14px; }
+.dcal-pager{ display:flex; align-items:center; justify-content:center; gap:26px; padding-top:10px; }
+.dcal-pager span{ font-size:12.5px; opacity:.8; min-width:44px; text-align:center; }
+.dcal-pager button{ width:34px; height:34px; border-radius:50%; border:none; background: rgba(255,255,255,.28); color:#fff; cursor:pointer; display:flex; align-items:center; justify-content:center; }
+.dcal-pager button:hover:not(:disabled){ background: rgba(255,255,255,.45); }
+.dcal-pager button:disabled{ opacity:.35; cursor:default; }
+@media (max-width: 1100px){ .dcal-card{ grid-template-columns: 1fr; } }
+
 .toast{
   position: fixed; bottom: 90px; left:50%; transform:translateX(-50%);
   background:#2c2c2c; color:#fff; padding:11px 20px; border-radius:30px; font-size:14px; z-index:60;

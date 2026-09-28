@@ -6,6 +6,7 @@ import {
 import { supabase } from '../lib/supabaseClient'
 import { todayStr } from '../lib/dateUtils'
 import { useBackHandler } from '../lib/backStack'
+import { useIsDesktop } from '../lib/useIsDesktop'
 
 const DOW = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab']
 const MONTHS_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des']
@@ -41,7 +42,8 @@ function subtitleOf(ev) {
   return ''
 }
 
-export default function CalendarPage({ onBack, onToast }) {
+export default function CalendarPage({ onBack, onToast, onNavigate }) {
+  const isDesktop = useIsDesktop()
   const [cursor, setCursor] = useState(() => {
     const [y, m] = todayStr().split('-').map(Number)
     return { y, m: m - 1 }
@@ -98,6 +100,25 @@ export default function CalendarPage({ onBack, onToast }) {
 
   useBackHandler(() => setDetail(null), !!detail)
   useBackHandler(() => setSheet(null), !!sheet)
+
+  if (isDesktop) {
+    return (
+      <>
+        <DesktopCalendar
+          cursor={cursor}
+          events={events}
+          byDate={byDate}
+          loading={loading}
+          today={today}
+          onMonth={changeMonth}
+          onToday={goToday}
+          onPick={setDetail}
+          onRequestLeave={onNavigate ? () => onNavigate('cuti-new') : null}
+        />
+        {detail && <DetailSheet ev={detail} onClose={() => setDetail(null)} center />}
+      </>
+    )
+  }
 
   const firstDow = new Date(cursor.y, cursor.m, 1).getDay()
   const daysInMonth = new Date(cursor.y, cursor.m + 1, 0).getDate()
@@ -310,12 +331,12 @@ function MonthSheet({ cursor, events, selected, initialTab, onMonth, onClose, on
   )
 }
 
-function DetailSheet({ ev, onClose }) {
+function DetailSheet({ ev, onClose, center }) {
   const meta = KIND_BY_KEY[ev.kind]
   const sub = subtitleOf(ev)
   return (
-    <div className="sheet-overlay" style={{ zIndex: 45 }} onClick={onClose}>
-      <div className="sheet" onClick={(e) => e.stopPropagation()}>
+    <div className="sheet-overlay" style={{ zIndex: 45, ...(center ? { alignItems: 'center' } : {}) }} onClick={onClose}>
+      <div className="sheet" style={center ? { borderRadius: 22, paddingBottom: 26 } : undefined} onClick={(e) => e.stopPropagation()}>
         <div className="sheet-handle" />
         <div className="sheet-title-row">
           <h3>{meta.label}</h3>
@@ -334,6 +355,152 @@ function DetailSheet({ ev, onClose }) {
         )}
         {ev.location && <div className="cal-detail-line"><MapPin size={17} /> {ev.location}</div>}
         {ev.description && <p style={{ margin: '12px 0 0', fontSize: 14.5, lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{ev.description}</p>}
+      </div>
+    </div>
+  )
+}
+
+
+// ---------------------------------------------------------------------
+// Tampilan desktop: kalender bulanan (kiri) + panel "Ada apa di bulan ini?" (kanan).
+// Minggu dimulai Senin. Klik tanggal = filter panel ke tanggal itu; klik lagi = kembali sebulan.
+// ---------------------------------------------------------------------
+const DESKTOP_TABS = [
+  { key: 'all', label: 'Semua' },
+  { key: 'activity', label: 'Aktivitas' },
+  { key: 'leave', label: 'Cuti' },
+  { key: 'holiday', label: 'Libur' },
+  { key: 'birthday', label: 'Ulang tahun' },
+]
+const DESKTOP_DOW = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min']
+const PAGE_SIZE = 5
+
+function lineOf(ev) {
+  if (ev.kind === 'leave') return `${ev.title} — ${ev.subtitle}`
+  if (ev.kind === 'birthday') return `${ev.title} berulang tahun`
+  const sub = subtitleOf(ev)
+  return ev.kind === 'activity' && sub !== 'Sepanjang hari' ? `${ev.title} · ${sub}` : ev.title
+}
+
+function DesktopCalendar({ cursor, events, byDate, loading, today, onMonth, onToday, onPick, onRequestLeave }) {
+  const [tab, setTab] = useState('all')
+  const [picked, setPicked] = useState(null)
+  const [page, setPage] = useState(0)
+
+  useEffect(() => { setPicked(null); setPage(0) }, [cursor.y, cursor.m])
+  useEffect(() => { setPage(0) }, [tab, picked])
+
+  // 6 minggu penuh? tidak — cukup sampai minggu terakhir bulan itu, sisa sel diisi tanggal bulan sebelah (pudar).
+  const lead = (new Date(cursor.y, cursor.m, 1).getDay() + 6) % 7
+  const daysInMonth = new Date(cursor.y, cursor.m + 1, 0).getDate()
+  const total = Math.ceil((lead + daysInMonth) / 7) * 7
+  const cells = []
+  for (let i = 0; i < total; i++) {
+    const d = new Date(cursor.y, cursor.m, 1 - lead + i)
+    cells.push({ date: ymd(d.getFullYear(), d.getMonth(), d.getDate()), day: d.getDate(), inMonth: d.getMonth() === cursor.m, dow: i % 7 })
+  }
+
+  const list = useMemo(() => {
+    return events
+      .filter((e) => (tab === 'all' || e.kind === tab) && (!picked || e.event_date === picked))
+      .sort((a, b) => (a.event_date < b.event_date ? -1 : a.event_date > b.event_date ? 1 : 0))
+  }, [events, tab, picked])
+
+  const pages = Math.max(1, Math.ceil(list.length / PAGE_SIZE))
+  const shown = list.slice(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE)
+
+  return (
+    <div className="dcal">
+      <div className="dcal-banner">
+        <h1>Kalender Perusahaan</h1>
+        <p>Cuti, ulang tahun, hari libur, dan aktivitas HR</p>
+      </div>
+
+      <div className="dcal-wrap">
+        {onRequestLeave && (
+          <div className="dcal-actions"><button className="dcal-outline-btn" onClick={onRequestLeave}>AJUKAN CUTI</button></div>
+        )}
+
+        <div className="dcal-card">
+          <div className="dcal-left">
+            <div className="dcal-nav">
+              <button className="dcal-year" onClick={() => onMonth(-12)}>{cursor.y - 1}</button>
+              <div className="dcal-month">
+                <button onClick={() => onMonth(-1)} aria-label="Bulan sebelumnya"><ChevronLeft size={20} /></button>
+                <strong>{MONTHS_LONG[cursor.m]} {cursor.y}</strong>
+                <button onClick={() => onMonth(1)} aria-label="Bulan berikutnya"><ChevronRight size={20} /></button>
+              </div>
+              <button className="dcal-year" onClick={() => onMonth(12)}>{cursor.y + 1}</button>
+            </div>
+
+            <div className="dcal-grid">
+              {DESKTOP_DOW.map((d, i) => <div key={d} className={`dcal-dow ${i === 6 ? 'sun' : ''}`}>{d}</div>)}
+              {cells.map((c) => {
+                const evs = c.inMonth ? byDate.get(c.date) || [] : []
+                const cls = [
+                  'dcal-cell',
+                  !c.inMonth ? 'out' : '',
+                  c.dow === 6 || evs.some((e) => e.kind === 'holiday') ? 'red' : evs.length ? 'has' : '',
+                  c.date === today ? 'today' : '',
+                  c.date === picked ? 'picked' : '',
+                ].join(' ')
+                return (
+                  <button
+                    key={c.date}
+                    className={cls}
+                    title={evs.length ? `${evs.length} acara` : undefined}
+                    onClick={() => (c.inMonth ? setPicked(picked === c.date ? null : c.date) : onMonth((c.date < ymd(cursor.y, cursor.m, 1)) ? -1 : 1))}
+                  >
+                    {c.day}
+                  </button>
+                )
+              })}
+            </div>
+
+            <div className="dcal-foot">
+              <div className="dcal-legend">
+                <span><i style={{ background: '#2e9e5b' }} /> Ada acara</span>
+                <span><i style={{ background: '#d21f2b' }} /> Minggu / libur</span>
+              </div>
+              <button className="dcal-today-btn" onClick={() => { onToday(); setPicked(null) }}>hari ini</button>
+            </div>
+          </div>
+
+          <div className="dcal-right">
+            <h2>Ada apa di {MONTHS_LONG[cursor.m]}?</h2>
+            <div className="dcal-tabs">
+              {DESKTOP_TABS.map((t) => (
+                <button key={t.key} className={tab === t.key ? 'active' : ''} onClick={() => setTab(t.key)}>{t.label}</button>
+              ))}
+            </div>
+
+            {picked && (
+              <div className="dcal-picked">
+                Menampilkan {fmtDate(picked)}
+                <button onClick={() => setPicked(null)}><X size={14} /> Lihat sebulan</button>
+              </div>
+            )}
+
+            <div className="dcal-list">
+              {loading ? (
+                <p className="dcal-empty">Memuat…</p>
+              ) : shown.length === 0 ? (
+                <p className="dcal-empty">Tidak ada acara{picked ? ' pada tanggal ini' : ' pada bulan ini'}.</p>
+              ) : shown.map((ev) => (
+                <button key={ev.kind + ev.ref_id + ev.event_date} className="dcal-item" onClick={() => onPick(ev)}>
+                  <b>{fmtDate(ev.event_date)}</b>
+                  <span>{lineOf(ev)}</span>
+                </button>
+              ))}
+            </div>
+
+            <div className="dcal-pager">
+              <button onClick={() => setPage((p) => Math.max(0, p - 1))} disabled={page === 0} aria-label="Sebelumnya"><ChevronLeft size={20} /></button>
+              <span>{page + 1} / {pages}</span>
+              <button onClick={() => setPage((p) => Math.min(pages - 1, p + 1))} disabled={page >= pages - 1} aria-label="Berikutnya"><ChevronRight size={20} /></button>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   )

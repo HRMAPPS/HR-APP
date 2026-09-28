@@ -156,7 +156,7 @@ export default function App() {
       <>
         <DesktopShell employee={employee} active={page ? null : tab} onChange={handleTabChange} onNavigate={navigateTo} onOpenAllApps={() => setShowAllApps(true)}
           onSignOut={signOut} onToast={flash} unread={unreadCount}
-          wide={!page && tab === 'employees' ? 'full' : !page && (tab === 'account' || tab === 'home' || tab === 'inbox') ? true : page === 'org-chart' ? 'chart' : (page === 'hr-dashboard' || page === 'lembur' || page === 'cuti') ? 'full' : false}>
+          wide={!page && tab === 'employees' ? 'full' : !page && (tab === 'account' || tab === 'home' || tab === 'inbox') ? true : page === 'org-chart' ? 'chart' : (page === 'hr-dashboard' || page === 'lembur' || page === 'cuti' || page === 'calendar') ? 'full' : false}>
           {content}
         </DesktopShell>
         {overlays}
@@ -213,7 +213,7 @@ function PageRouter({ page, employee, onBack, onToast, onNavigate }) {
     case 'data-new':
       return <DataChangeForm employee={employee} onBack={onBack} onToast={onToast} />
     case 'calendar':
-      return <CalendarPage onBack={onBack} onToast={onToast} />
+      return <CalendarPage onBack={onBack} onToast={onToast} onNavigate={onNavigate} />
     case 'org-chart':
       return <OrgChart onBack={onBack} onToast={onToast} />
     case 'hr-dashboard':
