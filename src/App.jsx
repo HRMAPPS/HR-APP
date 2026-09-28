@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useAuth } from './lib/useAuth'
 import { supabase } from './lib/supabaseClient'
 import BottomNav from './components/BottomNav'
@@ -28,6 +28,7 @@ import FaceEnrollment from './pages/FaceEnrollment'
 import InstallPrompt from './components/InstallPrompt'
 import DesktopShell from './components/DesktopShell'
 import { useIsDesktop } from './lib/useIsDesktop'
+import { runBackHandler } from './lib/backStack'
 import { ApprovalCategoryPage } from './components/ApprovalCenter'
 import DesktopProfile from './pages/DesktopProfile'
 
@@ -56,6 +57,49 @@ export default function App() {
     setToast(msg)
     setTimeout(() => setToast(''), 2500)
   }
+
+  // ---- Phone back button / back gesture ----
+  // A sentinel history entry keeps the browser from leaving the app on the
+  // first back press. Each press closes the top-most thing (sheet, form,
+  // page, tab) and re-arms the sentinel; on the Home screen it asks to
+  // press back once more before actually exiting.
+  const navRef = useRef({})
+  navRef.current = { page, tab, isDesktop }
+  const exitWindow = useRef({ open: false, timer: null })
+
+  useEffect(() => {
+    if (!employee) return
+    const w = exitWindow.current
+    const arm = () => window.history.pushState({ napocut: true }, '')
+    arm()
+
+    function onPop() {
+      if (runBackHandler()) { arm(); return }
+      const { page, tab, isDesktop } = navRef.current
+      if (page) { setPage(null); arm(); return }
+      if (tab !== 'home') { setTab('home'); arm(); return }
+      // Already on the Home screen.
+      if (isDesktop) { window.history.back(); return }
+      w.open = true
+      flash('Tekan tombol back sekali lagi untuk keluar')
+      // No sentinel during this window: a second press has nothing left to
+      // pop, so the OS/browser exits the app. Re-arm if the window lapses.
+      w.timer = setTimeout(() => { w.open = false; arm() }, 2000)
+    }
+
+    window.addEventListener('popstate', onPop)
+    return () => { window.removeEventListener('popstate', onPop); clearTimeout(w.timer) }
+  }, [employee?.id])
+
+  // Navigating during the "press back again" window cancels it and re-arms.
+  useEffect(() => {
+    const w = exitWindow.current
+    if (w.open) {
+      clearTimeout(w.timer)
+      w.open = false
+      window.history.pushState({ napocut: true }, '')
+    }
+  }, [page, tab, showAllApps, showRequestSheet])
 
   function handleTabChange(key) {
     if (key === 'request') { setShowRequestSheet(true); return }
@@ -122,7 +166,7 @@ export default function App() {
 
   return (
     <div className="app-shell">
-      <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 8 }}>
+      <div style={{ flex: 1, overflowY: (showAllApps || showRequestSheet) ? 'hidden' : 'auto', overflowX: 'hidden', paddingBottom: 8 }}>
         {content}
       </div>
 

@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react'
 import { ArrowLeft, FileQuestion } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
+import { useBackHandler } from '../lib/backStack'
 
 export default function Reimbursement({ onBack, startNew, onToast }) {
   const [showForm, setShowForm] = useState(!!startNew)
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
+  useBackHandler(() => setShowForm(false), showForm)
 
   async function load() {
     setLoading(true)

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { ArrowLeft, FileQuestion, Plus, Search } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
+import { useBackHandler } from '../lib/backStack'
 import { useIsDesktop } from '../lib/useIsDesktop'
 
 const MONTHS_ID = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember']
@@ -14,6 +15,7 @@ export default function Cuti({ onBack, startNew, onToast }) {
   const [monthFilter, setMonthFilter] = useState('')
   const [query, setQuery] = useState('')
   const [detailRow, setDetailRow] = useState(null)
+  useBackHandler(() => setShowForm(false), showForm)
   const isDesktop = useIsDesktop()
 
   async function load() {
@@ -125,7 +127,7 @@ export default function Cuti({ onBack, startNew, onToast }) {
         </p>
 
         {detailRow && (
-          <div style={{ position: 'fixed', inset: 0, background: 'rgba(20,15,10,.45)', zIndex: 40, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+          <div className="modal-overlay" style={{ position: 'fixed', inset: 0, background: 'rgba(20,15,10,.45)', zIndex: 40, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
             onClick={() => setDetailRow(null)}>
             <div onClick={(e) => e.stopPropagation()} style={{
               width: '100%', maxWidth: 480, background: '#fff', borderRadius: 16, padding: 24,

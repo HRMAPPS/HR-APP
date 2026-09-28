@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { ArrowLeft, Calendar, ChevronLeft, ChevronRight, ChevronDown, Clock, Filter, ScrollText, X } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
+import { useBackHandler } from '../lib/backStack'
 import { todayStr } from '../lib/dateUtils'
 import AttendanceDetail from '../components/AttendanceDetail'
 
@@ -33,6 +34,8 @@ export default function Absensi({ employee, onBack, startNew, onToast, onNavigat
   const [shiftStatusFilter, setShiftStatusFilter] = useState('')
   const [showShiftMonthPicker, setShowShiftMonthPicker] = useState(false)
   const [showShiftStatusSheet, setShowShiftStatusSheet] = useState(false)
+  useBackHandler(() => setShowForm(false), showForm)
+  useBackHandler(() => setEventDetail(null), !!eventDetail)
 
   const [monthYear, setMonthYear] = useState(todayParts[0])
   const [monthIndex, setMonthIndex] = useState(todayParts[1] - 1) // 0-based

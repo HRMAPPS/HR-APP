@@ -5,6 +5,7 @@ import {
   ClipboardCheck, Filter,
 } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
+import { useBackHandler } from '../lib/backStack'
 
 const CATEGORIES = [
   { key: 'reimbursement_requests', label: 'Reimbursement', icon: Receipt },
@@ -68,6 +69,7 @@ export default function ApprovalCenter({ onToast, onCountsChange, onOpenCategory
 // header "Inbox" dan bottom nav ikut hilang saat masuk ke satu kategori.
 export function ApprovalCategoryPage({ categoryKey, onBack, onToast }) {
   const [view, setView] = useState({ screen: 'list' })
+  useBackHandler(() => setView({ screen: 'list' }), view.screen === 'detail')
   const category = CATEGORIES.find((c) => c.key === categoryKey)
 
   if (view.screen === 'detail') {

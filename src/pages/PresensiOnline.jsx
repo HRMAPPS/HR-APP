@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { ArrowLeft, LogIn, LogOut, ChevronRight, Info, MapPin, MapPinOff } from 'lucide-react'
 import { useAttendance } from '../lib/useAttendance'
+import { useBackHandler } from '../lib/backStack'
 import { useIsDesktop } from '../lib/useIsDesktop'
 import CameraCapture from '../components/CameraCapture'
 import AttendanceDetail from '../components/AttendanceDetail'
@@ -14,6 +15,7 @@ export default function PresensiOnline({ employee, onBack, onToast, onNavigate }
   const { data, busy, cameraMode, setCameraMode, handleCapture, locationStatus } = useAttendance(employee)
   const [now, setNow] = useState(new Date())
   const [detailType, setDetailType] = useState(null) // 'in' | 'out' | null
+  useBackHandler(() => setDetailType(null), !!detailType)
   const [notes, setNotes] = useState('')
   const isDesktop = useIsDesktop()
 

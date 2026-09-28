@@ -16,6 +16,7 @@ export default function AllAppsSheet({ onClose, onNavigate, onToast, employee })
   if (isDesktop) {
     return (
       <div
+        className="modal-overlay"
         onClick={onClose}
         style={{
           position: 'fixed', inset: 0, background: 'rgba(20,15,10,.45)', zIndex: 40,

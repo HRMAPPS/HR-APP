@@ -37,7 +37,15 @@ html,body,#root{ height: 100%; }
    touching elements that scroll horizontally on purpose (e.g. a tab bar
    with its own overflow-x:auto keeps working, since this only clips
    overflow of body's own box, not a descendant's own scroll region). */
-body{ overflow-x: hidden; }
+html{ overscroll-behavior-x: none; }
+body{ overflow-x: hidden; overscroll-behavior-x: none; }
+
+/* Lock the page behind any open bottom sheet / modal so only the sheet
+   itself can scroll (the app stays "fixed" under it). */
+html:has(.sheet-overlay), body:has(.sheet-overlay),
+html:has(.modal-overlay), body:has(.modal-overlay){ overflow: hidden; }
+.sheet-overlay, .modal-overlay{ overscroll-behavior: contain; }
+.sheet, .modal-overlay > div{ overscroll-behavior: contain; }
 body{
   margin: 0;
   background: #d8d0c6;
@@ -95,6 +103,7 @@ button:active:not(:disabled){ transform: translateY(1px) scale(.98); }
   max-width: 460px;
   width: 100%;
   overflow-x: hidden;
+  overflow-x: clip;
   margin: 0 auto;
   min-height: 100vh;
   background: var(--bg);
@@ -553,3 +562,10 @@ button:active:not(:disabled){ transform: translateY(1px) scale(.98); }
 :focus-visible{ outline: 2px solid var(--blue); outline-offset: 2px; border-radius: 4px; }
 .primary-btn:focus-visible{ outline-offset: 3px; }
 
+
+/* Rows rendered as <button> get width:100% inline; combined with their
+   16px side margins that is 32px wider than the screen, which is what
+   made mobile pages swipe sideways. Cap them to what actually fits. */
+button.list-item, button.attendance-row, button.shift-hist-row{
+  max-width: calc(100% - 32px);
+}

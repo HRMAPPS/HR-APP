@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { ArrowLeft, Search, Phone, Mail, MessageCircle, ChevronUp, ChevronDown, ChevronsUpDown, List, Network, Columns3, User } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
+import { useBackHandler } from '../lib/backStack'
 import { useIsDesktop } from '../lib/useIsDesktop'
 
 function initials(name) {
@@ -45,6 +46,7 @@ export default function Employees({ viewer, onNavigate }) {
   const [count, setCount] = useState(0)
   const [loading, setLoading] = useState(true)
   const [selected, setSelected] = useState(null)
+  useBackHandler(() => setSelected(null), !!selected)
   const [sort, setSort] = useState({ key: 'full_name', dir: 'asc' })
   const isDesktop = useIsDesktop()
 

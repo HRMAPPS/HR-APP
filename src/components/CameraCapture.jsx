@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { X, MapPin, ChevronRight, AlignLeft } from 'lucide-react'
 import { loadFaceModels, extractFaceDescriptor } from '../lib/faceRecognition'
+import { useBackHandler } from '../lib/backStack'
 
 function formatSchedule(shift) {
   if (!shift) return null
@@ -25,6 +26,7 @@ export default function CameraCapture({ mode, employee, shift, initialNotes, onC
   const [error, setError] = useState('')
   const [ready, setReady] = useState(false)
   const [notes, setNotes] = useState(initialNotes || '')
+  useBackHandler(onClose)
   const [coords, setCoords] = useState(null)
   const [submitting, setSubmitting] = useState(false)
   const [modelsReady, setModelsReady] = useState(false)
