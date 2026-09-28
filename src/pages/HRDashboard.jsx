@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabaseClient'
 import { todayStr } from '../lib/dateUtils'
 import { useIsDesktop } from '../lib/useIsDesktop'
 import { linkifyText } from '../lib/linkify'
+import CalendarEventsTab from '../components/CalendarEventsTab'
 
 const TABS = [
   { key: 'overview', label: 'Ringkasan', icon: Users },
@@ -17,6 +18,7 @@ const TABS = [
   { key: 'correction', label: 'Koreksi Absen', icon: ClipboardList },
   { key: 'payslip', label: 'Slip Gaji', icon: Wallet },
   { key: 'pengumuman', label: 'Pengumuman', icon: Bell },
+  { key: 'kalender', label: 'Kalender', icon: CalendarDays },
 ]
 
 export default function HRDashboard({ onBack, onToast }) {
@@ -66,6 +68,7 @@ export default function HRDashboard({ onBack, onToast }) {
         {tab === 'correction' && <CorrectionTab onToast={onToast} isDesktop={isDesktop} />}
         {tab === 'payslip' && <PayslipTab employees={employees} onToast={onToast} isDesktop={isDesktop} />}
         {tab === 'pengumuman' && <AnnouncementTab onToast={onToast} isDesktop={isDesktop} />}
+        {tab === 'kalender' && <CalendarEventsTab onToast={onToast} isDesktop={isDesktop} />}
       </div>
     </div>
   )

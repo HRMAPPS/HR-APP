@@ -213,7 +213,7 @@ function PageRouter({ page, employee, onBack, onToast, onNavigate }) {
     case 'data-new':
       return <DataChangeForm employee={employee} onBack={onBack} onToast={onToast} />
     case 'calendar':
-      return <CalendarPage onBack={onBack} />
+      return <CalendarPage onBack={onBack} onToast={onToast} />
     case 'org-chart':
       return <OrgChart onBack={onBack} onToast={onToast} />
     case 'hr-dashboard':
