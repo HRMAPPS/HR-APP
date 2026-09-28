@@ -31,6 +31,13 @@
 *{ box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html{ scroll-behavior: smooth; }
 html,body,#root{ height: 100%; }
+/* Guards against the page becoming horizontally swipeable on mobile —
+   normally caused by one element somewhere quietly overflowing its
+   container. This clips any such overflow at the body level without
+   touching elements that scroll horizontally on purpose (e.g. a tab bar
+   with its own overflow-x:auto keeps working, since this only clips
+   overflow of body's own box, not a descendant's own scroll region). */
+body{ overflow-x: hidden; }
 body{
   margin: 0;
   background: #d8d0c6;
@@ -86,6 +93,8 @@ button:active:not(:disabled){ transform: translateY(1px) scale(.98); }
 
 .app-shell{
   max-width: 460px;
+  width: 100%;
+  overflow-x: hidden;
   margin: 0 auto;
   min-height: 100vh;
   background: var(--bg);
@@ -290,7 +299,7 @@ button:active:not(:disabled){ transform: translateY(1px) scale(.98); }
 /* ---------- quick menu grid ---------- */
 .quick-grid{
   display:grid; grid-template-columns: repeat(4,1fr);
-  gap: 18px 6px; background:#fff; margin: 12px 16px 0; padding: 20px 10px;
+  gap: 18px 4px; background:#fff; margin: 12px 16px 0; padding: 20px 4px;
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-md);
 }
