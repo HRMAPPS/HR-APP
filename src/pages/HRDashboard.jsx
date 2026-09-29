@@ -663,6 +663,7 @@ function LocationForm({ row, onClose, onSaved }) {
 function AnnouncementTab({ onToast, isDesktop }) {
   const [list, setList] = useState(null)
   const [editing, setEditing] = useState(null)
+  const [detail, setDetail] = useState(null)
 
   async function load() {
     const { data, error } = await supabase.from('announcements').select('*').order('published_at', { ascending: false })
@@ -676,6 +677,7 @@ function AnnouncementTab({ onToast, isDesktop }) {
     const { error } = await supabase.rpc('delete_announcement_hr', { p_id: id })
     if (error) { onToast(error.message); return }
     onToast('Pengumuman dihapus')
+    setDetail((d) => (d?.id === id ? null : d))
     load()
   }
 
@@ -701,47 +703,34 @@ function AnnouncementTab({ onToast, isDesktop }) {
       ) : list.length === 0 ? (
         <div className="empty-state"><p>Belum ada pengumuman. Buat yang pertama untuk ditampilkan di Beranda semua karyawan.</p></div>
       ) : isDesktop ? (
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, alignItems: 'start' }}>
-          {list.map((a) => (
-            <div key={a.id} style={{ background: '#fff', border: '1px solid var(--border)', borderRadius: 14, padding: 18 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10 }}>
-                <div>
-                  <div style={{ fontWeight: 700, fontSize: 15.5 }}>{a.title}</div>
-                  {a.category && (
-                    <span style={{
-                      display: 'inline-block', fontSize: 11, fontWeight: 600, color: 'var(--blue)', background: '#eef2ff',
-                      borderRadius: 20, padding: '2px 10px', marginTop: 6,
-                    }}>
-                      {a.category}
-                    </span>
-                  )}
-                </div>
-                <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
-                  <button onClick={() => copyText(a)} title="Salin" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: 6 }}><Copy size={16} /></button>
-                  <button onClick={() => setEditing(a)} title="Edit" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: 6 }}><Pencil size={16} /></button>
-                  <button onClick={() => remove(a.id)} title="Hapus" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: 6 }}><Trash2 size={16} /></button>
-                </div>
-              </div>
-
-              {a.body && (
-                <p style={{ fontSize: 13.5, color: 'var(--text-muted)', marginTop: 10, lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>
-                  {linkifyText(a.body)}
-                </p>
-              )}
-
-              {a.attachment_url && (
-                <a href={a.attachment_url} target="_blank" rel="noreferrer" style={{
-                  display: 'inline-flex', alignItems: 'center', gap: 5, marginTop: 10, fontSize: 12.5, color: 'var(--blue)', textDecoration: 'none',
-                }}>
-                  <Paperclip size={13} /> {a.attachment_name || 'Lihat lampiran'}
-                </a>
-              )}
-
-              <div style={{ fontSize: 11.5, color: 'var(--text-muted)', marginTop: 14, paddingTop: 10, borderTop: '1px solid var(--border)' }}>
-                {fmtDate(a.published_at)}{a.author ? ` · ${a.author}` : ''}
-              </div>
-            </div>
-          ))}
+        <div className="dsk-table-wrap">
+          <table className="dsk-table">
+            <thead><tr><th>Judul</th><th>Kategori</th><th>Tanggal</th><th>Penulis</th><th>Aksi</th></tr></thead>
+            <tbody>
+              {list.map((a) => (
+                <tr key={a.id} style={{ cursor: 'pointer' }} onClick={() => setDetail(a)}>
+                  <td style={{ fontWeight: 600 }}>{a.title}</td>
+                  <td>
+                    {a.category && (
+                      <span style={{
+                        display: 'inline-block', fontSize: 11, fontWeight: 600, color: '#96101c', background: '#f4e8e9',
+                        borderRadius: 20, padding: '2px 10px',
+                      }}>
+                        {a.category}
+                      </span>
+                    )}
+                  </td>
+                  <td>{fmtDate(a.published_at)}</td>
+                  <td>{a.author || '-'}</td>
+                  <td className="acts" onClick={(e) => e.stopPropagation()}>
+                    <button className="btn muted" onClick={() => copyText(a)} title="Salin"><Copy size={13} /></button>
+                    <button className="btn" onClick={() => setEditing(a)} title="Edit"><Pencil size={13} /></button>
+                    <button className="btn muted" onClick={() => remove(a.id)} title="Hapus"><Trash2 size={13} /></button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       ) : (
         list.map((a) => (
@@ -774,6 +763,47 @@ function AnnouncementTab({ onToast, isDesktop }) {
             </div>
           </div>
         ))
+      )}
+
+      {detail && (
+        <div className="modal-overlay dcuti-overlay" onClick={() => setDetail(null)}>
+          <div className="dcuti-modal narrow" onClick={(e) => e.stopPropagation()}>
+            <div className="dcuti-modal-body">
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
+                <h2 style={{ margin: 0, flex: 1, borderBottom: 'none', paddingBottom: 0 }}>{detail.title}</h2>
+                <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
+                  <button onClick={() => copyText(detail)} title="Salin" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: 6 }}><Copy size={16} /></button>
+                  <button onClick={() => { setEditing(detail); setDetail(null) }} title="Edit" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: 6 }}><Pencil size={16} /></button>
+                  <button onClick={() => remove(detail.id)} title="Hapus" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: 6 }}><Trash2 size={16} /></button>
+                </div>
+              </div>
+              {detail.category && (
+                <span style={{
+                  display: 'inline-block', fontSize: 11, fontWeight: 600, color: '#96101c', background: '#f4e8e9',
+                  borderRadius: 20, padding: '2px 10px', marginTop: 10,
+                }}>
+                  {detail.category}
+                </span>
+              )}
+              <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 10, paddingBottom: 18, borderBottom: '1px solid #ddd' }}>
+                {fmtDate(detail.published_at)}{detail.author ? ` · ${detail.author}` : ''}
+              </div>
+              {detail.body && (
+                <p style={{ fontSize: 14.5, marginTop: 18, lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>
+                  {linkifyText(detail.body)}
+                </p>
+              )}
+              {detail.attachment_url && (
+                <a href={detail.attachment_url} target="_blank" rel="noreferrer" style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 5, marginTop: 14, fontSize: 13, color: '#96101c',
+                }}>
+                  <Paperclip size={14} /> {detail.attachment_name || 'Lihat lampiran'}
+                </a>
+              )}
+            </div>
+            <div className="dcuti-modal-foot"><button className="dcal-outline-btn" onClick={() => setDetail(null)}>TUTUP</button></div>
+          </div>
+        </div>
       )}
 
       {editing !== null && (
