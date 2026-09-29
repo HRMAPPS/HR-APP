@@ -33,22 +33,64 @@ export default function CalendarEventsTab({ onToast, isDesktop }) {
   const shown = (list || []).filter((e) => !filter || e.kind === filter)
 
   return (
-    <div className="form-page">
-      <button
-        className="primary-btn"
-        style={{ marginBottom: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, ...(isDesktop ? { maxWidth: 260 } : {}) }}
-        onClick={() => setEditing({})}
-      >
-        <Plus size={18} /> Tambah acara
-      </button>
+    <div className="form-page" style={isDesktop ? { maxWidth: 'none' } : undefined}>
+      {isDesktop ? (
+        <div className="dsk-toolbar" style={{ marginBottom: 4 }}>
+          <button className="dsk-outline-btn" style={{ display: 'flex', alignItems: 'center', gap: 8 }} onClick={() => setEditing({})}>
+            <Plus size={16} /> TAMBAH ACARA
+          </button>
+          <div className="tabs" style={{ padding: 0, border: 'none' }}>
+            {[['', 'Semua'], ['activity', 'Aktivitas'], ['holiday', 'Hari libur']].map(([k, l]) => (
+              <button key={k} className={filter === k ? 'active' : ''} onClick={() => setFilter(k)}>{l}</button>
+            ))}
+          </div>
+        </div>
+      ) : (
+        <>
+          <button
+            className="primary-btn"
+            style={{ marginBottom: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
+            onClick={() => setEditing({})}
+          >
+            <Plus size={18} /> Tambah acara
+          </button>
 
-      <div className="tabs" style={{ padding: '0 0 6px', gap: 18 }}>
-        {[['', 'Semua'], ['activity', 'Aktivitas'], ['holiday', 'Hari libur']].map(([k, l]) => (
-          <button key={k} className={filter === k ? 'active' : ''} onClick={() => setFilter(k)}>{l}</button>
-        ))}
-      </div>
+          <div className="tabs" style={{ padding: '0 0 6px', gap: 18 }}>
+            {[['', 'Semua'], ['activity', 'Aktivitas'], ['holiday', 'Hari libur']].map(([k, l]) => (
+              <button key={k} className={filter === k ? 'active' : ''} onClick={() => setFilter(k)}>{l}</button>
+            ))}
+          </div>
+        </>
+      )}
 
-      {list === null ? (
+      {isDesktop ? (
+        <div className="dsk-table-wrap" style={{ marginTop: 18 }}>
+          <table className="dsk-table">
+            <thead><tr><th>Acara</th><th>Jenis</th><th>Tanggal</th><th>Jam / Lokasi</th><th>Aksi</th></tr></thead>
+            <tbody>
+              {list === null ? <tr><td colSpan={5} className="empty">Memuat...</td></tr>
+                : shown.length === 0 ? <tr><td colSpan={5} className="empty">Belum ada acara. Tambahkan aktivitas atau hari libur agar muncul di Kalender semua karyawan.</td></tr>
+                : shown.map((e) => (
+                  <tr key={e.id}>
+                    <td style={{ fontWeight: 600 }}>{e.title}{e.description && <div style={{ fontWeight: 400, fontSize: 12.5, color: '#888', marginTop: 3, whiteSpace: 'pre-wrap' }}>{e.description}</div>}</td>
+                    <td>
+                      <span style={{
+                        display: 'inline-block', fontSize: 10.5, fontWeight: 700, borderRadius: 20, padding: '2px 10px',
+                        color: e.kind === 'holiday' ? 'var(--red)' : '#96101c', background: e.kind === 'holiday' ? 'var(--red-soft)' : '#f4e8e9',
+                      }}>{KIND_LABEL[e.kind]}</span>
+                    </td>
+                    <td>{e.start_date === e.end_date ? fmt(e.start_date) : `${fmt(e.start_date)} – ${fmt(e.end_date)}`}</td>
+                    <td>{[e.start_time ? `${e.start_time.slice(0, 5)}${e.end_time ? '–' + e.end_time.slice(0, 5) : ''}` : null, e.location].filter(Boolean).join(' · ') || '-'}</td>
+                    <td className="acts">
+                      <button className="btn" onClick={() => setEditing(e)}><Pencil size={13} /></button>
+                      <button className="btn muted" onClick={() => remove(e.id)}><Trash2 size={13} /></button>
+                    </td>
+                  </tr>
+                ))}
+            </tbody>
+          </table>
+        </div>
+      ) : list === null ? (
         <div className="empty-state"><p>Memuat...</p></div>
       ) : shown.length === 0 ? (
         <div className="empty-state"><p>Belum ada acara. Tambahkan aktivitas atau hari libur agar muncul di Kalender semua karyawan.</p></div>

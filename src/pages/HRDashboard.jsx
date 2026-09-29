@@ -56,7 +56,7 @@ export default function HRDashboard({ onBack, onToast }) {
         ))}
       </div>
 
-      <div style={isDesktop ? { maxWidth: 920 } : undefined}>
+      <div style={isDesktop ? { maxWidth: 1280 } : undefined}>
         {tab === 'overview' && <OverviewTab onToast={onToast} onGo={setTab} isDesktop={isDesktop} />}
         {tab === 'karyawan' && <KaryawanTab employees={employees} onReload={loadEmployees} onToast={onToast} isDesktop={isDesktop} />}
         {tab === 'shift' && <ShiftTab employees={employees} onToast={onToast} isDesktop={isDesktop} />}
@@ -209,20 +209,48 @@ function KaryawanTab({ employees, onReload, onToast, isDesktop }) {
         </>
       )}
 
-      {filtered.map((e) => (
-        <div key={e.id} className="list-item">
-          <div className="info">
-            <div className="name">{e.full_name} {e.role !== 'employee' && <span style={{ fontSize: 11, background: '#FBE8D6', color: '#B4650C', padding: '2px 7px', borderRadius: 6, marginLeft: 6 }}>{e.role?.toUpperCase()}</span>}</div>
-            <div className="sub">
-              {e.employee_code} · {e.position || '-'}{e.employment_status === 'inactive' ? ' · Nonaktif' : ''}
-              {e.default_shift_name && ` · ${e.default_shift_name} (${e.default_shift_start?.slice(0, 5)}-${e.default_shift_end?.slice(0, 5)})`}
+      {isDesktop ? (
+        <div className="dsk-table-wrap" style={{ marginTop: 4 }}>
+          <table className="dsk-table">
+            <thead>
+              <tr><th>Karyawan</th><th>Kode</th><th>Jabatan</th><th>Departemen</th><th>Shift</th><th>Status</th><th>Aksi</th></tr>
+            </thead>
+            <tbody>
+              {filtered.length === 0 ? (
+                <tr><td colSpan={7} className="empty">Tidak ada karyawan yang cocok.</td></tr>
+              ) : filtered.map((e) => (
+                <tr key={e.id}>
+                  <td style={{ fontWeight: 600 }}>
+                    {e.full_name}
+                    {e.role !== 'employee' && <span style={{ fontSize: 10.5, background: '#FBE8D6', color: '#B4650C', padding: '2px 7px', borderRadius: 6, marginLeft: 8, fontWeight: 700 }}>{e.role?.toUpperCase()}</span>}
+                  </td>
+                  <td>{e.employee_code || '-'}</td>
+                  <td>{e.position || '-'}</td>
+                  <td>{e.department || '-'}</td>
+                  <td>{e.default_shift_name ? `${e.default_shift_name} (${e.default_shift_start?.slice(0, 5)}-${e.default_shift_end?.slice(0, 5)})` : '-'}</td>
+                  <td>{e.employment_status === 'inactive' ? <span style={{ color: '#C0392B' }}>Nonaktif</span> : <span style={{ color: '#1E8E5A' }}>Aktif</span>}</td>
+                  <td><button className="btn" onClick={() => setEditing(e)}><Pencil size={13} style={{ verticalAlign: '-2px', marginRight: 4 }} />Edit</button></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        filtered.map((e) => (
+          <div key={e.id} className="list-item">
+            <div className="info">
+              <div className="name">{e.full_name} {e.role !== 'employee' && <span style={{ fontSize: 11, background: '#FBE8D6', color: '#B4650C', padding: '2px 7px', borderRadius: 6, marginLeft: 6 }}>{e.role?.toUpperCase()}</span>}</div>
+              <div className="sub">
+                {e.employee_code} · {e.position || '-'}{e.employment_status === 'inactive' ? ' · Nonaktif' : ''}
+                {e.default_shift_name && ` · ${e.default_shift_name} (${e.default_shift_start?.slice(0, 5)}-${e.default_shift_end?.slice(0, 5)})`}
+              </div>
+            </div>
+            <div className="actions">
+              <button onClick={() => setEditing(e)}><Pencil size={17} /></button>
             </div>
           </div>
-          <div className="actions">
-            <button onClick={() => setEditing(e)}><Pencil size={17} /></button>
-          </div>
-        </div>
-      ))}
+        ))
+      )}
 
       {editing !== null && (
         <EmployeeForm

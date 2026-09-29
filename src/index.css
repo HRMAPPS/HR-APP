@@ -714,6 +714,7 @@ button:active:not(:disabled){ transform: translateY(1px) scale(.98); }
    sehingga tampilan mobile sama sekali tidak berubah.
    --------------------------------------------------------------------- */
 .desktop-main .form-page{ padding: 6px 4px 28px; max-width: 640px; }
+.desktop-main-inner-full .form-page{ max-width: none; }
 .desktop-main .field{ margin-bottom: 22px; }
 .desktop-main .field label{
   font-size:11.5px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:#8a8078; margin-bottom:8px;
