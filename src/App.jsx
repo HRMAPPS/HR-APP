@@ -156,7 +156,7 @@ export default function App() {
       <>
         <DesktopShell employee={employee} active={page ? null : tab} onChange={handleTabChange} onNavigate={navigateTo} onOpenAllApps={() => setShowAllApps(true)}
           onSignOut={signOut} onToast={flash} unread={unreadCount}
-          wide={!page && tab === 'employees' ? 'full' : !page && (tab === 'account' || tab === 'home' || tab === 'inbox') ? true : page === 'org-chart' ? 'chart' : (page === 'hr-dashboard' || page === 'lembur' || page === 'cuti' || page === 'calendar') ? 'full' : false}>
+          wide={!page && tab === 'employees' ? 'full' : !page && (tab === 'account' || tab === 'home' || tab === 'inbox') ? true : page === 'org-chart' ? 'chart' : (page === 'hr-dashboard' || page === 'lembur' || page === 'cuti' || page === 'calendar' || page === 'reimbursement' || page === 'team-report' || page === 'slip-gaji' || page?.startsWith('approval:') || page?.startsWith('announcement:')) ? 'full' : false}>
           {content}
         </DesktopShell>
         {overlays}
@@ -195,9 +195,9 @@ function PageRouter({ page, employee, onBack, onToast, onNavigate }) {
     case 'reimbursement-new':
       return <Reimbursement onBack={onBack} startNew onToast={onToast} />
     case 'cuti':
-      return <Cuti onBack={onBack} onToast={onToast} />
+      return <Cuti onBack={onBack} onToast={onToast} employee={employee} />
     case 'cuti-new':
-      return <Cuti onBack={onBack} startNew onToast={onToast} />
+      return <Cuti onBack={onBack} startNew onToast={onToast} employee={employee} />
     case 'lembur':
       return <Lembur onBack={onBack} onToast={onToast} />
     case 'lembur-new':

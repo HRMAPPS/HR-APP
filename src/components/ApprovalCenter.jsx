@@ -1,4 +1,6 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import { useIsDesktop } from '../lib/useIsDesktop'
+import { openLeaveAttachment } from '../lib/leaveAttachment'
 import {
   ChevronRight, ArrowLeft, Search, Check, X, Receipt, CalendarDays, MapPin,
   AlarmClock, RefreshCw, UserCircle, FileText, Target, ListChecks, CheckSquare, UserPlus, FolderInput,
@@ -26,6 +28,7 @@ const CAT_ICON_BG = '#EAF1FB'
 const CAT_ICON_FG = '#3B6ECF'
 
 export default function ApprovalCenter({ onToast, onCountsChange, onOpenCategory }) {
+  const isDesktop = useIsDesktop()
   const [counts, setCounts] = useState({})
 
   async function loadCounts() {
@@ -36,6 +39,24 @@ export default function ApprovalCenter({ onToast, onCountsChange, onOpenCategory
     }
   }
   useEffect(() => { loadCounts() }, [])
+
+  if (isDesktop) {
+    return (
+      <div className="dsk-grid-cards">
+        {CATEGORIES.map((c) => {
+          const Icon = c.icon
+          const count = counts[c.key]
+          return (
+            <button key={c.key} className="dsk-card" onClick={() => c.noBacking ? onToast?.(`${c.label} segera hadir`) : onOpenCategory(c.key)}>
+              <span className="ic"><Icon size={19} /></span>
+              <span className="lbl">{c.label}</span>
+              {count > 0 && <span className="count">{count} menunggu</span>}
+            </button>
+          )
+        })}
+      </div>
+    )
+  }
 
   return (
     <div>
@@ -98,8 +119,10 @@ function initials(name) {
 }
 
 function ApprovalList({ category, onBack, onOpen, onToast }) {
+  const isDesktop = useIsDesktop()
   const [rows, setRows] = useState(null)
   const [query, setQuery] = useState('')
+  const [status, setStatus] = useState('')
 
   async function load() {
     const { data, error } = await supabase.rpc('get_my_approvals', { p_status: null })
@@ -108,7 +131,55 @@ function ApprovalList({ category, onBack, onOpen, onToast }) {
   }
   useEffect(() => { load() }, [])
 
-  const filtered = (rows || []).filter((r) => r.requester_name?.toLowerCase().includes(query.toLowerCase()))
+  const filtered = (rows || []).filter((r) =>
+    r.requester_name?.toLowerCase().includes(query.toLowerCase()) && (!status || r.status === status)
+  )
+
+  if (isDesktop) {
+    return (
+      <div className="dsk-page">
+        <h1 className="dsk-title">{category.label}</h1>
+        <p className="dsk-sub">Pengajuan yang perlu Anda tinjau</p>
+        <div className="dsk-toolbar">
+          <div className="dsk-filters">
+            <label>Status
+              <select value={status} onChange={(e) => setStatus(e.target.value)}>
+                <option value="">-- Semua --</option>
+                <option value="pending">Menunggu persetujuan</option>
+                <option value="approved">Disetujui</option>
+                <option value="rejected">Ditolak</option>
+                <option value="cancelled">Dibatalkan</option>
+              </select>
+            </label>
+          </div>
+          <label style={{ width: 240 }}>Cari nama pemohon
+            <div className="dsk-search"><Search size={15} /><input value={query} onChange={(e) => setQuery(e.target.value)} /></div>
+          </label>
+        </div>
+        <div className="dsk-table-wrap">
+          <table className="dsk-table">
+            <thead><tr><th>Diajukan</th><th>Pemohon</th><th>Keterangan</th><th>Status</th><th>Aksi</th></tr></thead>
+            <tbody>
+              {rows === null ? <tr><td colSpan={5} className="empty">Memuat...</td></tr>
+                : filtered.length === 0 ? <tr><td colSpan={5} className="empty">Tidak ada pengajuan.</td></tr>
+                : filtered.map((r) => (
+                  <tr key={r.id}>
+                    <td>{fmtDay(r.created_at)}</td>
+                    <td style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <span className="avatar" style={{ width: 30, height: 30, fontSize: 11 }}>{initials(r.requester_name)}</span>
+                      {r.requester_name}
+                    </td>
+                    <td className="wrap">{titleFor(category.key, r)}{bulletsFor(category.key, r).length ? ' — ' + bulletsFor(category.key, r).join('; ') : ''}</td>
+                    <td><StatusPill status={r.status} /></td>
+                    <td><button className="btn" onClick={() => onOpen(r.id)}>Detail</button></td>
+                  </tr>
+                ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    )
+  }
 
   // Kelompokkan per tanggal pengajuan (created_at), seperti referensi.
   const groups = []
@@ -226,6 +297,7 @@ function StatusPill({ status }) {
 }
 
 function ApprovalDetail({ table, id, onBack, onToast, onDecided }) {
+  const isDesktop = useIsDesktop()
   const [detail, setDetail] = useState(null)
   const [busy, setBusy] = useState(false)
 
@@ -259,6 +331,40 @@ function ApprovalDetail({ table, id, onBack, onToast, onDecided }) {
   const cat = CATEGORIES.find((c) => c.key === table)
   const submittedAt = new Date(r.created_at).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) +
     ' pukul ' + new Date(r.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
+
+  if (isDesktop) {
+    return (
+      <div className="dsk-page" style={{ maxWidth: 720 }}>
+        <button className="dsk-outline-btn" style={{ marginBottom: 24 }} onClick={onBack}>&larr; KEMBALI</button>
+        <h1 className="dsk-title" style={{ fontSize: 27 }}>{cat?.label}</h1>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14, margin: '22px 0 6px' }}>
+          <div className="avatar" style={{ width: 48, height: 48, fontSize: 16 }}>{initials(detail.requester_name)}</div>
+          <div>
+            <div style={{ fontWeight: 700, fontSize: 16.5 }}>{detail.requester_name}</div>
+            <div style={{ fontSize: 12.5, color: 'var(--text-muted)' }}>{submittedAt}</div>
+          </div>
+          <span style={{ marginLeft: 'auto' }}><StatusPill status={r.status} /></span>
+        </div>
+
+        <div className="dcuti-detail" style={{ marginTop: 20 }}>
+          <FieldRows table={table} row={r} />
+          {r.reason && <div className="dl"><span>Alasan</span><div>{r.reason}</div></div>}
+        </div>
+
+        <div style={{ marginTop: 30 }}>
+          <div style={{ fontSize: 12.5, fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase', color: '#96101c', marginBottom: 14 }}>Status pengajuan</div>
+          <Timeline row={r} detail={detail} />
+        </div>
+
+        {r.status === 'pending' && (
+          <div style={{ display: 'flex', gap: 12, marginTop: 26 }}>
+            <button className="dsk-outline-btn" style={{ borderColor: '#C0392B', color: '#C0392B' }} disabled={busy} onClick={() => decide(false)}>TOLAK</button>
+            <button className="dsk-outline-btn" style={{ borderColor: '#1E8E5A', color: '#1E8E5A' }} disabled={busy} onClick={() => decide(true)}>SETUJUI</button>
+          </div>
+        )}
+      </div>
+    )
+  }
 
   return (
     <div>
@@ -317,6 +423,15 @@ function FieldRows({ table, row }) {
   const rows = []
   if (table === 'leave_requests') {
     rows.push(['Tanggal', `${fmt(row.start_date)} - ${fmt(row.end_date)} (${row.total_days} hari)`])
+    if (row.request_type === 'half_day') rows.push(['Tipe', 'Setengah hari'])
+    if (row.attachment_path) {
+      rows.push(['Lampiran', (
+        <button type="button" onClick={() => openLeaveAttachment(row.attachment_path)}
+          style={{ background: 'none', border: 'none', padding: 0, color: 'var(--blue)', cursor: 'pointer', font: 'inherit', fontWeight: 600, textDecoration: 'underline' }}>
+          {row.attachment_name || 'Buka lampiran'}
+        </button>
+      )])
+    }
   } else if (table === 'overtime_requests') {
     rows.push(['Tanggal', fmt(row.work_date)])
     rows.push(['Jam', `${row.start_time?.slice(0, 5)} - ${row.end_time?.slice(0, 5)}`])

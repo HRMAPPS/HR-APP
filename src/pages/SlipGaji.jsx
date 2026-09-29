@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { ArrowLeft, Download, Wallet } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../lib/useAuth'
+import { useIsDesktop } from '../lib/useIsDesktop'
 
 function rupiah(n) {
   return Number(n || 0).toLocaleString('id-ID')
@@ -153,6 +154,7 @@ async function downloadPayslipPdf(payslip, employee) {
 }
 
 export default function SlipGaji({ onBack, onToast }) {
+  const isDesktop = useIsDesktop()
   const { employee } = useAuth()
   const [payslips, setPayslips] = useState(null)
   const [downloading, setDownloading] = useState(null)
@@ -172,6 +174,42 @@ export default function SlipGaji({ onBack, onToast }) {
     } finally {
       setDownloading(null)
     }
+  }
+
+  if (isDesktop) {
+    return (
+      <div className="dsk-page">
+        <h1 className="dsk-title">Slip Gaji</h1>
+        <p className="dsk-sub">Riwayat slip gaji Anda, tersedia untuk diunduh sebagai PDF</p>
+
+        <div className="dsk-table-wrap">
+          <table className="dsk-table">
+            <thead><tr><th>Periode</th><th>Take home pay</th><th>Aksi</th></tr></thead>
+            <tbody>
+              {payslips === null ? <tr><td colSpan={3} className="empty">Memuat...</td></tr>
+                : payslips.length === 0 ? <tr><td colSpan={3} className="empty">Belum ada slip gaji.</td></tr>
+                : payslips.map((p) => (
+                  <tr key={p.id}>
+                    <td style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <span style={{ width: 32, height: 32, borderRadius: 9, background: '#DCEEF0', color: '#2C8C9C', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <Wallet size={16} />
+                      </span>
+                      {new Date(p.period).toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })}
+                    </td>
+                    <td>Rp {rupiah(p.net_salary)}</td>
+                    <td>
+                      <button className="btn" onClick={() => handleDownload(p)} disabled={downloading === p.id}>
+                        <Download size={13} style={{ verticalAlign: '-2px', marginRight: 4 }} />
+                        {downloading === p.id ? 'Membuat PDF...' : 'Unduh PDF'}
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    )
   }
 
   return (

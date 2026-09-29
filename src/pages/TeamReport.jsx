@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { ArrowLeft, ChevronLeft, ChevronRight, User, X } from 'lucide-react'
+import { useIsDesktop } from '../lib/useIsDesktop'
 import { supabase } from '../lib/supabaseClient'
 import { todayStr } from '../lib/dateUtils'
 
@@ -32,6 +33,7 @@ function TeamAvatar({ url, name, size = 42 }) {
 // tim saya" in the reference app: a swipeable stats strip up top, then a
 // list of each report's clock in/out for that day.
 export default function TeamReport({ employee, onBack }) {
+  const isDesktop = useIsDesktop()
   const [date, setDate] = useState(todayStr())
   const [rows, setRows] = useState([])
   const [loading, setLoading] = useState(true)
@@ -106,6 +108,65 @@ export default function TeamReport({ employee, onBack }) {
     if (w) setStatsPage(Math.round(e.currentTarget.scrollLeft / w))
   }
 
+  if (isDesktop) {
+    return (
+      <div className="dsk-page">
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+          <div>
+            <h1 className="dsk-title">Laporan Tim Saya</h1>
+            <p className="dsk-sub" style={{ marginBottom: 0 }}>{dateLabel}</p>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+            <button className="icon-btn" onClick={() => setDate((d) => addDays(d, -1))}><ChevronLeft size={20} /></button>
+            <button className="icon-btn" style={{ opacity: isToday ? 0.35 : 1, pointerEvents: isToday ? 'none' : 'auto' }}
+              onClick={() => setDate((d) => addDays(d, 1))}><ChevronRight size={20} /></button>
+          </div>
+        </div>
+
+        <div className="dsk-stats" style={{ marginTop: 26 }}>
+          <div><b>{stats.onTime}</b><span>tepat waktu</span></div>
+          <div><b>{stats.late}</b><span>terlambat masuk</span></div>
+          <div><b>{stats.earlyOut}</b><span>pulang lebih awal</span></div>
+          <div><b>{stats.clockedIn}</b><span>sudah clock in</span></div>
+          <div><b>{stats.noClockOut}</b><span>tidak clock out</span></div>
+          <div><b>{stats.invalid}</b><span>tidak valid</span></div>
+          <div><b>{stats.absent}</b><span>tidak hadir</span></div>
+          <div><b>{stats.cuti}</b><span>cuti</span></div>
+        </div>
+
+        <div className="dsk-table-wrap">
+          <table className="dsk-table">
+            <thead><tr><th>Karyawan</th><th>Departemen</th><th>Shift</th><th>Clock in</th><th>Clock out</th><th>Status</th></tr></thead>
+            <tbody>
+              {loading ? <tr><td colSpan={6} className="empty">Memuat...</td></tr>
+                : rows.length === 0 ? <tr><td colSpan={6} className="empty">Karyawan yang atasannya Anda akan muncul di sini.</td></tr>
+                : rows.map((r) => (
+                  <tr key={r.emp.id} style={{ cursor: 'pointer' }} onClick={() => setDetail(r)}>
+                    <td style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <TeamAvatar url={r.emp.avatar_url} name={r.emp.full_name} size={30} />
+                      {r.emp.full_name}
+                    </td>
+                    <td>{r.emp.department || '-'}</td>
+                    <td>{r.shift ? (r.shift.is_day_off ? 'Libur' : `${r.shift.name || ''} ${r.shift.start_time?.slice(0, 5) || ''}-${r.shift.end_time?.slice(0, 5) || ''}`) : '-'}</td>
+                    <td style={{ color: r.att?.clock_in ? '#1e8e5a' : '#bbb', fontWeight: 600 }}>{fmtTime(r.att?.clock_in) || '-'}</td>
+                    <td style={{ color: r.att?.clock_out ? '#3B6ECF' : '#bbb', fontWeight: 600 }}>{fmtTime(r.att?.clock_out) || '-'}</td>
+                    <td>
+                      {r.onLeave ? 'Cuti' : r.dayOff ? 'Hari libur' : r.absent ? 'Tidak hadir'
+                        : r.invalid ? 'Tidak valid' : r.late ? 'Terlambat masuk'
+                        : r.noClockOut ? 'Belum clock out' : r.earlyOut ? 'Pulang lebih awal'
+                        : r.onTime ? 'Tepat waktu' : '-'}
+                    </td>
+                  </tr>
+                ))}
+            </tbody>
+          </table>
+        </div>
+
+        {detail && <TeamReportDetailModal detail={detail} onClose={() => setDetail(null)} />}
+      </div>
+    )
+  }
+
   return (
     <div>
       <div className="page-header">
@@ -177,7 +238,7 @@ export default function TeamReport({ employee, onBack }) {
         ))}
       </div>
 
-      {detail && (
+      {detail && !isDesktop && (
         <div className="sheet-overlay" onClick={() => setDetail(null)}>
           <div className="sheet" onClick={(e) => e.stopPropagation()}>
             <div className="sheet-handle" />
@@ -214,6 +275,32 @@ export default function TeamReport({ employee, onBack }) {
           </div>
         </div>
       )}
+    </div>
+  )
+}
+
+
+function TeamReportDetailModal({ detail, onClose }) {
+  const line = (label, value) => <div className="dl"><span>{label}</span><div>{value}</div></div>
+  return (
+    <div className="modal-overlay dcuti-overlay" onClick={onClose}>
+      <div className="dcuti-modal narrow" onClick={(e) => e.stopPropagation()}>
+        <div className="dcuti-modal-body">
+          <h2>{detail.emp.full_name}</h2>
+          <div className="dcuti-detail">
+            {line('Jabatan', detail.emp.position || '-')}
+            {line('Departemen', detail.emp.department || '-')}
+            {line('Shift', detail.shift ? (detail.shift.is_day_off ? 'Libur' : `${detail.shift.name} (${detail.shift.start_time?.slice(0, 5)}-${detail.shift.end_time?.slice(0, 5)})`) : '-')}
+            {line('Clock in', fmtTime(detail.att?.clock_in) || '-')}
+            {line('Clock out', fmtTime(detail.att?.clock_out) || '-')}
+            {line('Status', detail.onLeave ? 'Cuti' : detail.dayOff ? 'Hari libur' : detail.absent ? 'Tidak hadir'
+              : detail.invalid ? 'Tidak valid' : detail.late ? 'Terlambat masuk'
+              : detail.noClockOut ? 'Belum clock out' : detail.earlyOut ? 'Pulang lebih awal'
+              : detail.onTime ? 'Tepat waktu' : '-')}
+          </div>
+        </div>
+        <div className="dcuti-modal-foot"><button className="dcal-outline-btn" onClick={onClose}>TUTUP</button></div>
+      </div>
     </div>
   )
 }

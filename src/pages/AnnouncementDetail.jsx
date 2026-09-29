@@ -2,11 +2,13 @@ import { useEffect, useState } from 'react'
 import { ArrowLeft, User, FileText } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
 import { linkifyText } from '../lib/linkify'
+import { useIsDesktop } from '../lib/useIsDesktop'
 
 // Full-page announcement view, opened from the "Pengumuman" lists on
 // Home. Shows the full body text and, when present, a downloadable
 // attachment card.
 export default function AnnouncementDetail({ id, onBack }) {
+  const isDesktop = useIsDesktop()
   const [a, setA] = useState(null)
   const [loading, setLoading] = useState(true)
 
@@ -20,9 +22,14 @@ export default function AnnouncementDetail({ id, onBack }) {
 
   return (
     <div>
-      <div className="topbar" style={{ paddingBottom: 4 }}>
-        <button className="icon-btn" onClick={onBack}><ArrowLeft size={22} /></button>
-      </div>
+      {!isDesktop && (
+        <div className="topbar" style={{ paddingBottom: 4 }}>
+          <button className="icon-btn" onClick={onBack}><ArrowLeft size={22} /></button>
+        </div>
+      )}
+      {isDesktop && (
+        <button className="dsk-outline-btn" style={{ margin: '32px 0 0 48px' }} onClick={onBack}>&larr; KEMBALI</button>
+      )}
 
       {loading ? (
         <div className="empty-state"><p>Memuat...</p></div>
@@ -30,8 +37,8 @@ export default function AnnouncementDetail({ id, onBack }) {
         <div className="empty-state"><p>Pengumuman tidak ditemukan.</p></div>
       ) : (
         <>
-          <div style={{ padding: '4px 18px 22px' }}>
-            <h1 style={{ fontSize: 22, fontWeight: 800, margin: '2px 0 14px', lineHeight: 1.3 }}>{a.title}</h1>
+          <div style={isDesktop ? { padding: '28px 48px 22px', maxWidth: 760 } : { padding: '4px 18px 22px' }}>
+            <h1 style={isDesktop ? { fontSize: 32, fontWeight: 300, margin: '2px 0 18px', lineHeight: 1.25, letterSpacing: '-.01em' } : { fontSize: 22, fontWeight: 800, margin: '2px 0 14px', lineHeight: 1.3 }}>{a.title}</h1>
 
             {a.author && (
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6, fontSize: 14, color: 'var(--text-muted)' }}>
@@ -58,9 +65,9 @@ export default function AnnouncementDetail({ id, onBack }) {
             )}
           </div>
 
-          <div style={{ background: '#fff', borderRadius: '22px 22px 0 0', padding: '24px 18px', minHeight: '55vh' }}>
+          <div style={isDesktop ? { padding: '0 48px 40px', maxWidth: 760 } : { background: '#fff', borderRadius: '22px 22px 0 0', padding: '24px 18px', minHeight: '55vh' }}>
             {a.body && (
-              <div style={{ fontSize: 14.5, lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>{linkifyText(a.body)}</div>
+              <div style={{ fontSize: isDesktop ? 16 : 14.5, lineHeight: 1.8, whiteSpace: 'pre-wrap', color: isDesktop ? '#3a3530' : 'inherit' }}>{linkifyText(a.body)}</div>
             )}
 
             {a.attachment_url && (

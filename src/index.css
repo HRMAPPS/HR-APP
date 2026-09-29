@@ -638,6 +638,163 @@ button:active:not(:disabled){ transform: translateY(1px) scale(.98); }
 .dcal-pager button:disabled{ opacity:.35; cursor:default; }
 @media (max-width: 1100px){ .dcal-card{ grid-template-columns: 1fr; } }
 
+/* ---------- cuti (desktop) ---------- */
+.dcuti{ background:#fff; padding: 40px 48px 36px; min-height:100%; color:var(--text); }
+.dcuti-title{ margin:0; font-size:36px; font-weight:300; letter-spacing:-.01em; }
+.dcuti-sub{ margin:22px 0 14px; font-style:italic; color:#6b6560; font-size:15px; }
+.dcuti-stats{ display:flex; gap:14px; margin-bottom:18px; }
+.dcuti-stats div{ background:#faf6f6; border:1px solid #efdcdd; border-radius:10px; padding:10px 18px; display:flex; align-items:baseline; gap:8px; }
+.dcuti-stats b{ font-size:22px; color:#96101c; }
+.dcuti-stats span{ font-size:13px; color:#6b6560; }
+.dcuti-btns{ display:flex; gap:10px; margin-bottom: 30px; }
+.dcuti-tabs{ display:grid; grid-template-columns:repeat(3,1fr); margin-bottom: 26px; }
+.dcuti-tabs button{
+  background:none; border:none; border-left:3px solid #d6d6d6; padding:22px 0; font-size:12.5px; font-weight:700;
+  letter-spacing:.14em; color:#8b8b8b; cursor:pointer;
+}
+.dcuti-tabs button:first-child{ border-left:none; }
+.dcuti-tabs button.active{ color:#96101c; }
+.dcuti-tabs button:hover{ color:#96101c; }
+.dcuti-filters{ display:flex; gap:22px; align-items:flex-end; margin-bottom: 18px; flex-wrap:wrap; }
+.dcuti-filters label{ display:flex; flex-direction:column; gap:4px; font-size:12px; font-weight:600; width:210px; }
+.dcuti-filters select, .dcuti-search{ border:none; border-bottom:1px solid #9a9a9a; padding:8px 2px; font-size:15px; background:none; outline:none; font-family:inherit; }
+.dcuti-search{ display:flex; align-items:center; gap:6px; color:#888; }
+.dcuti-search input{ border:none; outline:none; flex:1; font-size:14.5px; background:none; min-width:0; }
+.dcuti-table-wrap{ overflow-x:auto; border-bottom:2px solid #222; }
+.dcuti-table{ width:100%; border-collapse:collapse; font-size:14px; }
+.dcuti-table thead th{ background:#f4e8e9; color:#96101c; font-weight:700; text-align:left; padding:12px 10px; white-space:nowrap; font-size:13.5px; }
+.dcuti-table thead th.sortable{ cursor:pointer; user-select:none; }
+.dcuti-table td{ padding:14px 10px; border-top:1px solid #eee; vertical-align:middle; white-space:nowrap; }
+.dcuti-table td.wrap{ white-space:normal; max-width:220px; }
+.dcuti-table td.empty{ text-align:center; color:#888; padding:34px; }
+.dcuti-table td.acts{ display:flex; gap:8px; }
+.dcuti-table tbody tr:hover{ background:#fdfafa; }
+.dcuti-table button{ background:none; border:1.5px solid #77706a; color:#4b4541; border-radius:8px; padding:5px 12px; font-size:12.5px; font-weight:600; cursor:pointer; }
+.dcuti-table button:hover{ background:#f5f0f0; }
+.dcuti-table button.muted{ border-color:transparent; color:#777; }
+.dcuti-table button.link, .dcuti-detail button.link{ border:none; padding:0; color:var(--blue); display:inline-flex; align-items:center; gap:4px; background:none; cursor:pointer; font:inherit; }
+.dcuti-foot{ display:flex; align-items:center; justify-content:space-between; margin-top:18px; font-size:14px; }
+.dcuti-foot .pager{ display:flex; align-items:center; gap:14px; }
+.dcuti-foot .pager button{ background:none; border:none; cursor:pointer; color:#555; display:flex; padding:4px; border-radius:50%; }
+.dcuti-foot .pager button:hover:not(:disabled){ background:#f0eaea; }
+.dcuti-foot .pager button:disabled{ opacity:.3; cursor:default; }
+
+.dcuti-overlay{ position:fixed; inset:0; background:rgba(20,15,10,.5); z-index:50; display:flex; align-items:center; justify-content:center; padding:24px; }
+.dcuti-modal{ background:#e4e4e4; padding:16px; width:100%; max-width:1050px; max-height:92vh; display:flex; flex-direction:column; box-shadow:0 20px 60px rgba(20,15,10,.35); }
+.dcuti-modal.narrow{ max-width:1000px; }
+.dcuti-modal-body{ background:#fafafa; padding:24px 24px 28px; overflow-y:auto; flex:1; min-height:360px; }
+.dcuti-modal-body h2{ margin:0 0 22px; padding-bottom:14px; border-bottom:1px solid #ddd; color:#96101c; font-size:25px; font-weight:600; }
+.dcuti-modal-foot{ background:#fafafa; border-top:1px solid #e3e3e3; display:flex; justify-content:flex-end; gap:8px; padding:12px 18px; }
+.dcuti-modal .dcal-outline-btn:disabled{ opacity:.5; cursor:default; }
+.dcuti-form{ display:grid; grid-template-columns:1fr 1fr; gap:36px; }
+.dcuti-form .col{ display:flex; flex-direction:column; gap:22px; padding:0 8px; }
+.fld{ display:flex; flex-direction:column; gap:4px; font-size:12.5px; font-weight:600; color:#333; }
+.fld select, .fld input, .fld textarea, select.under, input.under, textarea.under{
+  border:none; border-bottom:1px solid #8f8f8f; background:none; padding:8px 2px; font-size:15.5px; font-family:inherit; outline:none; font-weight:400; color:#222;
+}
+.fld select:focus, .fld input:focus, .fld textarea:focus, select.under:focus, input.under:focus, textarea.under:focus{ border-bottom-color:#96101c; }
+.fld textarea, textarea.under{ resize:vertical; }
+.dcuti-form .two{ display:grid; grid-template-columns:1fr 1fr; gap:22px; }
+.dcuti-form .hint{ margin:-10px 0 0; font-size:13px; color:#666; }
+.attach{ display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+.attach .chip{ display:inline-flex; align-items:center; gap:6px; background:#eee; border-radius:6px; padding:5px 8px; font-size:12.5px; max-width:260px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.attach .chip button{ background:none; border:none; cursor:pointer; display:flex; color:#777; padding:0; }
+.chk{ display:flex; align-items:center; gap:10px; font-size:15.5px; }
+.chk input{ width:18px; height:18px; accent-color:#96101c; }
+.dcuti-rows > div{ display:grid; grid-template-columns:300px 1fr; align-items:center; gap:10px; padding:14px 8px; border-bottom:1px solid #e6e6e6; }
+.dcuti-rows span{ font-size:13.5px; font-weight:700; letter-spacing:.12em; color:#444; }
+.dcuti-rows b{ font-size:14.5px; letter-spacing:.06em; text-transform:uppercase; color:#333; }
+.dcuti-detail .dl{ display:grid; grid-template-columns:200px 1fr; gap:10px; padding:11px 4px; border-bottom:1px solid #eee; font-size:14.5px; }
+.dcuti-detail .dl > span{ color:#777; font-size:13.5px; }
+
+/* ---------------------------------------------------------------------
+   Polesan premium untuk desktop pada halaman yang masih memakai kerangka
+   umum (form-page, list-item, tabs, dsb.) alih-alih dashboard khusus
+   seperti Cuti/Kalender. Semua aturan di sini dibatasi pada ".desktop-main"
+   sehingga tampilan mobile sama sekali tidak berubah.
+   --------------------------------------------------------------------- */
+.desktop-main .form-page{ padding: 6px 4px 28px; max-width: 640px; }
+.desktop-main .field{ margin-bottom: 22px; }
+.desktop-main .field label{
+  font-size:11.5px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:#8a8078; margin-bottom:8px;
+}
+.desktop-main .field input, .desktop-main .field select, .desktop-main .field textarea{
+  border:none; border-bottom:1.5px solid #ddd6cd; border-radius:0; background:none; padding:9px 2px; font-size:16px;
+}
+.desktop-main .field input:focus, .desktop-main .field select:focus, .desktop-main .field textarea:focus{
+  border-bottom-color:#96101c; box-shadow:none;
+}
+.desktop-main .primary-btn{
+  background: linear-gradient(165deg, #ab1522, #7d0d18); box-shadow: 0 8px 20px rgba(150,16,28,.28);
+  border-radius:10px; font-weight:700; letter-spacing:.03em; padding:14px;
+}
+.desktop-main .primary-btn:hover:not(:disabled){ filter: brightness(1.06); }
+.desktop-main .fab-bottom-btn{
+  background: linear-gradient(165deg, #ab1522, #7d0d18); box-shadow: 0 8px 20px rgba(150,16,28,.28); border-radius:10px;
+}
+
+.desktop-main .list-item{ transition: box-shadow .15s, transform .15s; cursor:pointer; }
+.desktop-main .list-item:hover{ box-shadow: var(--shadow-md); transform: translateY(-1px); }
+.desktop-main .list-item:active{ transform:none; }
+
+.desktop-main .empty-state{ padding: 60px 20px; }
+.desktop-main .empty-state h3{ font-size:19px; font-weight:600; }
+
+.desktop-main .balance-card{
+  background: linear-gradient(150deg, #faf6f6, #fdfaf9); border:1px solid #efdcdd; box-shadow:none;
+}
+.desktop-main .balance-card h4{ font-size:12px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:#96101c; }
+
+.desktop-main .tabs{ gap: 28px; border-bottom: 1px solid var(--border); padding: 0 0 0; }
+.desktop-main .tabs button{
+  font-size:12.5px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:#9a9089; padding:0 0 14px; border-bottom-width:2px;
+}
+.desktop-main .tabs button.active{ color:#96101c; border-color:#96101c; }
+.desktop-main .tabs button:hover{ color:#96101c; }
+
+.desktop-main .menu-row{ border-radius:12px; transition: background .15s; }
+.desktop-main .menu-row:hover{ background:#faf7f3; }
+
+/* Reusable premium dashboard shell — headline + stat chips, for pages that
+   get a bespoke desktop layout (mirrors .dcuti but generic, non-cuti name). */
+.dsk-page{ background:#fff; padding: 40px 48px 40px; min-height:100%; color:var(--text); }
+.dsk-title{ margin:0; font-size:34px; font-weight:300; letter-spacing:-.01em; }
+.dsk-sub{ margin:20px 0 26px; font-style:italic; color:#6b6560; font-size:15px; }
+.dsk-stats{ display:flex; gap:14px; margin-bottom:26px; flex-wrap:wrap; }
+.dsk-stats div{ background:#faf6f6; border:1px solid #efdcdd; border-radius:10px; padding:12px 20px; display:flex; align-items:baseline; gap:9px; min-width:120px; }
+.dsk-stats b{ font-size:23px; color:#96101c; }
+.dsk-stats span{ font-size:12.5px; color:#6b6560; }
+.dsk-toolbar{ display:flex; align-items:center; justify-content:space-between; gap:18px; margin-bottom:18px; flex-wrap:wrap; }
+.dsk-filters{ display:flex; gap:22px; align-items:flex-end; flex-wrap:wrap; }
+.dsk-filters label{ display:flex; flex-direction:column; gap:4px; font-size:12px; font-weight:600; width:190px; }
+.dsk-filters select{ border:none; border-bottom:1px solid #9a9a9a; padding:8px 2px; font-size:15px; background:none; outline:none; font-family:inherit; }
+.dsk-search{ display:flex; align-items:center; gap:6px; color:#888; border-bottom:1px solid #9a9a9a; padding:8px 2px; width:220px; }
+.dsk-search input{ border:none; outline:none; flex:1; font-size:14.5px; background:none; min-width:0; }
+.dsk-table-wrap{ overflow-x:auto; border-bottom:2px solid #222; }
+.dsk-table{ width:100%; border-collapse:collapse; font-size:14px; }
+.dsk-table thead th{ background:#f4e8e9; color:#96101c; font-weight:700; text-align:left; padding:12px 10px; white-space:nowrap; font-size:13.5px; }
+.dsk-table td{ padding:14px 10px; border-top:1px solid #eee; vertical-align:middle; }
+.dsk-table td.wrap{ white-space:normal; max-width:260px; }
+.dsk-table td.empty{ text-align:center; color:#888; padding:34px; }
+.dsk-table td.acts{ display:flex; gap:8px; white-space:nowrap; }
+.dsk-table tbody tr{ transition: background .12s; }
+.dsk-table tbody tr:hover{ background:#fdfafa; }
+.dsk-table button.btn{ background:none; border:1.5px solid #77706a; color:#4b4541; border-radius:8px; padding:5px 12px; font-size:12.5px; font-weight:600; cursor:pointer; }
+.dsk-table button.btn:hover{ background:#f5f0f0; }
+.dsk-table button.btn.muted{ border-color:transparent; color:#777; }
+.dsk-outline-btn{ background:none; border:2px solid #77706a; color:#4b4541; font-weight:700; font-size:11.5px; letter-spacing:.14em; padding:12px 20px; border-radius:10px; cursor:pointer; }
+.dsk-outline-btn:hover{ background:#fff; box-shadow: var(--shadow-sm); }
+.dsk-empty{ text-align:center; color:#888; padding:70px 20px; }
+.dsk-grid-cards{ display:grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap:14px; }
+.dsk-card{
+  border:1px solid var(--border); border-radius:14px; padding:20px; display:flex; flex-direction:column; gap:10px;
+  cursor:pointer; transition: box-shadow .15s, transform .15s; background:#fff; text-align:left;
+}
+.dsk-card:hover{ box-shadow: var(--shadow-md); transform: translateY(-2px); border-color:#e6d3d4; }
+.dsk-card .ic{ width:40px; height:40px; border-radius:11px; background:#f4e8e9; color:#96101c; display:flex; align-items:center; justify-content:center; }
+.dsk-card .lbl{ font-weight:700; font-size:15px; }
+.dsk-card .count{ font-size:12.5px; color:#96101c; font-weight:700; }
+
 .toast{
   position: fixed; bottom: 90px; left:50%; transform:translateX(-50%);
   background:#2c2c2c; color:#fff; padding:11px 20px; border-radius:30px; font-size:14px; z-index:60;
