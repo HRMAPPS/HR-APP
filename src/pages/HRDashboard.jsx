@@ -145,9 +145,22 @@ function OverviewTab({ onToast, onGo, isDesktop }) {
     { label: 'Reimburse Menunggu', value: stats.pending_reimbursement, go: 'reimbursement' },
   ]
 
+  if (isDesktop) {
+    return (
+      <div className="dsk-grid-cards" style={{ gridTemplateColumns: 'repeat(5, 1fr)' }}>
+        {cards.map((c) => (
+          <button key={c.label} className="dsk-card" onClick={() => onGo(c.go)}>
+            <span style={{ fontSize: 30, fontWeight: 300, color: '#96101c' }}>{c.value}</span>
+            <span className="lbl" style={{ fontWeight: 600, fontSize: 13, color: '#6b6560' }}>{c.label}</span>
+          </button>
+        ))}
+      </div>
+    )
+  }
+
   return (
     <div className="form-page">
-      <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? 'repeat(5, 1fr)' : '1fr 1fr', gap: 12 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
         {cards.map((c) => (
           <button key={c.label} onClick={() => onGo(c.go)} style={{
             textAlign: 'left', background: '#fff', border: 'none', borderRadius: 14, padding: 16,
@@ -416,14 +429,31 @@ function ShiftTab({ employees, onToast, isDesktop }) {
       {sub === 'jenis' && (
         <div>
           <button
-            className="primary-btn"
-            style={{ marginBottom: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, ...(isDesktop ? { maxWidth: 260 } : {}) }}
+            className={isDesktop ? 'dsk-outline-btn' : 'primary-btn'}
+            style={isDesktop
+              ? { marginBottom: 18, display: 'inline-flex', alignItems: 'center', gap: 8 }
+              : { marginBottom: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
             onClick={() => setEditingShift({})}
           >
-            <Plus size={18} /> Tambah jenis shift
+            <Plus size={isDesktop ? 15 : 18} /> {isDesktop ? 'TAMBAH JENIS SHIFT' : 'Tambah jenis shift'}
           </button>
           {shifts.length === 0 ? (
             <div className="empty-state"><p>Belum ada jenis shift. Tambah dulu, misalnya "Office Staff 08:00 - 17:00".</p></div>
+          ) : isDesktop ? (
+            <div className="dsk-table-wrap">
+              <table className="dsk-table">
+                <thead><tr><th>Nama shift</th><th>Jam</th><th>Aksi</th></tr></thead>
+                <tbody>
+                  {shifts.map((s) => (
+                    <tr key={s.id}>
+                      <td style={{ fontWeight: 600 }}>{s.name}</td>
+                      <td>{s.start_time?.slice(0, 5)} - {s.end_time?.slice(0, 5)}</td>
+                      <td><button className="btn" onClick={() => setEditingShift(s)}><Pencil size={13} /></button></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           ) : (
             shifts.map((s) => (
               <div key={s.id} className="list-item">
@@ -511,17 +541,38 @@ function LocationTab({ onToast, isDesktop }) {
       </div>
 
       <button
-        className="primary-btn"
-        style={{ marginBottom: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, ...(isDesktop ? { maxWidth: 260 } : {}) }}
+        className={isDesktop ? 'dsk-outline-btn' : 'primary-btn'}
+        style={isDesktop
+          ? { marginBottom: 18, display: 'inline-flex', alignItems: 'center', gap: 8 }
+          : { marginBottom: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
         onClick={() => setEditing({})}
       >
-        <Plus size={18} /> Tambah lokasi
+        <Plus size={isDesktop ? 15 : 18} /> {isDesktop ? 'TAMBAH LOKASI' : 'Tambah lokasi'}
       </button>
 
       {locations === null ? (
         <div className="empty-state"><p>Memuat...</p></div>
       ) : locations.length === 0 ? (
         <div className="empty-state"><p>Belum ada lokasi absen. Tambah dulu, misalnya "Kantor Pusat".</p></div>
+      ) : isDesktop ? (
+        <div className="dsk-table-wrap">
+          <table className="dsk-table">
+            <thead><tr><th>Nama lokasi</th><th>Radius</th><th>Koordinat</th><th>Aksi</th></tr></thead>
+            <tbody>
+              {locations.map((l) => (
+                <tr key={l.id}>
+                  <td style={{ fontWeight: 600 }}>{l.name}</td>
+                  <td>{l.radius_meters} m</td>
+                  <td>{Number(l.lat).toFixed(5)}, {Number(l.lng).toFixed(5)}</td>
+                  <td className="acts">
+                    <button className="btn" onClick={() => setEditing(l)}><Pencil size={13} /></button>
+                    <button className="btn muted" onClick={() => remove(l.id)}><Trash2 size={13} /></button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       ) : (
         locations.map((l) => (
           <div key={l.id} className="list-item">
@@ -636,11 +687,13 @@ function AnnouncementTab({ onToast, isDesktop }) {
   return (
     <div className="form-page">
       <button
-        className="primary-btn"
-        style={{ marginBottom: 18, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, ...(isDesktop ? { maxWidth: 260 } : {}) }}
+        className={isDesktop ? 'dsk-outline-btn' : 'primary-btn'}
+        style={isDesktop
+          ? { marginBottom: 22, display: 'inline-flex', alignItems: 'center', gap: 8 }
+          : { marginBottom: 18, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
         onClick={() => setEditing({})}
       >
-        <Plus size={18} /> Buat pengumuman
+        <Plus size={isDesktop ? 15 : 18} /> {isDesktop ? 'BUAT PENGUMUMAN' : 'Buat pengumuman'}
       </button>
 
       {list === null ? (
@@ -852,17 +905,38 @@ function ScheduleManager({ employees, shifts, onToast, isDesktop }) {
       </div>
 
       <button
-        className="primary-btn"
-        style={{ marginBottom: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, ...(isDesktop ? { maxWidth: 260 } : {}) }}
+        className={isDesktop ? 'dsk-outline-btn' : 'primary-btn'}
+        style={isDesktop
+          ? { marginBottom: 18, display: 'inline-flex', alignItems: 'center', gap: 8 }
+          : { marginBottom: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
         onClick={() => setShowBulk(true)}
       >
-        <Plus size={18} /> Atur Jadwal (massal)
+        <Plus size={isDesktop ? 15 : 18} /> {isDesktop ? 'ATUR JADWAL (MASSAL)' : 'Atur Jadwal (massal)'}
       </button>
 
       {rows === null ? (
         <div className="empty-state"><p>Memuat...</p></div>
       ) : rows.length === 0 ? (
         <div className="empty-state"><p>Belum ada jadwal di rentang ini.</p></div>
+      ) : isDesktop ? (
+        <div className="dsk-table-wrap">
+          <table className="dsk-table">
+            <thead><tr><th>Karyawan</th><th>Tanggal</th><th>Jadwal</th><th>Aksi</th></tr></thead>
+            <tbody>
+              {rows.map((r) => (
+                <tr key={r.id}>
+                  <td style={{ fontWeight: 600 }}>{r.full_name}</td>
+                  <td>{fmtDate(r.work_date)}</td>
+                  <td>{r.is_day_off ? 'Libur' : (r.shift_name ? `${r.shift_name} (${r.start_time?.slice(0, 5)}-${r.end_time?.slice(0, 5)})` : 'Belum ada shift')}</td>
+                  <td className="acts">
+                    <button className="btn" onClick={() => setEditingRow(r)}><Pencil size={13} /></button>
+                    <button className="btn muted" onClick={() => remove(r.id)}><Trash2 size={13} /></button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       ) : (
         rows.map((r) => (
           <div key={r.id} className="list-item">
@@ -1030,7 +1104,7 @@ function BulkScheduleForm({ employees, shifts, onClose, onSaved }) {
 // ---------------------------------------------------------------------
 // Absensi — semua karyawan, filter tanggal + cari nama
 // ---------------------------------------------------------------------
-function AttendanceTab({ onToast }) {
+function AttendanceTab({ onToast, isDesktop }) {
   const today = todayStr()
   const firstOfMonth = today.slice(0, 8) + '01'
   const [start, setStart] = useState(firstOfMonth)
@@ -1046,6 +1120,52 @@ function AttendanceTab({ onToast }) {
   useEffect(() => { load() }, [start, end])
 
   const filtered = (rows || []).filter((r) => r.full_name.toLowerCase().includes(query.toLowerCase()))
+
+  if (isDesktop) {
+    return (
+      <div>
+        <div className="dsk-toolbar">
+          <div className="dsk-filters">
+            <label>Dari<input type="date" value={start} onChange={(e) => setStart(e.target.value)} /></label>
+            <label>Sampai<input type="date" value={end} onChange={(e) => setEnd(e.target.value)} /></label>
+            <label style={{ width: 240 }}>Cari nama<div className="dsk-search"><Search size={15} /><input value={query} onChange={(e) => setQuery(e.target.value)} /></div></label>
+          </div>
+          <ExportButton style={{ marginBottom: 0 }} onClick={() => exportToExcel(`absensi-${start}_${end}.xlsx`, 'Absensi', filtered, [
+            ['Kode Karyawan', 'employee_code'], ['Nama', 'full_name'], ['Divisi', (r) => r.department || '-'],
+            ['Tanggal', (r) => fmtDate(r.work_date)], ['Week', (r) => isoWeek(r.work_date)],
+            ['Jam Masuk', (r) => fmtTime(r.clock_in)], ['Jam Keluar', (r) => fmtTime(r.clock_out)],
+            ['Status', (r) => (r.status === 'late' ? 'Telat' : 'Tepat waktu')],
+          ])} />
+        </div>
+        <div className="dsk-table-wrap">
+          <table className="dsk-table">
+            <thead><tr><th>Karyawan</th><th>Tanggal</th><th>Masuk</th><th>Keluar</th><th>Status</th></tr></thead>
+            <tbody>
+              {rows === null ? <tr><td colSpan={5} className="empty">Memuat...</td></tr>
+                : filtered.length === 0 ? <tr><td colSpan={5} className="empty">Tidak ada data absensi pada rentang ini.</td></tr>
+                : filtered.map((r) => (
+                  <tr key={r.id}>
+                    <td style={{ fontWeight: 600 }}>{r.full_name}</td>
+                    <td>{fmtDate(r.work_date)}</td>
+                    <td>{fmtTime(r.clock_in)}</td>
+                    <td>{fmtTime(r.clock_out)}</td>
+                    <td>
+                      <span style={{
+                        fontSize: 11.5, fontWeight: 700, padding: '3px 10px', borderRadius: 8,
+                        background: r.status === 'late' ? '#FBE1DD' : '#E1F3EA',
+                        color: r.status === 'late' ? '#C0392B' : '#1E8E5A',
+                      }}>
+                        {r.status === 'late' ? 'Telat' : 'Tepat waktu'}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="form-page">
@@ -1100,7 +1220,7 @@ function AttendanceTab({ onToast }) {
 // ---------------------------------------------------------------------
 // Generic approval list (dipakai untuk Cuti, Lembur, Reimburse)
 // ---------------------------------------------------------------------
-function ApprovalTab({ onToast, rpcName, table, statusOptions, renderRow, exportColumns, exportFilename }) {
+function ApprovalTab({ onToast, rpcName, table, statusOptions, renderRow, exportColumns, exportFilename, isDesktop, desktopColumns }) {
   const [status, setStatus] = useState('pending')
   const [rows, setRows] = useState(null)
 
@@ -1116,6 +1236,50 @@ function ApprovalTab({ onToast, rpcName, table, statusOptions, renderRow, export
     if (error) { onToast(error.message); return }
     onToast(approve ? 'Disetujui' : 'Ditolak')
     load()
+  }
+
+  if (isDesktop) {
+    return (
+      <div>
+        <div className="dsk-toolbar">
+          <div className="tabs" style={{ padding: 0, border: 'none' }}>
+            {statusOptions.map(([v, l]) => (
+              <button key={v} className={status === v ? 'active' : ''} onClick={() => setStatus(v)}>{l}</button>
+            ))}
+          </div>
+          {rows && rows.length > 0 && (
+            <ExportButton style={{ marginBottom: 0 }} onClick={() => exportToExcel(`${exportFilename}-${status || 'semua'}.xlsx`, 'Data', rows, exportColumns)} />
+          )}
+        </div>
+        <div className="dsk-table-wrap">
+          <table className="dsk-table">
+            <thead><tr><th>Karyawan</th>{desktopColumns.map(([label]) => <th key={label}>{label}</th>)}<th>Status / Aksi</th></tr></thead>
+            <tbody>
+              {rows === null ? <tr><td colSpan={desktopColumns.length + 2} className="empty">Memuat...</td></tr>
+                : rows.length === 0 ? <tr><td colSpan={desktopColumns.length + 2} className="empty">Tidak ada pengajuan.</td></tr>
+                : rows.map((r) => (
+                  <tr key={r.id}>
+                    <td style={{ fontWeight: 600 }}>{r.full_name}</td>
+                    {desktopColumns.map(([label, fn]) => <td key={label} className="wrap">{fn(r)}</td>)}
+                    <td>
+                      {r.status === 'pending' ? (
+                        <div style={{ display: 'flex', gap: 6 }}>
+                          <button className="btn" style={{ borderColor: '#1E8E5A', color: '#1E8E5A' }} onClick={() => decide(r.id, true)}><Check size={13} /></button>
+                          <button className="btn" style={{ borderColor: '#C0392B', color: '#C0392B' }} onClick={() => decide(r.id, false)}><X size={13} /></button>
+                        </div>
+                      ) : (
+                        <span className={r.status === 'approved' ? 'status-approved' : 'status-rejected'}>
+                          {r.status === 'approved' ? 'Disetujui' : 'Ditolak'}
+                        </span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -1159,14 +1323,19 @@ function ApprovalTab({ onToast, rpcName, table, statusOptions, renderRow, export
 
 const STATUS_OPTS = [['pending', 'Menunggu'], ['approved', 'Disetujui'], ['rejected', 'Ditolak'], ['', 'Semua']]
 
-function LeaveTab({ onToast }) {
+function LeaveTab({ onToast, isDesktop }) {
   return (
     <ApprovalTab
-      onToast={onToast} rpcName="get_hr_leave" table="leave_requests" statusOptions={STATUS_OPTS}
+      onToast={onToast} isDesktop={isDesktop} rpcName="get_hr_leave" table="leave_requests" statusOptions={STATUS_OPTS}
       exportFilename="cuti" exportColumns={[
         ['Kode Karyawan', 'employee_code'], ['Nama', 'full_name'], ['Jenis Cuti', 'leave_type_name'],
         ['Mulai', (r) => fmtDate(r.start_date)], ['Selesai', (r) => fmtDate(r.end_date)], ['Total Hari', 'total_days'],
         ['Alasan', 'reason'], ['Status', 'status'],
+      ]}
+      desktopColumns={[
+        ['Jenis', (r) => r.leave_type_name || 'Cuti'],
+        ['Periode', (r) => `${fmtDate(r.start_date)} - ${fmtDate(r.end_date)} (${r.total_days} hari)`],
+        ['Alasan', (r) => r.reason || '-'],
       ]}
       renderRow={(r) => (
         <div>
@@ -1179,14 +1348,19 @@ function LeaveTab({ onToast }) {
   )
 }
 
-function OvertimeTab({ onToast }) {
+function OvertimeTab({ onToast, isDesktop }) {
   return (
     <ApprovalTab
-      onToast={onToast} rpcName="get_hr_overtime" table="overtime_requests" statusOptions={STATUS_OPTS}
+      onToast={onToast} isDesktop={isDesktop} rpcName="get_hr_overtime" table="overtime_requests" statusOptions={STATUS_OPTS}
       exportFilename="lembur" exportColumns={[
         ['Kode Karyawan', 'employee_code'], ['Nama', 'full_name'], ['Tanggal', (r) => fmtDate(r.work_date)],
         ['Jam Mulai', (r) => r.start_time?.slice(0, 5)], ['Jam Selesai', (r) => r.end_time?.slice(0, 5)],
         ['Alasan', 'reason'], ['Status', 'status'],
+      ]}
+      desktopColumns={[
+        ['Tanggal', (r) => fmtDate(r.work_date)],
+        ['Jam', (r) => `${r.start_time?.slice(0, 5)} - ${r.end_time?.slice(0, 5)}`],
+        ['Alasan', (r) => r.reason || '-'],
       ]}
       renderRow={(r) => (
         <div>
@@ -1199,13 +1373,18 @@ function OvertimeTab({ onToast }) {
   )
 }
 
-function ReimbursementTab({ onToast }) {
+function ReimbursementTab({ onToast, isDesktop }) {
   return (
     <ApprovalTab
-      onToast={onToast} rpcName="get_hr_reimbursement" table="reimbursement_requests" statusOptions={STATUS_OPTS}
+      onToast={onToast} isDesktop={isDesktop} rpcName="get_hr_reimbursement" table="reimbursement_requests" statusOptions={STATUS_OPTS}
       exportFilename="reimbursement" exportColumns={[
         ['Kode Karyawan', 'employee_code'], ['Nama', 'full_name'], ['Kategori', 'category_name'],
         ['Jumlah', 'amount'], ['Deskripsi', 'description'], ['Bulan', 'submitted_month'], ['Status', 'status'],
+      ]}
+      desktopColumns={[
+        ['Kategori', (r) => r.category_name || 'Reimburse'],
+        ['Jumlah', (r) => rupiah(r.amount)],
+        ['Deskripsi', (r) => r.description || '-'],
       ]}
       renderRow={(r) => (
         <div>
@@ -1218,14 +1397,24 @@ function ReimbursementTab({ onToast }) {
   )
 }
 
-function CorrectionTab({ onToast }) {
+function CorrectionTab({ onToast, isDesktop }) {
   return (
     <ApprovalTab
-      onToast={onToast} rpcName="get_hr_absence" table="absence_requests" statusOptions={STATUS_OPTS}
+      onToast={onToast} isDesktop={isDesktop} rpcName="get_hr_absence" table="absence_requests" statusOptions={STATUS_OPTS}
       exportFilename="koreksi-absensi" exportColumns={[
         ['Kode Karyawan', 'employee_code'], ['Nama', 'full_name'], ['Tanggal', (r) => fmtDate(r.work_date)],
         ['Jenis Masalah', 'issue_type'], ['Usulan Clock In', (r) => r.requested_clock_in?.slice(0, 5)],
         ['Usulan Clock Out', (r) => r.requested_clock_out?.slice(0, 5)], ['Alasan', 'reason'], ['Status', 'status'],
+      ]}
+      desktopColumns={[
+        ['Tanggal', (r) => fmtDate(r.work_date)],
+        ['Usulan jam', (r) => `${r.requested_clock_in?.slice(0, 5) || '-'} - ${r.requested_clock_out?.slice(0, 5) || '-'}`],
+        ['Alasan', (r) => (
+          <>
+            {r.reason || '-'}
+            {r.attachment_url && <><br /><a href={r.attachment_url} target="_blank" rel="noreferrer" style={{ color: '#96101c' }}>Lihat lampiran</a></>}
+          </>
+        )],
       ]}
       renderRow={(r) => (
         <div>
@@ -1377,7 +1566,7 @@ function PayslipTab({ employees, onToast, isDesktop }) {
         Setiap kali slip gaji disimpan/diimpor, karyawan otomatis dapat notifikasi di app (ikon 🔔 untuk kirim ulang).
       </div>
 
-      <div style={{ display: 'flex', gap: 10, marginBottom: 10 }}>
+      <div style={{ display: 'flex', gap: 10, marginBottom: 10, ...(isDesktop ? { maxWidth: 480 } : {}) }}>
         <button className="primary-btn" style={{ flex: 1, background: '#eee', color: '#333', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }} onClick={() => downloadTemplate(employees)}>
           <Download size={17} /> Template Excel
         </button>
@@ -1393,27 +1582,50 @@ function PayslipTab({ employees, onToast, isDesktop }) {
         </div>
       )}
 
-      <button
-        className="primary-btn"
-        style={{ marginBottom: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, ...(isDesktop ? { maxWidth: 260 } : {}) }}
-        onClick={() => setEditing({})}
-      >
-        <Plus size={18} /> Input manual
-      </button>
-
-      {rows && rows.length > 0 && (
-        <ExportButton onClick={() => exportToExcel('data-slip-gaji.xlsx', 'Slip Gaji', rows, [
-          ['Kode Karyawan', 'employee_code'], ['Nama', 'full_name'], ['Jabatan', 'position'], ['Departemen', 'department'],
-          ['Periode', (r) => new Date(r.period).toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })],
-          ['Gaji Pokok', 'basic_salary'], ['Total Tunjangan', 'allowances'], ['Total Potongan', 'deductions'],
-          ['Take Home Pay', 'net_salary'], ['PTKP', 'ptkp_status'], ['Badan Usaha', 'business_entity'], ['Catatan', 'notes'],
-        ])} />
-      )}
+      <div className={isDesktop ? 'dsk-toolbar' : undefined} style={isDesktop ? { marginTop: 6 } : undefined}>
+        <button
+          className={isDesktop ? 'dsk-outline-btn' : 'primary-btn'}
+          style={isDesktop
+            ? { display: 'inline-flex', alignItems: 'center', gap: 8 }
+            : { marginBottom: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
+          onClick={() => setEditing({})}
+        >
+          <Plus size={isDesktop ? 15 : 18} /> {isDesktop ? 'INPUT MANUAL' : 'Input manual'}
+        </button>
+        {rows && rows.length > 0 && (
+          <ExportButton style={isDesktop ? { marginBottom: 0 } : undefined} onClick={() => exportToExcel('data-slip-gaji.xlsx', 'Slip Gaji', rows, [
+            ['Kode Karyawan', 'employee_code'], ['Nama', 'full_name'], ['Jabatan', 'position'], ['Departemen', 'department'],
+            ['Periode', (r) => new Date(r.period).toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })],
+            ['Gaji Pokok', 'basic_salary'], ['Total Tunjangan', 'allowances'], ['Total Potongan', 'deductions'],
+            ['Take Home Pay', 'net_salary'], ['PTKP', 'ptkp_status'], ['Badan Usaha', 'business_entity'], ['Catatan', 'notes'],
+          ])} />
+        )}
+      </div>
 
       {rows === null ? (
         <div className="empty-state"><p>Memuat...</p></div>
       ) : rows.length === 0 ? (
         <div className="empty-state"><p>Belum ada slip gaji yang diinput.</p></div>
+      ) : isDesktop ? (
+        <div className="dsk-table-wrap">
+          <table className="dsk-table">
+            <thead><tr><th>Karyawan</th><th>Periode</th><th>Take home pay</th><th>Aksi</th></tr></thead>
+            <tbody>
+              {rows.map((r) => (
+                <tr key={r.id}>
+                  <td style={{ fontWeight: 600 }}>{r.full_name}</td>
+                  <td>{new Date(r.period).toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })}</td>
+                  <td>{rupiah(r.net_salary)}</td>
+                  <td className="acts">
+                    <button className="btn" onClick={() => resend(r)} title="Kirim ulang notifikasi"><Bell size={13} /></button>
+                    <button className="btn" onClick={() => setEditing(r)}><Pencil size={13} /></button>
+                    <button className="btn muted" onClick={() => remove(r.id)}><Trash2 size={13} /></button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       ) : (
         rows.map((r) => (
           <div key={r.id} className="list-item">

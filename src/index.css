@@ -769,6 +769,7 @@ button:active:not(:disabled){ transform: translateY(1px) scale(.98); }
 .dsk-filters{ display:flex; gap:22px; align-items:flex-end; flex-wrap:wrap; }
 .dsk-filters label{ display:flex; flex-direction:column; gap:4px; font-size:12px; font-weight:600; width:190px; }
 .dsk-filters select{ border:none; border-bottom:1px solid #9a9a9a; padding:8px 2px; font-size:15px; background:none; outline:none; font-family:inherit; }
+.dsk-filters input{ border:none; border-bottom:1px solid #9a9a9a; padding:8px 2px; font-size:14.5px; background:none; outline:none; font-family:inherit; }
 .dsk-search{ display:flex; align-items:center; gap:6px; color:#888; border-bottom:1px solid #9a9a9a; padding:8px 2px; width:220px; }
 .dsk-search input{ border:none; outline:none; flex:1; font-size:14.5px; background:none; min-width:0; }
 .dsk-table-wrap{ overflow-x:auto; border-bottom:2px solid #222; }
