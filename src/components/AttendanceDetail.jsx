@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import { ArrowLeft, MapPin } from 'lucide-react'
-import { useSignedPhoto } from '../lib/signedUrl'
 
 function formatTime(iso) {
   if (!iso) return '-'
@@ -20,8 +19,7 @@ export default function AttendanceDetail({ type, attendance, shift, onBack }) {
   const time = type === 'in' ? attendance?.clock_in : attendance?.clock_out
   const lat = type === 'in' ? attendance?.clock_in_lat : attendance?.clock_out_lat
   const lng = type === 'in' ? attendance?.clock_in_lng : attendance?.clock_out_lng
-  const rawPhoto = type === 'in' ? attendance?.clock_in_photo_url : attendance?.clock_out_photo_url
-  const photo = useSignedPhoto(rawPhoto)
+  const photo = type === 'in' ? attendance?.clock_in_photo_url : attendance?.clock_out_photo_url
   const hasLocation = lat != null && lng != null
 
   async function loadAddress() {
@@ -65,7 +63,7 @@ export default function AttendanceDetail({ type, attendance, shift, onBack }) {
             <img src={photo} alt="Selfie" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
           ) : (
             <div style={{ width: '100%', height: '100%', background: '#ddd', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#999', fontSize: 13 }}>
-              {rawPhoto ? 'Memuat foto...' : 'Tidak ada foto'}
+              Tidak ada foto
             </div>
           )}
         </div>

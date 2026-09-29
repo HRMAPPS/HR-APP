@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import { MapPin } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
-import { useSignedPhoto } from '../lib/signedUrl'
 
 const fmtClock = (iso) => (iso ? new Date(iso).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' }).replace(/\./g, ':') : '-')
 const fmtLong = (d) => new Date(d.length === 10 ? d + 'T00:00:00' : d).toLocaleDateString('id-ID', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' })
@@ -24,8 +23,7 @@ export default function HRAttendanceDetail({ attendanceId, onClose }) {
   const time = d && (isIn ? d.clock_in : d.clock_out)
   const lat = d && (isIn ? d.clock_in_lat : d.clock_out_lat)
   const lng = d && (isIn ? d.clock_in_lng : d.clock_out_lng)
-  const rawPhoto = d && (isIn ? d.clock_in_photo_url : d.clock_out_photo_url)
-  const photo = useSignedPhoto(rawPhoto)
+  const photo = d && (isIn ? d.clock_in_photo_url : d.clock_out_photo_url)
   const notes = d && (isIn ? d.clock_in_notes : d.clock_out_notes)
   const locName = d && (isIn ? d.clock_in_location : d.clock_out_location)
   const dist = d && (isIn ? d.clock_in_distance_m : d.clock_out_distance_m)
@@ -84,7 +82,7 @@ export default function HRAttendanceDetail({ attendanceId, onClose }) {
                     {photo ? (
                       <img src={photo} alt="Selfie" onClick={() => setZoomPhoto(photo)}
                         style={{ width: '100%', height: '100%', objectFit: 'cover', cursor: 'zoom-in' }} />
-                    ) : <Empty text={rawPhoto ? 'Memuat foto...' : 'Tidak ada foto'} />}
+                    ) : <Empty text="Tidak ada foto" />}
                   </div>
                 </div>
 
