@@ -5,6 +5,8 @@ import { todayStr } from '../lib/dateUtils'
 import { useIsDesktop } from '../lib/useIsDesktop'
 import { linkifyText } from '../lib/linkify'
 import CalendarEventsTab from '../components/CalendarEventsTab'
+import EmployeeImportModal from '../components/EmployeeImportModal'
+import HRAttendanceDetail from '../components/HRAttendanceDetail'
 
 const TABS = [
   { key: 'overview', label: 'Ringkasan', icon: Users },
@@ -122,6 +124,21 @@ function ExportButton({ onClick, label = 'Export Excel', style }) {
   )
 }
 
+function ImportButton({ onClick, label = 'Import Excel', style }) {
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        display: 'inline-flex', alignItems: 'center', gap: 6, background: '#fff', border: '1px solid var(--border)',
+        borderRadius: 10, padding: '8px 12px', fontSize: 13, fontWeight: 600, color: 'var(--text)', cursor: 'pointer',
+        boxShadow: 'var(--shadow-xs)', marginBottom: 14, whiteSpace: 'nowrap', ...style,
+      }}
+    >
+      <Upload size={15} /> {label}
+    </button>
+  )
+}
+
 // ---------------------------------------------------------------------
 // Ringkasan — angka penting untuk HR
 // ---------------------------------------------------------------------
@@ -181,6 +198,7 @@ function OverviewTab({ onToast, onGo, isDesktop }) {
 function KaryawanTab({ employees, onReload, onToast, isDesktop }) {
   const [query, setQuery] = useState('')
   const [editing, setEditing] = useState(null) // null closed, {} new, {...} edit
+  const [importOpen, setImportOpen] = useState(false)
 
   const filtered = employees.filter((e) =>
     e.full_name.toLowerCase().includes(query.toLowerCase()) || (e.employee_code || '').toLowerCase().includes(query.toLowerCase())
@@ -198,6 +216,7 @@ function KaryawanTab({ employees, onReload, onToast, isDesktop }) {
           <button className="primary-btn" style={{ width: 'auto', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: 8, padding: '11px 18px' }} onClick={() => setEditing({})}>
             <Plus size={18} /> Tambah karyawan
           </button>
+          <ImportButton onClick={() => setImportOpen(true)} style={{ marginBottom: 0, flexShrink: 0 }} />
           <ExportButton style={{ marginBottom: 0, flexShrink: 0 }} onClick={() => exportToExcel('data-karyawan.xlsx', 'Karyawan', filtered, [
             ['Kode Karyawan', 'employee_code'], ['Nama', 'full_name'], ['Jabatan', 'position'], ['Departemen', 'department'],
             ['Role', 'role'], ['Status', (r) => r.employment_status || 'active'], ['No HP', 'phone'], ['Email', 'email'],
@@ -215,6 +234,7 @@ function KaryawanTab({ employees, onReload, onToast, isDesktop }) {
             <Plus size={18} /> Tambah karyawan
           </button>
 
+          <ImportButton onClick={() => setImportOpen(true)} style={{ marginRight: 8 }} />
           <ExportButton onClick={() => exportToExcel('data-karyawan.xlsx', 'Karyawan', filtered, [
             ['Kode Karyawan', 'employee_code'], ['Nama', 'full_name'], ['Jabatan', 'position'], ['Departemen', 'department'],
             ['Role', 'role'], ['Status', (r) => r.employment_status || 'active'], ['No HP', 'phone'], ['Email', 'email'],
@@ -263,6 +283,14 @@ function KaryawanTab({ employees, onReload, onToast, isDesktop }) {
             </div>
           </div>
         ))
+      )}
+
+      {importOpen && (
+        <EmployeeImportModal
+          employees={employees}
+          onClose={() => setImportOpen(false)}
+          onDone={(msg) => { onReload(); onToast(msg) }}
+        />
       )}
 
       {editing !== null && (
@@ -1141,6 +1169,7 @@ function AttendanceTab({ onToast, isDesktop }) {
   const [end, setEnd] = useState(today)
   const [rows, setRows] = useState(null)
   const [query, setQuery] = useState('')
+  const [detailId, setDetailId] = useState(null)
 
   async function load() {
     const { data, error } = await supabase.rpc('get_hr_attendance', { p_start: start, p_end: end })
@@ -1174,7 +1203,7 @@ function AttendanceTab({ onToast, isDesktop }) {
               {rows === null ? <tr><td colSpan={5} className="empty">Memuat...</td></tr>
                 : filtered.length === 0 ? <tr><td colSpan={5} className="empty">Tidak ada data absensi pada rentang ini.</td></tr>
                 : filtered.map((r) => (
-                  <tr key={r.id}>
+                  <tr key={r.id} onClick={() => setDetailId(r.id)} style={{ cursor: 'pointer' }} title="Klik untuk lihat detail">
                     <td style={{ fontWeight: 600 }}>{r.full_name}</td>
                     <td>{fmtDate(r.work_date)}</td>
                     <td>{fmtTime(r.clock_in)}</td>
@@ -1193,6 +1222,7 @@ function AttendanceTab({ onToast, isDesktop }) {
             </tbody>
           </table>
         </div>
+        {detailId && <HRAttendanceDetail attendanceId={detailId} onClose={() => setDetailId(null)} />}
       </div>
     )
   }
@@ -1228,7 +1258,7 @@ function AttendanceTab({ onToast, isDesktop }) {
         <div className="empty-state"><p>Tidak ada data absensi pada rentang ini.</p></div>
       ) : (
         filtered.map((r) => (
-          <div key={r.id} className="list-item">
+          <div key={r.id} className="list-item" onClick={() => setDetailId(r.id)} style={{ cursor: 'pointer' }}>
             <div className="info">
               <div className="name">{r.full_name}</div>
               <div className="sub">{fmtDate(r.work_date)} · masuk {fmtTime(r.clock_in)} · keluar {fmtTime(r.clock_out)}</div>
@@ -1243,6 +1273,7 @@ function AttendanceTab({ onToast, isDesktop }) {
           </div>
         ))
       )}
+      {detailId && <HRAttendanceDetail attendanceId={detailId} onClose={() => setDetailId(null)} />}
     </div>
   )
 }
