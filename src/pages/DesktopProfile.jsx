@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { LogOut } from 'lucide-react'
 import { useProfileDetail } from '../lib/useProfileDetail'
+import AvatarUploader from '../components/AvatarUploader'
 import {
   PersonalForm, JobView, EmergencyForm, FamilyList, EducationList,
   PayrollForm, AdditionalForm, FilesList, WarningsList,
@@ -18,11 +19,7 @@ const MENU = [
   { key: 'warnings', label: 'Peringatan' },
 ]
 
-function initials(name) {
-  return (name || '').split(' ').slice(0, 2).map((n) => n[0]).join('').toUpperCase()
-}
-
-export default function DesktopProfile({ employee, onSignOut, onToast }) {
+export default function DesktopProfile({ employee, onSignOut, onToast, onAvatarChanged }) {
   const profile = useProfileDetail()
   const [section, setSection] = useState('personal')
 
@@ -36,7 +33,16 @@ export default function DesktopProfile({ employee, onSignOut, onToast }) {
     <div style={{ display: 'flex', gap: 24, alignItems: 'flex-start' }}>
       <aside style={{ width: 220, flexShrink: 0, background: '#fff', borderRadius: 16, padding: 22, boxShadow: 'var(--shadow-sm)' }}>
         <div style={{ textAlign: 'center', marginBottom: 18 }}>
-          <div className="avatar" style={{ width: 68, height: 68, fontSize: 20, margin: '0 auto 12px' }}>{initials(e.full_name)}</div>
+          <div style={{ margin: '0 auto 12px' }}>
+            <AvatarUploader
+              name={e.full_name}
+              url={e.avatar_url}
+              size={84}
+              fontSize={24}
+              onToast={onToast}
+              onChanged={async () => { await profile.reload(); await onAvatarChanged?.() }}
+            />
+          </div>
           <div style={{ fontWeight: 700, fontSize: 15 }}>{e.full_name}</div>
           <div style={{ fontSize: 12.5, color: 'var(--text-muted)', margin: '2px 0 8px' }}>{e.position}</div>
           <span style={{ background: '#DCF3E6', color: '#1E8E5A', fontSize: 11, fontWeight: 700, borderRadius: 8, padding: '3px 10px' }}>

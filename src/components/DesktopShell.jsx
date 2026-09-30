@@ -85,7 +85,9 @@ export default function DesktopShell({ employee, active, onChange, onNavigate, o
 
         <div style={{ position: 'relative' }}>
           <button className="desktop-account" onClick={() => setOpenMenu(openMenu === 'account' ? null : 'account')}>
-            <span className="avatar" style={{ width: 32, height: 32, fontSize: 12 }}>{initials(employee?.full_name)}</span>
+            {employee?.avatar_url
+              ? <img src={employee.avatar_url} alt="" style={{ width: 32, height: 32, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />
+              : <span className="avatar" style={{ width: 32, height: 32, fontSize: 12 }}>{initials(employee?.full_name)}</span>}
             <span className="desktop-account-text">
               <strong>{employee?.full_name}</strong>
               <span>{employee?.department || employee?.position}</span>

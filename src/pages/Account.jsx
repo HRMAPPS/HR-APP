@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { ChevronRight, User, Briefcase, Flag, Users, GraduationCap, Wallet, Info, Folder, AlertTriangle, Lock, ScanFace } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
+import AvatarUploader from '../components/AvatarUploader'
 
 const INFO_ROWS = [
   { label: 'Info personal', icon: User, section: 'personal' },
@@ -14,7 +15,7 @@ const INFO_ROWS = [
   { label: 'Peringatan', icon: AlertTriangle, section: 'warnings' },
 ]
 
-export default function Account({ employee, onSignOut, onToast, onNavigate }) {
+export default function Account({ employee, onSignOut, onToast, onNavigate, onAvatarChanged }) {
   const [showPwd, setShowPwd] = useState(false)
 
   function initials(name) {
@@ -24,7 +25,14 @@ export default function Account({ employee, onSignOut, onToast, onNavigate }) {
   return (
     <div>
       <div className="account-header">
-        <div className="avatar" style={{ width: 56, height: 56, fontSize: 18 }}>{initials(employee?.full_name)}</div>
+        <AvatarUploader
+          name={employee?.full_name}
+          url={employee?.avatar_url}
+          size={56}
+          fontSize={18}
+          onToast={onToast}
+          onChanged={() => onAvatarChanged?.()}
+        />
         <div>
           <div className="name">{employee?.full_name}</div>
           <div className="role">{employee?.position}</div>

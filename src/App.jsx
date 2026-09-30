@@ -133,8 +133,8 @@ export default function App() {
       {tab === 'employees' && <Employees viewer={employee} onNavigate={navigateTo} />}
       {tab === 'inbox' && <Inbox employee={employee} onToast={flash} onNavigate={navigateTo} onRead={loadUnread} />}
       {tab === 'account' && (isDesktop
-        ? <DesktopProfile employee={employee} onSignOut={signOut} onToast={flash} />
-        : <Account employee={employee} onSignOut={signOut} onToast={flash} onNavigate={navigateTo} />
+        ? <DesktopProfile employee={employee} onSignOut={signOut} onToast={flash} onAvatarChanged={refreshEmployee} />
+        : <Account employee={employee} onSignOut={signOut} onToast={flash} onNavigate={navigateTo} onAvatarChanged={refreshEmployee} />
       )}
     </>
   )
