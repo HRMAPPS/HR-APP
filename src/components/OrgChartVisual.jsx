@@ -348,8 +348,10 @@ export default function OrgChartVisual({ employees, departments = [], isDesktop,
     toggle: (id) => setCollapsed((s) => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n }),
     openTeam: (id) => setOpenTeams((s) => new Set(s).add(id)),
     match: (id) => matches.has(id),
-    dimmed: (id) => searching && !matches.has(id) && !forced.has(id),
-  }), [model, collapsed, forced, matches, openTeams, searching, canEdit, onEdit])
+    // filter golongan: semua yang bukan golongan terpilih diredupkan (termasuk atasannya);
+    // pencarian teks: atasan di jalur hasil tetap terang supaya konteksnya terlihat
+    dimmed: (id) => searching && !matches.has(id) && (!!gradeFilter || !forced.has(id)),
+  }), [model, collapsed, forced, matches, openTeams, searching, gradeFilter, canEdit, onEdit])
 
   const expandAll = () => { setCollapsed(new Set()); setOpenTeams(new Set(model.nodes.map((n) => n.p.id))) }
   const collapseAll = () => { setCollapsed(new Set(model.nodes.filter((n) => n.depth >= 1 && n.children.length > 0).map((n) => n.p.id))); setOpenTeams(new Set()) }
