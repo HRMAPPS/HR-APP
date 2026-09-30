@@ -102,13 +102,19 @@ export default function DesktopShell({ employee, active, onChange, onNavigate, o
                 border: '1px solid var(--border)',
               }}>
                 <div style={{ textAlign: 'center', padding: '0 16px 18px', borderBottom: '1px solid var(--border)' }}>
-                  <div style={{
-                    width: 52, height: 52, borderRadius: '50%', background: 'var(--blue)', color: '#fff',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 17,
-                    margin: '0 auto 10px',
-                  }}>
-                    {initials(employee?.full_name)}
-                  </div>
+                  {employee?.avatar_url ? (
+                    <img src={employee.avatar_url} alt="" style={{
+                      width: 52, height: 52, borderRadius: '50%', objectFit: 'cover', display: 'block', margin: '0 auto 10px',
+                    }} />
+                  ) : (
+                    <div style={{
+                      width: 52, height: 52, borderRadius: '50%', background: 'var(--blue)', color: '#fff',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 17,
+                      margin: '0 auto 10px',
+                    }}>
+                      {initials(employee?.full_name)}
+                    </div>
+                  )}
                   <div style={{ fontWeight: 700, fontSize: 14.5 }}>{employee?.full_name}</div>
                   <div style={{ fontSize: 12.5, color: 'var(--text-muted)', marginTop: 2 }}>
                     {employee?.department || employee?.position}

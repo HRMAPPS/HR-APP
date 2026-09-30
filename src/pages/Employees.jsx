@@ -170,7 +170,9 @@ export default function Employees({ viewer, onNavigate }) {
         {!loading && list.map((emp) => (
           <div key={emp.id} className="list-item">
             <button onClick={() => setSelected(emp)} style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1, minWidth: 0, background: 'none', border: 'none', textAlign: 'left', cursor: 'pointer', padding: 0 }}>
-              <div className="avatar">{initials(emp.full_name)}</div>
+              {emp.avatar_url
+                ? <img src={emp.avatar_url} alt="" style={{ width: 44, height: 44, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />
+                : <div className="avatar">{initials(emp.full_name)}</div>}
               <div className="info">
                 <div className="name">{emp.full_name}</div>
                 <div className="sub">{emp.position || '-'}</div>
@@ -215,7 +217,9 @@ function EmployeeDetail({ emp, isHr, onBack }) {
         <button className="icon-btn" onClick={onBack}><ArrowLeft size={22} /></button>
       </div>
       <div style={{ textAlign: 'center', padding: '8px 20px 20px' }}>
-        <div className="avatar" style={{ width: 76, height: 76, fontSize: 24, margin: '0 auto 14px' }}>{initials(emp.full_name)}</div>
+        {emp.avatar_url
+          ? <img src={emp.avatar_url} alt="" style={{ width: 76, height: 76, borderRadius: '50%', objectFit: 'cover', display: 'block', margin: '0 auto 14px' }} />
+          : <div className="avatar" style={{ width: 76, height: 76, fontSize: 24, margin: '0 auto 14px' }}>{initials(emp.full_name)}</div>}
         <div style={{ fontSize: 19, fontWeight: 700 }}>{emp.full_name}</div>
         <div style={{ fontSize: 14, color: 'var(--text-muted)', marginTop: 2 }}>{emp.position || '-'}</div>
 
