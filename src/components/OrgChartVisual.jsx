@@ -131,15 +131,14 @@ function Card({ node, ctx }) {
   )
 }
 
-function TeamPanel({ parent, members, row, ctx }) {
-  const key = `${parent.p.id}:${row}`
+function TeamPanel({ parent, members, teamKey: key, title = 'Tim', byPos = false, ctx }) {
   const anyMatch = members.some((m) => ctx.match(m.p.id))
   const all = ctx.openTeams.has(key) || ctx.openTeams.has(parent.p.id) || anyMatch || members.length <= TEAM_PREVIEW + 2
   const shown = all ? members : members.slice(0, TEAM_PREVIEW)
   const cols = teamCols(members.length)
   return (
     <div className="oc-team">
-      <div className="oc-team-h"><span>Tim</span><span>{members.length} orang</span></div>
+      <div className="oc-team-h"><span title={title}>{title}</span><span>{members.length} orang</span></div>
       <div className="oc-team-grid" style={{ '--cols': cols }}>
         {shown.map((m) => {
           const color = ctx.model.colorOf(m.p)
@@ -150,7 +149,7 @@ function TeamPanel({ parent, members, row, ctx }) {
                 <Avatar p={m.p} color={color} size={30} />
                 <div className="oc-meta">
                   <div className="oc-name" title={m.p.full_name}>{m.p.full_name}</div>
-                  <div className="oc-pos" title={m.p.position || ''}>{m.p.position || '-'}</div>
+                  {!byPos && <div className="oc-pos" title={m.p.position || ''}>{m.p.position || '-'}</div>}
                 </div>
                 <GradePill grade={m.p.grade} />
               </Hit>
@@ -210,7 +209,14 @@ function TierChart({ roots, ctx }) {
       const a = slots.current.get(e.from), b = slots.current.get(e.to), row = rowRect.get(e.fromRow)
       if (!a || !b || !row) continue
       const qa = rel(a), qb = rel(b)
-      paths.push(elbow((qa.l + qa.r) / 2, qa.b, (qb.l + qb.r) / 2, qb.t, row.b + ROW_GAP / 2))
+      if (e.lateral) {
+        // golongan sama dengan atasan: garis putus-putus horizontal di samping kartu
+        const y = qa.t + Math.min(44, (qa.b - qa.t) / 2)
+        const [x1, x2] = qb.l >= qa.r ? [qa.r, qb.l] : [qa.l, qb.r]
+        paths.push({ d: `M${x1} ${y}H${x2}`, lat: true })
+      } else {
+        paths.push({ d: elbow((qa.l + qa.r) / 2, qa.b, (qb.l + qb.r) / 2, qb.t, row.b + ROW_GAP / 2) })
+      }
     }
     const next = { w: box.offsetWidth, bands, paths }
     setGeo((prev) => (JSON.stringify(prev) === JSON.stringify(next) ? prev : next))
@@ -228,7 +234,7 @@ function TierChart({ roots, ctx }) {
     <div ref={boxRef} className="oc-tier" style={{ width: layout.width + LABEL_W, '--oc-label': `${LABEL_W}px`, '--oc-rowgap': `${ROW_GAP}px` }}>
       <svg className="oc-lines" aria-hidden="true">
         {geo.bands.map((b) => <rect key={b.key} className="oc-band" x={0} y={b.y} width={geo.w} height={b.h} rx={18} />)}
-        {geo.paths.map((d, i) => <path key={i} d={d} />)}
+        {geo.paths.map((p, i) => <path key={i} d={p.d} className={p.lat ? 'oc-lat' : undefined} />)}
       </svg>
       {layout.rows.map((r) => {
         const meta = rowMeta(r.row)
@@ -242,7 +248,7 @@ function TierChart({ roots, ctx }) {
               <div key={u.id} className="oc-slot" style={{ width: u.w, marginLeft: u.gap }}
                 ref={(el) => (el ? slots.current.set(u.id, el) : slots.current.delete(u.id))}>
                 {u.kind === 'team'
-                  ? <TeamPanel parent={u.parent} members={u.members} row={u.row} ctx={ctx} />
+                  ? <TeamPanel parent={u.parent} members={u.members} teamKey={u.teamKey} title={u.title} byPos={u.byPos} ctx={ctx} />
                   : <Card node={u.node} ctx={ctx} />}
               </div>
             ))}

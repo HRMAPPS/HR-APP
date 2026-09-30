@@ -29,6 +29,7 @@
 .oc-tier{ position:relative; }
 .oc-lines{ position:absolute; left:0; top:0; width:100%; height:100%; overflow:visible; pointer-events:none; z-index:0; }
 .oc-lines .oc-band{ fill:rgba(255,255,255,.5); stroke:#E9DED2; stroke-width:1; stroke-dasharray:4 4; }
+.oc-lines path.oc-lat{ stroke-dasharray:5 5; }
 .oc-lines path{ fill:none; stroke:var(--oc-line); stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
 .oc-tier-row{ position:relative; z-index:1; display:flex; align-items:flex-start; margin-left:var(--oc-label); }
 .oc-tier-row + .oc-tier-row{ margin-top:var(--oc-rowgap); }
@@ -58,6 +59,7 @@
 /* team panel */
 .oc-team{ z-index:1; min-width:232px; padding:10px 10px 12px; background:rgba(255,255,255,.72); backdrop-filter:blur(4px); border:1px solid #E7DBCE; border-radius:18px; box-shadow:var(--shadow-sm); }
 .oc-team-h{ display:flex; align-items:center; justify-content:space-between; gap:8px; padding:0 4px 8px; font-size:11px; font-weight:800; letter-spacing:.06em; text-transform:uppercase; color:#8a7f75; }
+.oc-team-h span:first-child{ min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .oc-team-grid{ display:grid; gap:6px; grid-template-columns:repeat(var(--cols,1), 208px); }
 .oc-mini{ --c:#7A7370; display:flex; align-items:center; gap:9px; padding:7px 9px; background:#fff; border:1px solid #EFE6DC; border-left:3px solid var(--c); border-radius:11px; transition:transform .15s var(--ease), box-shadow .15s; min-width:0; }
 .oc-mini:hover{ transform:translateY(-1px); box-shadow:var(--shadow-sm); }
