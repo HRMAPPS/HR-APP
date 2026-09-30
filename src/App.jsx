@@ -110,6 +110,14 @@ export default function App() {
   // Navigation target used both by quick-grid and the "Ajukan untuk" sheet.
   // '-new' suffix opens the list page pre-armed to show its form.
   function navigateTo(target) {
+    // Targets that are bottom-nav tabs (e.g. Quick Links -> Employee profile
+    // sends 'account') switch tabs instead of opening a page overlay;
+    // PageRouter has no case for them, which used to render a blank screen.
+    if (['home', 'employees', 'inbox', 'account'].includes(target)) {
+      setPage(null)
+      setTab(target)
+      return
+    }
     setPage(target)
   }
 
