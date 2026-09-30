@@ -167,7 +167,9 @@ function TeamPanel({ parent, members, teamKey: key, title = 'Tim', byPos = false
 const rowMeta = (row) => {
   if (row === 0) return { pill: 'Puncak', desc: 'CEO & Advisor', g: GRADES[5] }
   const g = GRADES[6 - row]
-  return g ? { pill: `Gol. ${g.short}`, desc: g.desc, g } : { pill: 'Lainnya', desc: 'Di bawah Gol. I', g: null }
+  if (g) return { pill: `Gol. ${g.short}`, desc: g.desc, g }
+  // di bawah baris Gol. I: bawahan Gol. I yang lapor ke Gol. I
+  return { pill: `Gol. ${GRADES[1].short}`, desc: 'Lapor ke Gol. I', g: GRADES[1] }
 }
 
 // garis siku: turun dari induk -> horizontal di celah bawah baris induk -> turun lurus ke anak
@@ -176,14 +178,6 @@ function elbow(px, py, cx, cy, busY) {
   const dir = cx > px ? 1 : -1
   const r = Math.max(0, Math.min(12, Math.abs(cx - px) / 2, busY - py, cy - busY))
   return `M${px} ${py}V${busY - r}Q${px} ${busY} ${px + dir * r} ${busY}H${cx - dir * r}Q${cx} ${busY} ${cx} ${busY + r}V${cy}`
-}
-
-// baris golongan sama: turun dari bawah atasan -> horizontal di bawah baris -> naik ke bawah kartu anak
-function uturn(px, py, cx, cy, busY) {
-  if (Math.abs(cx - px) < 1) return `M${px} ${py}V${cy}`
-  const dir = cx > px ? 1 : -1
-  const r = Math.max(0, Math.min(12, Math.abs(cx - px) / 2, busY - py, busY - cy))
-  return `M${px} ${py}V${busY - r}Q${px} ${busY} ${px + dir * r} ${busY}H${cx - dir * r}Q${cx} ${busY} ${cx} ${busY - r}V${cy}`
 }
 
 function TierChart({ roots, ctx }) {
@@ -217,12 +211,7 @@ function TierChart({ roots, ctx }) {
       const a = slots.current.get(e.from), b = slots.current.get(e.to), row = rowRect.get(e.fromRow)
       if (!a || !b || !row) continue
       const qa = rel(a), qb = rel(b)
-      if (e.lateral) {
-        // golongan sama dengan atasan: satu baris, tapi garis tetap keluar dari bawah atasan
-        paths.push({ d: uturn((qa.l + qa.r) / 2, qa.b, (qb.l + qb.r) / 2, qb.b, Math.max(qa.b, qb.b) + 24) })
-      } else {
-        paths.push({ d: elbow((qa.l + qa.r) / 2, qa.b, (qb.l + qb.r) / 2, qb.t, row.b + ROW_GAP / 2) })
-      }
+      paths.push({ d: elbow((qa.l + qa.r) / 2, qa.b, (qb.l + qb.r) / 2, qb.t, row.b + ROW_GAP / 2) })
     }
     const next = { w: box.offsetWidth, bands, paths }
     setGeo((prev) => (JSON.stringify(prev) === JSON.stringify(next) ? prev : next))

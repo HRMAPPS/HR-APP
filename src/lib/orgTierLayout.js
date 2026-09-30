@@ -7,8 +7,8 @@
 //   baris 3 = Gol. III
 //   baris 4 = Gol. II
 //   baris 5 = Gol. I
-// - Golongan yang sama dengan atasannya TETAP di baris golongannya (tidak turun baris);
-//   orang itu diletakkan di samping atasannya, garis penghubung tetap keluar dari bawah atasan.
+// - Bawahan SELALU satu baris di bawah atasannya, walaupun golongannya sama
+//   (mis. Gol. I lapor ke Gol. I -> baris "lanjutan" tepat di bawah atasannya).
 // - Orang tanpa golongan ditaruh 1 baris di bawah atasannya.
 // - Anggota tanpa bawahan dikelompokkan jadi panel tim. Jabatan yang sama dan jumlahnya
 //   lebih dari 2 dipisah jadi panel sendiri (mis. Reseller, Online Sales, SPG).
@@ -27,11 +27,8 @@ export const teamWidth = (n) => (teamCols(n) === 2 ? 444 : 232)
 
 export const tierRow = (grade) => (grade >= 1 && grade <= 5 ? 6 - grade : null)
 const rootRow = (node) => (node.p.grade === 5 ? 0 : tierRow(node.p.grade) ?? 0)
-// golongan sama/lebih tinggi dari atasan -> baris golongannya sendiri (bisa sama dengan atasan)
-const childRow = (grade, parentRow) => {
-  const t = tierRow(grade)
-  return t == null ? parentRow + 1 : Math.max(t, parentRow)
-}
+// baris bawahan = baris golongannya, tapi minimal 1 baris di bawah atasan
+const childRow = (grade, parentRow) => Math.max(tierRow(grade) ?? 0, parentRow + 1)
 
 const posKey = (p) => (p.position || '').toLowerCase().replace(/\s+/g, ' ').trim()
 
@@ -60,14 +57,14 @@ function groupLeaves(list) {
  * @param roots       node dari useModel: { p, depth, children, size }
  * @param isCollapsed (id) => boolean
  * @returns { rows: [{ row, items }], edges, width }
- *   edge: { from, fromRow, to, lateral? }
+ *   edge: { from, fromRow, to }
  */
 export function buildTierLayout(roots, isCollapsed) {
   const all = []
 
-  // makeCard memasukkan dirinya sendiri ke `peers` (daftar saudara pada level layout yang sama)
+  // makeCard memasukkan dirinya sendiri ke `peers` (daftar saudara pada level yang sama)
   const makeCard = (node, row, peers) => {
-    const u = { id: node.p.id, kind: 'card', node, row, w: CARD_W, kids: [], lat: [] }
+    const u = { id: node.p.id, kind: 'card', node, row, w: CARD_W, kids: [] }
     all.push(u)
     peers.push(u)
     if (node.children.length === 0 || isCollapsed(node.p.id)) return u
@@ -75,32 +72,23 @@ export function buildTierLayout(roots, isCollapsed) {
     const placed = node.children.map((c) => ({ c, row: childRow(c.p.grade, row) }))
 
     // cabang (punya bawahan)
-    placed.filter(({ c }) => c.children.length > 0).forEach(({ c, row: r }) => {
-      if (r === row) u.lat.push(makeCard(c, r, peers))   // golongan sama: satu baris di samping atasan
-      else makeCard(c, r, u.kids)
-    })
+    placed.filter(({ c }) => c.children.length > 0).forEach(({ c, row: r }) => makeCard(c, r, u.kids))
 
     // anggota tanpa bawahan, dikelompokkan per baris golongan
     const leafByRow = new Map()
     placed.filter(({ c }) => c.children.length === 0).forEach(({ c, row: r }) => leafByRow.set(r, [...(leafByRow.get(r) || []), c]))
     for (const [r, list] of [...leafByRow].sort((a, b) => a[0] - b[0])) {
-      const lateral = r === row
-      const target = lateral ? peers : u.kids
       const { groups, singles } = groupLeaves(list)
       groups.forEach((g) => {
         const t = {
           id: `team:${node.p.id}:${r}:${g.key}`, kind: 'team', parent: node, members: g.members, row: r,
           title: g.title, byPos: g.byPos, teamKey: `${node.p.id}:${r}:${g.key}`,
-          w: teamWidth(g.members.length), kids: [], lat: [],
+          w: teamWidth(g.members.length), kids: [],
         }
         all.push(t)
-        target.push(t)
-        if (lateral) u.lat.push(t)
+        u.kids.push(t)
       })
-      singles.forEach((c) => {
-        const cu = makeCard(c, r, target)
-        if (lateral) u.lat.push(cu)
-      })
+      singles.forEach((c) => makeCard(c, r, u.kids))
     }
     return u
   }
@@ -157,10 +145,7 @@ export function buildTierLayout(roots, isCollapsed) {
   })
 
   const edges = []
-  all.forEach((u) => {
-    u.kids.forEach((k) => edges.push({ from: u.id, fromRow: u.row, to: k.id }))
-    u.lat.forEach((k) => edges.push({ from: u.id, fromRow: u.row, to: k.id, lateral: true }))
-  })
+  all.forEach((u) => u.kids.forEach((k) => edges.push({ from: u.id, fromRow: u.row, to: k.id })))
 
   return { rows, edges, width: maxX - minX }
 }
