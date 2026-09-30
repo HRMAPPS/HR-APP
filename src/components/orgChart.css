@@ -34,8 +34,9 @@
 .oc-tier-row + .oc-tier-row{ margin-top:var(--oc-rowgap); }
 .oc-tier-label{ position:absolute; top:2px; left:calc(-1 * var(--oc-label) + 16px); width:calc(var(--oc-label) - 40px); display:flex; flex-direction:column; align-items:flex-start; gap:5px; }
 .oc-tier-desc{ font-size:10.5px; font-weight:700; line-height:1.25; color:#8a7f75; }
-.oc-slot{ flex:none; position:relative; }
-.oc-slot > .oc-team{ width:100%; box-sizing:border-box; }
+.oc-slot{ flex:none; position:relative; display:flex; flex-direction:column; align-items:center; gap:36px; }
+.oc-cell{ position:relative; }
+.oc-cell > .oc-team{ width:100%; box-sizing:border-box; }
 
 /* ---------- cards ---------- */
 .oc-card{ --c:#7A7370; position:relative; z-index:1; width:220px; min-height:88px; display:flex; align-items:center; gap:11px; padding:12px 12px 14px; background:#fff; border:1px solid #EADFD3; border-top:3px solid var(--c); border-radius:16px; box-shadow:var(--shadow-sm); text-align:left; transition:transform .18s var(--ease), box-shadow .18s var(--ease), opacity .2s; }

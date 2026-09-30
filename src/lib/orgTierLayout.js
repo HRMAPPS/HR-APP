@@ -7,8 +7,9 @@
 //   baris 3 = Gol. III
 //   baris 4 = Gol. II
 //   baris 5 = Gol. I
-// - Bawahan SELALU satu baris di bawah atasannya, walaupun golongannya sama
-//   (mis. Gol. I lapor ke Gol. I -> baris "lanjutan" tepat di bawah atasannya).
+// - Bawahan yang golongannya SAMA dengan atasannya (mis. Gol. I lapor ke Gol. I) tetap berada
+//   di baris golongannya: kartunya ditumpuk ke bawah tepat di bawah atasan dalam satu kolom
+//   (atasan di atas, bawahan di bawahnya), tidak pindah ke baris lain.
 // - Orang tanpa golongan ditaruh 1 baris di bawah atasannya.
 // - Anggota tanpa bawahan dikelompokkan jadi panel tim. Jabatan yang sama dan jumlahnya
 //   lebih dari 2 dipisah jadi panel sendiri (mis. Reseller, Online Sales, SPG).
@@ -53,44 +54,69 @@ function groupLeaves(list) {
   return { groups, singles: rest }
 }
 
+const teamUnit = (parent, row, g, from) => ({
+  id: `team:${parent.p.id}:${row}:${g.key}`, kind: 'team', parent, members: g.members, row,
+  title: g.title, byPos: g.byPos, teamKey: `${parent.p.id}:${row}:${g.key}`,
+  w: teamWidth(g.members.length), kids: [], stack: [], from,
+})
+
 /**
  * @param roots       node dari useModel: { p, depth, children, size }
  * @param isCollapsed (id) => boolean
  * @returns { rows: [{ row, items }], edges, width }
- *   edge: { from, fromRow, to }
+ *   item : { id, kind: 'card'|'team', w, cx, gap, stack: [item ditumpuk di bawahnya], ... }
+ *   edge : { from, fromRow, to }
  */
 export function buildTierLayout(roots, isCollapsed) {
   const all = []
 
   // makeCard memasukkan dirinya sendiri ke `peers` (daftar saudara pada level yang sama)
   const makeCard = (node, row, peers) => {
-    const u = { id: node.p.id, kind: 'card', node, row, w: CARD_W, kids: [] }
+    const u = { id: node.p.id, kind: 'card', node, row, w: CARD_W, kids: [], stack: [] }
     all.push(u)
     peers.push(u)
-    if (node.children.length === 0 || isCollapsed(node.p.id)) return u
+    addChildren(u, node, row)
+    u.w = Math.max(CARD_W, ...u.stack.map((s) => s.w))
+    return u
+  }
+
+  // host = unit kolom (kartu di baris `row`); node = orang yang bawahannya sedang diproses
+  // (node bisa host sendiri, atau anggota tumpukan di bawah host)
+  const addChildren = (host, node, row) => {
+    if (node.children.length === 0 || isCollapsed(node.p.id)) return
 
     const placed = node.children.map((c) => ({ c, row: childRow(c.p.grade, row) }))
+    const sameGrade = (c) => !!c.p.grade && c.p.grade === node.p.grade && tierRow(c.p.grade) <= row
+    const stacked = placed.filter(({ c }) => sameGrade(c)).map(({ c }) => c)
+    const normal = placed.filter(({ c }) => !sameGrade(c))
 
-    // cabang (punya bawahan)
-    placed.filter(({ c }) => c.children.length > 0).forEach(({ c, row: r }) => makeCard(c, r, u.kids))
+    // ---- golongan sama dengan atasan: ditumpuk ke bawah dalam baris yang sama ----
+    stacked.filter((c) => c.children.length > 0).forEach((c) => {
+      host.stack.push({ id: c.p.id, kind: 'card', node: c, w: CARD_W, from: node.p.id })
+      addChildren(host, c, row)
+    })
+    const stackedLeaves = stacked.filter((c) => c.children.length === 0)
+    if (stackedLeaves.length) {
+      const { groups, singles } = groupLeaves(stackedLeaves)
+      groups.forEach((g) => host.stack.push(teamUnit(node, row, g, node.p.id)))
+      singles.forEach((c) => host.stack.push({ id: c.p.id, kind: 'card', node: c, w: CARD_W, from: node.p.id }))
+    }
 
-    // anggota tanpa bawahan, dikelompokkan per baris golongan
+    // ---- golongan lebih rendah: baris golongannya sendiri ----
+    normal.filter(({ c }) => c.children.length > 0).forEach(({ c, row: r }) => {
+      makeCard(c, r, host.kids).from = node.p.id
+    })
     const leafByRow = new Map()
-    placed.filter(({ c }) => c.children.length === 0).forEach(({ c, row: r }) => leafByRow.set(r, [...(leafByRow.get(r) || []), c]))
+    normal.filter(({ c }) => c.children.length === 0).forEach(({ c, row: r }) => leafByRow.set(r, [...(leafByRow.get(r) || []), c]))
     for (const [r, list] of [...leafByRow].sort((a, b) => a[0] - b[0])) {
       const { groups, singles } = groupLeaves(list)
       groups.forEach((g) => {
-        const t = {
-          id: `team:${node.p.id}:${r}:${g.key}`, kind: 'team', parent: node, members: g.members, row: r,
-          title: g.title, byPos: g.byPos, teamKey: `${node.p.id}:${r}:${g.key}`,
-          w: teamWidth(g.members.length), kids: [],
-        }
+        const t = teamUnit(node, r, g, node.p.id)
         all.push(t)
-        u.kids.push(t)
+        host.kids.push(t)
       })
-      singles.forEach((c) => makeCard(c, r, u.kids))
+      singles.forEach((c) => { makeCard(c, r, host.kids).from = node.p.id })
     }
-    return u
   }
 
   // ---- lebar tiap subtree, lalu posisi x (pusat) ----
@@ -145,7 +171,10 @@ export function buildTierLayout(roots, isCollapsed) {
   })
 
   const edges = []
-  all.forEach((u) => u.kids.forEach((k) => edges.push({ from: u.id, fromRow: u.row, to: k.id })))
+  all.forEach((u) => {
+    u.kids.forEach((k) => edges.push({ from: k.from ?? u.id, fromRow: u.row, to: k.id }))
+    u.stack.forEach((s) => edges.push({ from: s.from, fromRow: u.row, to: s.id }))
+  })
 
   return { rows, edges, width: maxX - minX }
 }

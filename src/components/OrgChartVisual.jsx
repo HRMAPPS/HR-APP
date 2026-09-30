@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { ChevronRight, ChevronDown, ChevronsDownUp, ChevronsUpDown, Maximize2, Minus, Pencil, Plus, Search, X } from 'lucide-react'
-import { buildTierLayout, TEAM_PREVIEW, teamCols } from '../lib/orgTierLayout'
+import { buildTierLayout, CARD_W, TEAM_PREVIEW, teamCols } from '../lib/orgTierLayout'
 import './orgChart.css'
 
 const PALETTE = ['#4F6BED', '#0E9F86', '#E8833A', '#B34BC4', '#2E90D1', '#D9467A', '#7A8B2C', '#8A5A44', '#5B6B7F', '#C79A1E']
@@ -240,11 +240,15 @@ function TierChart({ roots, ctx }) {
               <span className="oc-tier-desc">{meta.desc}</span>
             </div>
             {r.items.map((u) => (
-              <div key={u.id} className="oc-slot" style={{ width: u.w, marginLeft: u.gap }}
-                ref={(el) => (el ? slots.current.set(u.id, el) : slots.current.delete(u.id))}>
-                {u.kind === 'team'
-                  ? <TeamPanel parent={u.parent} members={u.members} teamKey={u.teamKey} title={u.title} byPos={u.byPos} ctx={ctx} />
-                  : <Card node={u.node} ctx={ctx} />}
+              <div key={u.id} className="oc-slot" style={{ width: u.w, marginLeft: u.gap }}>
+                {[u, ...u.stack].map((it) => (
+                  <div key={it.id} className="oc-cell" style={{ width: it.kind === 'team' ? it.w : CARD_W }}
+                    ref={(el) => (el ? slots.current.set(it.id, el) : slots.current.delete(it.id))}>
+                    {it.kind === 'team'
+                      ? <TeamPanel parent={it.parent} members={it.members} teamKey={it.teamKey} title={it.title} byPos={it.byPos} ctx={ctx} />
+                      : <Card node={it.node} ctx={ctx} />}
+                  </div>
+                ))}
               </div>
             ))}
           </div>
