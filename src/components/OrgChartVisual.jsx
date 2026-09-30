@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { ChevronRight, ChevronDown, ChevronsDownUp, ChevronsUpDown, Maximize2, Minus, Pencil, Plus, Search, X } from 'lucide-react'
+import { buildTierLayout, TEAM_PREVIEW, teamCols } from '../lib/orgTierLayout'
 import './orgChart.css'
 
 const PALETTE = ['#4F6BED', '#0E9F86', '#E8833A', '#B34BC4', '#2E90D1', '#D9467A', '#7A8B2C', '#8A5A44', '#5B6B7F', '#C79A1E']
 const NEUTRAL = '#7A7370'
-const TEAM_MIN = 3        // >= 3 anggota tanpa bawahan dikelompokkan jadi satu panel tim
-const TEAM_PREVIEW = 8    // jumlah anggota yang tampil sebelum "lihat semua"
+const LABEL_W = 132       // lebar kolom label golongan (kiri)
+const ROW_GAP = 72        // jarak vertikal antar baris golongan (harus sama dengan --oc-rowgap)
 
 // Golongan (employees.grade 1..5). Warna mengikuti Excel Struktur Organisasi.
 export const GRADES = {
@@ -96,13 +97,6 @@ function Hit({ p, ctx, className = '', children }) {
   )
 }
 
-function groupKids(node) {
-  const leaves = node.children.filter((c) => c.children.length === 0)
-  const branches = node.children.filter((c) => c.children.length > 0)
-  const team = leaves.length >= TEAM_MIN ? leaves : null
-  return { branches, singles: team ? [] : leaves, team }
-}
-
 /* ---------------------------------------------------------------- desktop */
 function Card({ node, ctx }) {
   const { p } = node
@@ -137,11 +131,12 @@ function Card({ node, ctx }) {
   )
 }
 
-function TeamPanel({ parent, members, ctx }) {
+function TeamPanel({ parent, members, row, ctx }) {
+  const key = `${parent.p.id}:${row}`
   const anyMatch = members.some((m) => ctx.match(m.p.id))
-  const all = ctx.openTeams.has(parent.p.id) || anyMatch || members.length <= TEAM_PREVIEW + 2
+  const all = ctx.openTeams.has(key) || ctx.openTeams.has(parent.p.id) || anyMatch || members.length <= TEAM_PREVIEW + 2
   const shown = all ? members : members.slice(0, TEAM_PREVIEW)
-  const cols = members.length > 6 ? 2 : 1
+  const cols = teamCols(members.length)
   return (
     <div className="oc-team">
       <div className="oc-team-h"><span>Tim</span><span>{members.length} orang</span></div>
@@ -163,27 +158,98 @@ function TeamPanel({ parent, members, ctx }) {
           )
         })}
         {!all && (
-          <button className="oc-more" onClick={() => ctx.openTeam(parent.p.id)}>Lihat {members.length - TEAM_PREVIEW} lainnya</button>
+          <button className="oc-more" onClick={() => ctx.openTeam(key)}>Lihat {members.length - TEAM_PREVIEW} lainnya</button>
         )}
       </div>
     </div>
   )
 }
 
-function DesktopNode({ node, ctx }) {
-  const open = !ctx.isCollapsed(node.p.id)
-  const { branches, singles, team } = groupKids(node)
+const rowMeta = (row) => {
+  if (row === 0) return { pill: 'Puncak', desc: 'CEO & Advisor', g: GRADES[5] }
+  const g = GRADES[6 - row]
+  return g ? { pill: `Gol. ${g.short}`, desc: g.desc, g } : { pill: 'Lainnya', desc: 'Di bawah Gol. I', g: null }
+}
+
+// garis siku: turun dari induk -> horizontal di celah bawah baris induk -> turun lurus ke anak
+function elbow(px, py, cx, cy, busY) {
+  if (Math.abs(cx - px) < 1) return `M${px} ${py}V${cy}`
+  const dir = cx > px ? 1 : -1
+  const r = Math.max(0, Math.min(12, Math.abs(cx - px) / 2, busY - py, cy - busY))
+  return `M${px} ${py}V${busY - r}Q${px} ${busY} ${px + dir * r} ${busY}H${cx - dir * r}Q${cx} ${busY} ${cx} ${busY + r}V${cy}`
+}
+
+function TierChart({ roots, ctx }) {
+  const layout = useMemo(() => buildTierLayout(roots, ctx.isCollapsed), [roots, ctx.isCollapsed])
+  const boxRef = useRef(null)
+  const slots = useRef(new Map())
+  const rowEls = useRef(new Map())
+  const [geo, setGeo] = useState({ w: 0, bands: [], paths: [] })
+
+  const measure = useCallback(() => {
+    const box = boxRef.current
+    if (!box) return
+    const br = box.getBoundingClientRect()
+    const sc = box.offsetWidth ? br.width / box.offsetWidth : 1 // skala zoom saat ini
+    const q = (v) => Math.round(v * 2) / 2
+    const rel = (el) => {
+      const r = el.getBoundingClientRect()
+      return { l: q((r.left - br.left) / sc), t: q((r.top - br.top) / sc), r: q((r.right - br.left) / sc), b: q((r.bottom - br.top) / sc) }
+    }
+    const rowRect = new Map()
+    const bands = []
+    for (const r of layout.rows) {
+      const el = rowEls.current.get(r.row)
+      if (!el) continue
+      const b = rel(el)
+      rowRect.set(r.row, b)
+      bands.push({ key: r.row, y: b.t - 16, h: b.b - b.t + 32 })
+    }
+    const paths = []
+    for (const e of layout.edges) {
+      const a = slots.current.get(e.from), b = slots.current.get(e.to), row = rowRect.get(e.fromRow)
+      if (!a || !b || !row) continue
+      const qa = rel(a), qb = rel(b)
+      paths.push(elbow((qa.l + qa.r) / 2, qa.b, (qb.l + qb.r) / 2, qb.t, row.b + ROW_GAP / 2))
+    }
+    const next = { w: box.offsetWidth, bands, paths }
+    setGeo((prev) => (JSON.stringify(prev) === JSON.stringify(next) ? prev : next))
+  }, [layout])
+
+  useLayoutEffect(() => {
+    measure()
+    const ro = new ResizeObserver(measure)
+    if (boxRef.current) ro.observe(boxRef.current)
+    document.fonts?.ready?.then(measure)
+    return () => ro.disconnect()
+  }, [measure])
+
   return (
-    <li>
-      <Card node={node} ctx={ctx} />
-      {node.children.length > 0 && open && (
-        <ul>
-          {branches.map((b) => <DesktopNode key={b.p.id} node={b} ctx={ctx} />)}
-          {singles.map((s) => <li key={s.p.id}><Card node={s} ctx={ctx} /></li>)}
-          {team && <li><TeamPanel parent={node} members={team} ctx={ctx} /></li>}
-        </ul>
-      )}
-    </li>
+    <div ref={boxRef} className="oc-tier" style={{ width: layout.width + LABEL_W, '--oc-label': `${LABEL_W}px`, '--oc-rowgap': `${ROW_GAP}px` }}>
+      <svg className="oc-lines" aria-hidden="true">
+        {geo.bands.map((b) => <rect key={b.key} className="oc-band" x={0} y={b.y} width={geo.w} height={b.h} rx={18} />)}
+        {geo.paths.map((d, i) => <path key={i} d={d} />)}
+      </svg>
+      {layout.rows.map((r) => {
+        const meta = rowMeta(r.row)
+        return (
+          <div key={r.row} className="oc-tier-row" ref={(el) => (el ? rowEls.current.set(r.row, el) : rowEls.current.delete(r.row))}>
+            <div className="oc-tier-label">
+              <span className="oc-grade" style={meta.g ? gradeStyle(meta.g) : undefined}>{meta.pill}</span>
+              <span className="oc-tier-desc">{meta.desc}</span>
+            </div>
+            {r.items.map((u) => (
+              <div key={u.id} className="oc-slot" style={{ width: u.w, marginLeft: u.gap }}
+                ref={(el) => (el ? slots.current.set(u.id, el) : slots.current.delete(u.id))}>
+                {u.kind === 'team'
+                  ? <TeamPanel parent={u.parent} members={u.members} row={u.row} ctx={ctx} />
+                  : <Card node={u.node} ctx={ctx} />}
+              </div>
+            ))}
+          </div>
+        )
+      })}
+    </div>
   )
 }
 
@@ -398,9 +464,7 @@ export default function OrgChartVisual({ employees, departments = [], isDesktop,
       <div ref={viewRef} className="oc-viewport" onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp}>
         <div className="oc-scaler" style={{ width: size.w * zoom || undefined, height: size.h * zoom || undefined }}>
           <div ref={innerRef} className="oc-inner" style={{ transform: `scale(${zoom})` }}>
-            <ul className="oc-tree">
-              {model.roots.map((r) => <DesktopNode key={r.p.id} node={r} ctx={ctx} />)}
-            </ul>
+            <TierChart roots={model.roots} ctx={ctx} />
           </div>
         </div>
       </div>

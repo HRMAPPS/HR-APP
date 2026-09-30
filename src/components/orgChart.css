@@ -25,21 +25,17 @@
 .oc-scaler{ margin:0 auto; position:relative; }
 .oc-inner{ width:max-content; padding:44px 48px 64px; transform-origin:top left; }
 
-/* ---------- tree connectors (desktop) ---------- */
-.oc-tree, .oc-tree ul{ list-style:none; margin:0; padding:0; display:flex; justify-content:center; position:relative; }
-.oc-tree ul{ padding-top:var(--oc-v); }
-.oc-tree ul::before{ content:''; position:absolute; top:0; left:50%; margin-left:-1px; height:var(--oc-v); border-left:2px solid var(--oc-line); }
-.oc-tree li{ position:relative; display:flex; flex-direction:column; align-items:center; padding:var(--oc-v) var(--oc-h) 0; }
-.oc-tree > li{ padding-top:0; }
-.oc-tree li::before, .oc-tree li::after{ content:''; position:absolute; top:0; width:50%; height:var(--oc-v); border-top:2px solid var(--oc-line); }
-.oc-tree li::before{ right:50%; }
-.oc-tree li::after{ left:50%; margin-left:-1px; width:calc(50% + 1px); border-left:2px solid var(--oc-line); }
-.oc-tree > li::before, .oc-tree > li::after{ display:none; }
-.oc-tree li:only-child{ padding-top:0; }
-.oc-tree li:only-child::before, .oc-tree li:only-child::after{ display:none; }
-.oc-tree li:first-child::before, .oc-tree li:last-child::after{ border:0; }
-.oc-tree li:last-child::before{ right:calc(50% - 1px); width:calc(50% + 1px); border-right:2px solid var(--oc-line); border-radius:0 12px 0 0; }
-.oc-tree li:first-child::after{ border-radius:12px 0 0 0; }
+/* ---------- baris golongan + garis penghubung (desktop) ---------- */
+.oc-tier{ position:relative; }
+.oc-lines{ position:absolute; left:0; top:0; width:100%; height:100%; overflow:visible; pointer-events:none; z-index:0; }
+.oc-lines .oc-band{ fill:rgba(255,255,255,.5); stroke:#E9DED2; stroke-width:1; stroke-dasharray:4 4; }
+.oc-lines path{ fill:none; stroke:var(--oc-line); stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+.oc-tier-row{ position:relative; z-index:1; display:flex; align-items:flex-start; margin-left:var(--oc-label); }
+.oc-tier-row + .oc-tier-row{ margin-top:var(--oc-rowgap); }
+.oc-tier-label{ position:absolute; top:2px; left:calc(-1 * var(--oc-label) + 16px); width:calc(var(--oc-label) - 40px); display:flex; flex-direction:column; align-items:flex-start; gap:5px; }
+.oc-tier-desc{ font-size:10.5px; font-weight:700; line-height:1.25; color:#8a7f75; }
+.oc-slot{ flex:none; position:relative; }
+.oc-slot > .oc-team{ width:100%; box-sizing:border-box; }
 
 /* ---------- cards ---------- */
 .oc-card{ --c:#7A7370; position:relative; z-index:1; width:220px; min-height:88px; display:flex; align-items:center; gap:11px; padding:12px 12px 14px; background:#fff; border:1px solid #EADFD3; border-top:3px solid var(--c); border-radius:16px; box-shadow:var(--shadow-sm); text-align:left; transition:transform .18s var(--ease), box-shadow .18s var(--ease), opacity .2s; }
