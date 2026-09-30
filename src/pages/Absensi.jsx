@@ -4,6 +4,8 @@ import { supabase } from '../lib/supabaseClient'
 import { useBackHandler } from '../lib/backStack'
 import { todayStr } from '../lib/dateUtils'
 import AttendanceDetail from '../components/AttendanceDetail'
+import AttendanceLogDesktop, { DesktopAbsensiHeader } from '../components/AttendanceLogDesktop'
+import { useIsDesktop } from '../lib/useIsDesktop'
 
 const MONTHS_ID = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des']
 const MONTHS_FULL = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember']
@@ -36,6 +38,7 @@ export default function Absensi({ employee, onBack, startNew, onToast, onNavigat
   const [showShiftStatusSheet, setShowShiftStatusSheet] = useState(false)
   useBackHandler(() => setShowForm(false), showForm)
   useBackHandler(() => setEventDetail(null), !!eventDetail)
+  const isDesktop = useIsDesktop()
 
   const [monthYear, setMonthYear] = useState(todayParts[0])
   const [monthIndex, setMonthIndex] = useState(todayParts[1] - 1) // 0-based
@@ -169,19 +172,42 @@ export default function Absensi({ employee, onBack, startNew, onToast, onNavigat
 
   return (
     <div>
-      <div className="page-header">
-        <button className="back-btn" onClick={onBack}><ArrowLeft size={22} /></button>
-        <h1>Daftar Absensi</h1>
-        <span style={{ width: 22 }} />
-      </div>
+      {isDesktop ? (
+        <DesktopAbsensiHeader tab={tab} onTab={setTab} onBack={onBack} />
+      ) : (
+        <>
+          <div className="page-header">
+            <button className="back-btn" onClick={onBack}><ArrowLeft size={22} /></button>
+            <h1>Daftar Absensi</h1>
+            <span style={{ width: 22 }} />
+          </div>
 
-      <div className="tabs on-red" style={{ background: 'var(--red)', margin: 0, padding: '0 16px 10px' }}>
-        <button className={tab === 'riwayat' ? 'active' : ''} onClick={() => setTab('riwayat')}>Riwayat</button>
-        <button className={tab === 'absensi' ? 'active' : ''} onClick={() => setTab('absensi')}>Absensi</button>
-        <button className={tab === 'shift' ? 'active' : ''} onClick={() => setTab('shift')}>Shift</button>
-      </div>
+          <div className="tabs on-red" style={{ background: 'var(--red)', margin: 0, padding: '0 16px 10px' }}>
+            <button className={tab === 'riwayat' ? 'active' : ''} onClick={() => setTab('riwayat')}>Riwayat</button>
+            <button className={tab === 'absensi' ? 'active' : ''} onClick={() => setTab('absensi')}>Absensi</button>
+            <button className={tab === 'shift' ? 'active' : ''} onClick={() => setTab('shift')}>Shift</button>
+          </div>
+        </>
+      )}
 
-      {tab === 'riwayat' && (
+      {tab === 'riwayat' && isDesktop && (
+        <AttendanceLogDesktop
+          employee={employee}
+          loading={loading}
+          attendance={attendance}
+          shiftByDate={shiftByDate}
+          today={today}
+          dayIssue={dayIssue}
+          monthLabel={`${MONTHS_FULL[monthIndex]} ${monthYear}`}
+          periodLabel={`${new Date(monthStart + 'T00:00:00').toLocaleDateString('id-ID', { day: '2-digit', month: 'short' })} - ${new Date(monthEnd + 'T00:00:00').toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })}`}
+          onOpenMonth={() => setShowMonthPicker(true)}
+          statCards={STAT_CARDS}
+          onOpenIssue={setIssueList}
+          onOpenDay={setDayDetail}
+        />
+      )}
+
+      {tab === 'riwayat' && !isDesktop && (
         <>
           <div style={{ padding: '14px 16px 0' }}>
             <button onClick={() => setShowMonthPicker(true)} className="date-select" style={{ width: '100%', justifyContent: 'space-between', cursor: 'pointer' }}>
