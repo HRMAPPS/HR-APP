@@ -45,7 +45,8 @@ export async function readEmployeeFile(file) {
 }
 
 // Validasi + susun rencana impor. existingEmployees: hasil get_hr_employees, shifts: hasil get_hr_shifts
-export function buildPlan(rows, existingEmployees, shifts) {
+export function buildPlan(rows, existingEmployees, shifts, departments = []) {
+  const deptByLower = new Map(departments.map((d) => [d.toLowerCase(), d]))
   const existingByCode = new Map(existingEmployees.filter((e) => e.employee_code).map((e) => [e.employee_code.toLowerCase(), e]))
   const shiftByName = new Map(shifts.map((s) => [s.name.toLowerCase(), s]))
   const seen = new Set()
@@ -57,7 +58,7 @@ export function buildPlan(rows, existingEmployees, shifts) {
     .map((r) => {
       const it = {
         row: r._row, code: str(r.code), name: str(r.name), position: str(r.position) || null,
-        department: str(r.department) || null, manager_code: str(r.manager_code),
+        department: (deptByLower.get(str(r.department).toLowerCase()) || str(r.department)) || null, manager_code: str(r.manager_code),
         phone: str(r.phone) || null, email: str(r.email) || null,
         role: str(r.role).toLowerCase() || 'employee', shiftName: str(r.shift), shift_id: null,
         work_days: null, join_date: null, status: 'ok', message: '',
@@ -102,7 +103,7 @@ export function buildPlan(rows, existingEmployees, shifts) {
 }
 
 // Jalankan impor. Baris dibuat berurutan supaya atasan (di file yang sama) lebih dulu terbuat.
-export async function runImport(items, existingEmployees, onProgress) {
+export async function runImport(items, existingEmployees, onProgress, existingDepartments = []) {
   const idByCode = new Map(existingEmployees.filter((e) => e.employee_code).map((e) => [e.employee_code.toLowerCase(), e.id]))
   let pending = items.filter((i) => i.status === 'ok')
   const ok = [], failed = []
@@ -129,5 +130,9 @@ export async function runImport(items, existingEmployees, onProgress) {
     }
     pending = pending.filter((i) => !ready.includes(i))
   }
+  // daftarkan departemen baru yang muncul di file
+  const known = new Set((existingDepartments || []).map((d) => d.toLowerCase()))
+  const fresh = [...new Set(items.filter((i) => ok.includes(i.code) && i.department && !known.has(i.department.toLowerCase())).map((i) => i.department))]
+  if (fresh.length) await supabase.from('departments').insert(fresh.map((name) => ({ name })))
   return { ok, failed }
 }

@@ -11,6 +11,7 @@ const STATUS_STYLE = {
 
 export default function EmployeeImportModal({ employees, onClose, onDone }) {
   const [shifts, setShifts] = useState([])
+  const [departments, setDepartments] = useState([])
   const [items, setItems] = useState(null)
   const [fileName, setFileName] = useState('')
   const [busy, setBusy] = useState(false)
@@ -18,7 +19,10 @@ export default function EmployeeImportModal({ employees, onClose, onDone }) {
   const [result, setResult] = useState(null)
   const [error, setError] = useState('')
 
-  useEffect(() => { supabase.rpc('get_hr_shifts').then(({ data }) => setShifts(data || [])) }, [])
+  useEffect(() => {
+    supabase.rpc('get_hr_shifts').then(({ data }) => setShifts(data || []))
+    supabase.from('departments').select('name').then(({ data }) => setDepartments((data || []).map((d) => d.name)))
+  }, [])
 
   async function onFile(ev) {
     const file = ev.target.files?.[0]
@@ -27,7 +31,7 @@ export default function EmployeeImportModal({ employees, onClose, onDone }) {
     setError(''); setResult(null); setItems(null); setFileName(file.name)
     try {
       const rows = await readEmployeeFile(file)
-      const plan = buildPlan(rows, employees, shifts)
+      const plan = buildPlan(rows, employees, shifts, departments)
       if (plan.length === 0) { setError('Tidak ada baris data di file ini. Pastikan data diisi mulai baris 3 di sheet "Karyawan".'); return }
       setItems(plan)
     } catch (err) {
@@ -39,7 +43,7 @@ export default function EmployeeImportModal({ employees, onClose, onDone }) {
 
   async function doImport() {
     setBusy(true); setError('')
-    const res = await runImport(items, employees, (d, t) => setProgress(`${d}/${t}`))
+    const res = await runImport(items, employees, (d, t) => setProgress(`${d}/${t}`), departments)
     setBusy(false); setProgress(null)
     setResult(res)
     if (res.ok.length) onDone?.(`${res.ok.length} karyawan berhasil diimpor${res.failed.length ? `, ${res.failed.length} gagal` : ''}`, res.failed.length === 0)

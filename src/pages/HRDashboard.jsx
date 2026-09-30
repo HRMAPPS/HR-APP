@@ -314,11 +314,13 @@ function EmployeeForm({ row, employees, onClose, onSaved }) {
     default_days: row.default_work_days && row.default_work_days.length > 0 ? row.default_work_days.map(String) : ['0', '1', '2', '3', '4', '5', '6'],
   })
   const [shifts, setShifts] = useState([])
+  const [departments, setDepartments] = useState([])
   const [error, setError] = useState('')
   const [saving, setSaving] = useState(false)
 
   useEffect(() => {
     supabase.rpc('get_hr_shifts').then(({ data }) => setShifts(data || []))
+    supabase.from('departments').select('name').order('name').then(({ data }) => setDepartments((data || []).map((d) => d.name)))
   }, [])
 
   const managerOptions = employees.filter((e) => e.id !== row.id)
@@ -332,6 +334,11 @@ function EmployeeForm({ row, employees, onClose, onSaved }) {
     setError('')
     if (!form.full_name.trim() || (!row.id && !form.employee_code.trim())) { setError('Nama dan kode karyawan wajib diisi'); return }
     setSaving(true)
+    // samakan huruf dengan daftar resmi; departemen baru otomatis didaftarkan
+    const typed = form.department.trim()
+    const canonical = departments.find((d) => d.toLowerCase() === typed.toLowerCase())
+    form.department = canonical || typed
+    if (typed && !canonical) await supabase.from('departments').insert({ name: typed })
     const daysParam = form.default_shift_id && form.default_days.length < 7 ? form.default_days.map(Number) : null
     let res
     if (row.id) {
@@ -368,7 +375,10 @@ function EmployeeForm({ row, employees, onClose, onSaved }) {
           </div>
           <div className="field"><label>Nama lengkap</label><input value={form.full_name} onChange={(e) => setForm((f) => ({ ...f, full_name: e.target.value }))} /></div>
           <div className="field"><label>Jabatan</label><input value={form.position} onChange={(e) => setForm((f) => ({ ...f, position: e.target.value }))} /></div>
-          <div className="field"><label>Departemen (teks)</label><input value={form.department} onChange={(e) => setForm((f) => ({ ...f, department: e.target.value }))} /></div>
+          <div className="field"><label>Departemen</label>
+            <input list="dept-options" placeholder="Pilih atau ketik departemen baru" value={form.department} onChange={(e) => setForm((f) => ({ ...f, department: e.target.value }))} />
+            <datalist id="dept-options">{departments.map((d) => <option key={d} value={d} />)}</datalist>
+          </div>
           <div className="field">
             <label>Atasan langsung</label>
             <select value={form.manager_id} onChange={(e) => setForm((f) => ({ ...f, manager_id: e.target.value }))}>
