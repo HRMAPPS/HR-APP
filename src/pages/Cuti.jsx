@@ -3,10 +3,11 @@ import { ArrowLeft, FileQuestion, Plus, Search } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
 import { useBackHandler } from '../lib/backStack'
 import { useIsDesktop } from '../lib/useIsDesktop'
+import CutiRequestDesktop from './CutiRequestDesktop'
 
 const MONTHS_ID = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember']
 
-export default function Cuti({ onBack, startNew, onToast }) {
+export default function Cuti({ onBack, startNew, onToast, employee }) {
   const [showForm, setShowForm] = useState(!!startNew)
   const [tab, setTab] = useState('saya')
   const [items, setItems] = useState([])
@@ -29,6 +30,10 @@ export default function Cuti({ onBack, startNew, onToast }) {
   }
 
   useEffect(() => { load() }, [])
+
+  if (showForm && isDesktop) {
+    return <CutiRequestDesktop employee={employee} onDone={() => { setShowForm(false); load() }} onCancel={() => setShowForm(false)} onToast={onToast} />
+  }
 
   if (showForm) {
     return <CutiForm onDone={() => { setShowForm(false); load() }} onCancel={() => setShowForm(false)} onToast={onToast} />

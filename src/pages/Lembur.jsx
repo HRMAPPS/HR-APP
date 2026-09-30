@@ -3,6 +3,7 @@ import { ArrowLeft, ScrollText, Search, X } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
 import { useBackHandler } from '../lib/backStack'
 import { useIsDesktop } from '../lib/useIsDesktop'
+import LemburRequestDesktop from './LemburRequestDesktop'
 
 export default function Lembur({ onBack, startNew, onToast }) {
   const [showForm, setShowForm] = useState(!!startNew)
@@ -26,6 +27,10 @@ export default function Lembur({ onBack, startNew, onToast }) {
   }
 
   useEffect(() => { load() }, [])
+
+  if (showForm && isDesktop) {
+    return <LemburRequestDesktop onDone={() => { setShowForm(false); load() }} onCancel={() => setShowForm(false)} onToast={onToast} />
+  }
 
   if (showForm) {
     return <LemburForm onDone={() => { setShowForm(false); load() }} onCancel={() => setShowForm(false)} onToast={onToast} />
