@@ -1,0 +1,242 @@
+diff --git a/src/components/HomeLeavePanel.jsx b/src/components/HomeLeavePanel.jsx
+new file mode 100644
+index 0000000..68d487a
+--- /dev/null
++++ b/src/components/HomeLeavePanel.jsx
+@@ -0,0 +1,131 @@
++import { useEffect, useState } from 'react'
++import { User } from 'lucide-react'
++import { supabase } from '../lib/supabaseClient'
++import { toDateStr } from '../lib/dateUtils'
++
++// Panel kanan Beranda desktop (gaya Talenta): "Sakit Used", "Unpaid Leave Used"
++// dan "Who's Off". Data dari RPC get_leave_summary & get_whos_off
++// (lihat supabase/migrations/20260930_home_leave_summary_whos_off.sql).
++
++const cardStyle = { background: '#fff', borderRadius: 16, padding: 20, boxShadow: 'var(--shadow-sm)' }
++const linkBtn = {
++  background: 'none', border: 'none', padding: 0, cursor: 'pointer',
++  color: 'var(--blue)', fontSize: 13.5, textAlign: 'left',
++}
++
++function formatDays(n) {
++  const v = Number(n) || 0
++  return `${v} ${v > 1 ? 'Days' : 'Day'}`
++}
++
++function initials(name) {
++  return (name || '').split(' ').slice(0, 2).map((n) => n[0]).join('').toUpperCase()
++}
++
++function StatBlock({ label, value, actionLabel, onAction }) {
++  return (
++    <div>
++      <div style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--text)' }}>{label}</div>
++      <div style={{ fontSize: 22, fontWeight: 700, margin: '6px 0 4px' }}>{value}</div>
++      <button onClick={onAction} style={linkBtn}>{actionLabel} →</button>
++    </div>
++  )
++}
++
++export default function HomeLeavePanel({ onNavigate }) {
++  const [summary, setSummary] = useState(null)
++  const [offDay, setOffDay] = useState('today') // 'today' | 'tomorrow'
++  const [offList, setOffList] = useState([])
++  const [offLoading, setOffLoading] = useState(true)
++
++  useEffect(() => {
++    supabase.rpc('get_leave_summary')
++      .then(({ data }) => setSummary(data || { sakit_used: 0, unpaid_used: 0 }))
++  }, [])
++
++  const targetDate = offDay === 'today'
++    ? new Date()
++    : new Date(Date.now() + 24 * 60 * 60 * 1000)
++  const targetStr = toDateStr(targetDate)
++
++  useEffect(() => {
++    let cancelled = false
++    setOffLoading(true)
++    supabase.rpc('get_whos_off', { p_date: targetStr })
++      .then(({ data }) => {
++        if (cancelled) return
++        setOffList(data || [])
++        setOffLoading(false)
++      })
++    return () => { cancelled = true }
++  }, [targetStr])
++
++  const dateHeading = targetDate
++    .toLocaleDateString('en-GB', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric', timeZone: 'Asia/Jakarta' })
++    .replace(',', '')
++    .toUpperCase()
++
++  return (
++    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
++      <div style={cardStyle}>
++        <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
++          <StatBlock
++            label="Sakit Used"
++            value={summary ? formatDays(summary.sakit_used) : '…'}
++            actionLabel="Request sakit"
++            onAction={() => onNavigate('cuti-new')}
++          />
++          <StatBlock
++            label="Unpaid Leave Used"
++            value={summary ? formatDays(summary.unpaid_used) : '…'}
++            actionLabel="Request unpaid leave"
++            onAction={() => onNavigate('cuti-new')}
++          />
++        </div>
++        <div style={{ borderTop: '1px solid var(--border)', marginTop: 18, paddingTop: 14 }}>
++          <button onClick={() => onNavigate('cuti')} style={linkBtn}>View all</button>
++        </div>
++      </div>
++
++      <div style={{ ...cardStyle, padding: 0, overflow: 'hidden' }}>
++        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 20px' }}>
++          <div style={{ fontWeight: 700, fontSize: 14.5 }}>Who's Off</div>
++          <select
++            value={offDay}
++            onChange={(e) => setOffDay(e.target.value)}
++            style={{ border: 'none', background: 'none', color: 'var(--text-muted)', fontSize: 13, cursor: 'pointer' }}
++          >
++            <option value="today">Today</option>
++            <option value="tomorrow">Tomorrow</option>
++          </select>
++        </div>
++
++        <div style={{ background: '#f4f1ee', padding: '7px 20px', fontSize: 11.5, fontWeight: 600, color: 'var(--text-muted)' }}>
++          {dateHeading}
++        </div>
++
++        <div style={{ padding: '6px 20px 12px', maxHeight: 280, overflowY: 'auto' }}>
++          {offLoading ? (
++            <p style={{ fontSize: 13, color: 'var(--text-muted)', margin: '10px 0' }}>Memuat…</p>
++          ) : offList.length === 0 ? (
++            <p style={{ fontSize: 13, color: 'var(--text-muted)', margin: '10px 0' }}>Tidak ada yang cuti.</p>
++          ) : offList.map((p) => (
++            <div key={p.employee_id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 0' }}>
++              {p.avatar_url
++                ? <img src={p.avatar_url} alt="" style={{ width: 40, height: 40, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />
++                : (
++                  <div className="avatar" style={{ width: 40, height: 40, fontSize: 13, flexShrink: 0 }}>
++                    {initials(p.full_name) || <User size={16} />}
++                  </div>
++                )}
++              <div style={{ minWidth: 0 }}>
++                <div style={{ fontWeight: 600, fontSize: 13.5, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.full_name}</div>
++                <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{p.leave_type || 'Cuti'}</div>
++              </div>
++            </div>
++          ))}
++        </div>
++      </div>
++    </div>
++  )
++}
+diff --git a/src/pages/Home.jsx b/src/pages/Home.jsx
+index 0f7bce5..8c5ed94 100644
+--- a/src/pages/Home.jsx
++++ b/src/pages/Home.jsx
+@@ -5,6 +5,7 @@ import { HOME_QUICK_APPS } from '../lib/menuConfig'
+ import { useAttendance } from '../lib/useAttendance'
+ import { useIsDesktop } from '../lib/useIsDesktop'
+ import CameraCapture from '../components/CameraCapture'
++import HomeLeavePanel from '../components/HomeLeavePanel'
+ import { jakartaHour, greetingID } from '../lib/dateUtils'
+ import { linkifyText } from '../lib/linkify'
+ 
+@@ -125,7 +126,7 @@ export default function Home({ employee, onNavigate, onOpenAllApps }) {
+           ))}
+         </div>
+ 
+-        <div style={{ display: 'grid', gridTemplateColumns: '260px 1fr', gap: 20, alignItems: 'start' }}>
++        <div style={{ display: 'grid', gridTemplateColumns: '240px minmax(0, 1fr) 290px', gap: 20, alignItems: 'start' }}>
+           <div style={{ background: '#fff', borderRadius: 16, padding: 20, boxShadow: 'var(--shadow-sm)' }}>
+             <div style={{ fontWeight: 700, marginBottom: 14 }}>Quick Links</div>
+             {[
+@@ -215,6 +216,8 @@ export default function Home({ employee, onNavigate, onOpenAllApps }) {
+               </div>
+             ))}
+           </div>
++
++          <HomeLeavePanel onNavigate={onNavigate} />
+         </div>
+ 
+         {overlays}
+diff --git a/supabase/migrations/20260930_home_leave_summary_whos_off.sql b/supabase/migrations/20260930_home_leave_summary_whos_off.sql
+new file mode 100644
+index 0000000..7595e8d
+--- /dev/null
++++ b/supabase/migrations/20260930_home_leave_summary_whos_off.sql
+@@ -0,0 +1,69 @@
++-- Sudah diterapkan ke project Supabase (usdnfufdadpiwreqhjhc). Disimpan di repo sebagai catatan.
++--
++-- Panel kanan Beranda desktop (mirip Talenta): "Sakit Used", "Unpaid Leave Used", "Who's Off".
++-- RLS leave_requests hanya mengizinkan pemilik / atasan / HR membaca, jadi dua fungsi
++-- security definer di bawah dipakai supaya semua karyawan bisa melihat data ringkas ini
++-- TANPA membuka kolom sensitif (reason, attachment_*, approver_id, dst).
++
++-- 1) Total hari cuti Sakit & Unpaid Leave yang sudah DISETUJUI untuk karyawan yang sedang login,
++--    pada tahun berjalan (zona Asia/Jakarta). Dihitung dari leave_requests karena leave_balances kosong.
++create or replace function public.get_leave_summary(p_year int default null)
++returns json
++language plpgsql
++stable
++security definer
++set search_path = public
++as $$
++declare
++  v_emp_id uuid := current_employee_id();
++  v_year   int  := coalesce(p_year, extract(year from (now() at time zone 'Asia/Jakarta'))::int);
++  v_sakit  numeric := 0;
++  v_unpaid numeric := 0;
++begin
++  if v_emp_id is null then
++    return json_build_object('year', v_year, 'sakit_used', 0, 'unpaid_used', 0);
++  end if;
++
++  select
++    coalesce(sum(lr.total_days) filter (where lower(lt.name) = 'sakit'), 0),
++    coalesce(sum(lr.total_days) filter (where lower(lt.name) = 'unpaid leave'), 0)
++  into v_sakit, v_unpaid
++  from leave_requests lr
++  join leave_types lt on lt.id = lr.leave_type_id
++  where lr.employee_id = v_emp_id
++    and lr.status = 'approved'
++    and extract(year from lr.start_date)::int = v_year;
++
++  return json_build_object('year', v_year, 'sakit_used', v_sakit, 'unpaid_used', v_unpaid);
++end;
++$$;
++
++grant execute on function public.get_leave_summary(int) to authenticated;
++
++-- 2) Siapa saja yang sedang cuti pada tanggal tertentu (default: hari ini di Jakarta).
++--    Hanya cuti berstatus approved. Hanya mengembalikan nama, foto, jenis cuti, dan rentang tanggal.
++create or replace function public.get_whos_off(p_date date default null)
++returns table (
++  employee_id uuid,
++  full_name   text,
++  avatar_url  text,
++  leave_type  text,
++  start_date  date,
++  end_date    date
++)
++language sql
++stable
++security definer
++set search_path = public
++as $$
++  select e.id, e.full_name, e.avatar_url, lt.name, lr.start_date, lr.end_date
++  from leave_requests lr
++  join employees e        on e.id = lr.employee_id
++  left join leave_types lt on lt.id = lr.leave_type_id
++  where auth.uid() is not null
++    and lr.status = 'approved'
++    and coalesce(p_date, (now() at time zone 'Asia/Jakarta')::date) between lr.start_date and lr.end_date
++  order by e.full_name;
++$$;
++
++grant execute on function public.get_whos_off(date) to authenticated;
