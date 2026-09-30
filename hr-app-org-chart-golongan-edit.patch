@@ -1,0 +1,473 @@
+diff --git a/src/App.jsx b/src/App.jsx
+index 31e8284..f1ee629 100644
+--- a/src/App.jsx
++++ b/src/App.jsx
+@@ -215,7 +215,7 @@ function PageRouter({ page, employee, onBack, onToast, onNavigate }) {
+     case 'calendar':
+       return <CalendarPage onBack={onBack} onToast={onToast} onNavigate={onNavigate} />
+     case 'org-chart':
+-      return <OrgChart onBack={onBack} onToast={onToast} />
++      return <OrgChart onBack={onBack} onToast={onToast} employee={employee} />
+     case 'hr-dashboard':
+       return <HRDashboard onBack={onBack} onToast={onToast} />
+     case 'team-report':
+diff --git a/src/components/OrgChartVisual.jsx b/src/components/OrgChartVisual.jsx
+index a18ce09..35f79c2 100644
+--- a/src/components/OrgChartVisual.jsx
++++ b/src/components/OrgChartVisual.jsx
+@@ -1,5 +1,5 @@
+ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+-import { ChevronRight, ChevronDown, ChevronsDownUp, ChevronsUpDown, Maximize2, Minus, Plus, Search, X } from 'lucide-react'
++import { ChevronRight, ChevronDown, ChevronsDownUp, ChevronsUpDown, Maximize2, Minus, Pencil, Plus, Search, X } from 'lucide-react'
+ import './orgChart.css'
+ 
+ const PALETTE = ['#4F6BED', '#0E9F86', '#E8833A', '#B34BC4', '#2E90D1', '#D9467A', '#7A8B2C', '#8A5A44', '#5B6B7F', '#C79A1E']
+@@ -7,6 +7,16 @@ const NEUTRAL = '#7A7370'
+ const TEAM_MIN = 3        // >= 3 anggota tanpa bawahan dikelompokkan jadi satu panel tim
+ const TEAM_PREVIEW = 8    // jumlah anggota yang tampil sebelum "lihat semua"
+ 
++// Golongan (employees.grade 1..5). Warna mengikuti Excel Struktur Organisasi.
++export const GRADES = {
++  5: { short: 'V', label: 'Golongan V', desc: 'BOD & Advisor', bg: '#4285F4', fg: '#fff' },
++  4: { short: 'IV', label: 'Golongan IV', desc: 'Head', bg: '#B4A7D6', fg: '#2a2320' },
++  3: { short: 'III', label: 'Golongan III', desc: 'Manager', bg: '#F9CB9C', fg: '#2a2320' },
++  2: { short: 'II', label: 'Golongan II', desc: 'SPV/Leader', bg: '#76A5AF', fg: '#fff' },
++  1: { short: 'I', label: 'Golongan I', desc: 'Staff', bg: '#B6D7A8', fg: '#2a2320' },
++}
++const gradeStyle = (g) => ({ '--gb': g.bg, '--gf': g.fg })
++
+ const initials = (n) => (n || '?').trim().split(/\s+/).slice(0, 2).map((s) => s[0]).join('').toUpperCase()
+ const norm = (s) => (s || '').toLowerCase()
+ 
+@@ -54,7 +64,8 @@ function useModel(employees, departments) {
+     const nodes = []
+     const walk = (n) => { nodes.push(n); n.children.forEach(walk) }
+     roots.forEach(walk)
+-    return { roots, nodes, parentOf, colorOf, deptName, legend }
++    const gradeCounts = employees.reduce((m, e) => (e.grade ? m.set(e.grade, (m.get(e.grade) || 0) + 1) : m), new Map())
++    return { roots, nodes, parentOf, colorOf, deptName, legend, gradeCounts }
+   }, [employees, departments])
+ }
+ 
+@@ -68,6 +79,23 @@ function Avatar({ p, color, size }) {
+   )
+ }
+ 
++function GradePill({ grade, full }) {
++  const g = GRADES[grade]
++  if (!g) return null
++  return <span className={`oc-grade ${full ? '' : 'sm'}`} style={gradeStyle(g)} title={`${g.label} · ${g.desc}`}>{full ? `Gol. ${g.short}` : g.short}</span>
++}
++
++// Area nama: tombol untuk edit jika boleh, div biasa jika tidak
++function Hit({ p, ctx, className = '', children }) {
++  if (!ctx.canEdit) return <div className={`oc-hit ${className}`}>{children}</div>
++  return (
++    <button type="button" className={`oc-hit is-edit ${className}`} onClick={() => ctx.onEdit(p)} title="Klik untuk edit struktur" aria-label={`Edit ${p.full_name}`}>
++      {children}
++      <Pencil size={12} className="oc-pen" />
++    </button>
++  )
++}
++
+ function groupKids(node) {
+   const leaves = node.children.filter((c) => c.children.length === 0)
+   const branches = node.children.filter((c) => c.children.length > 0)
+@@ -86,12 +114,19 @@ function Card({ node, ctx }) {
+   const cls = ['oc-card', isRoot && 'is-root', ctx.match(p.id) && 'is-match', ctx.dimmed(p.id) && 'oc-dim'].filter(Boolean).join(' ')
+   return (
+     <div className={cls} style={{ '--c': color }} data-oc-match={ctx.match(p.id) ? '1' : undefined}>
+-      <Avatar p={p} color={isRoot ? '#E9B949' : color} size={44} />
+-      <div className="oc-meta">
+-        <div className="oc-name" title={p.full_name}>{p.full_name}</div>
+-        <div className="oc-pos" title={p.position || ''}>{p.position || '-'}</div>
+-        {dept && <span className="oc-chip">{dept}</span>}
+-      </div>
++      <Hit p={p} ctx={ctx}>
++        <Avatar p={p} color={isRoot ? '#E9B949' : color} size={44} />
++        <div className="oc-meta">
++          <div className="oc-name" title={p.full_name}>{p.full_name}</div>
++          <div className="oc-pos" title={p.position || ''}>{p.position || '-'}</div>
++          {(dept || p.grade) && (
++            <div className="oc-chips">
++              {dept && <span className="oc-chip">{dept}</span>}
++              <GradePill grade={p.grade} full />
++            </div>
++          )}
++        </div>
++      </Hit>
+       {has && (
+         <button className={`oc-toggle ${open ? '' : 'is-closed'}`} aria-expanded={open}
+           aria-label={open ? 'Tutup bawahan' : 'Buka bawahan'} onClick={() => ctx.toggle(p.id)}>
+@@ -116,11 +151,14 @@ function TeamPanel({ parent, members, ctx }) {
+           return (
+             <div key={m.p.id} className={['oc-mini', ctx.match(m.p.id) && 'is-match', ctx.dimmed(m.p.id) && 'oc-dim'].filter(Boolean).join(' ')}
+               style={{ '--c': color }} data-oc-match={ctx.match(m.p.id) ? '1' : undefined}>
+-              <Avatar p={m.p} color={color} size={30} />
+-              <div className="oc-meta">
+-                <div className="oc-name" title={m.p.full_name}>{m.p.full_name}</div>
+-                <div className="oc-pos" title={m.p.position || ''}>{m.p.position || '-'}</div>
+-              </div>
++              <Hit p={m.p} ctx={ctx}>
++                <Avatar p={m.p} color={color} size={30} />
++                <div className="oc-meta">
++                  <div className="oc-name" title={m.p.full_name}>{m.p.full_name}</div>
++                  <div className="oc-pos" title={m.p.position || ''}>{m.p.position || '-'}</div>
++                </div>
++                <GradePill grade={m.p.grade} />
++              </Hit>
+             </div>
+           )
+         })}
+@@ -171,21 +209,26 @@ function MobileNode({ node, ctx }) {
+   }
+ 
+   const cls = ['oc-row', isRoot && 'is-root', ctx.match(p.id) && 'is-match', ctx.dimmed(p.id) && 'oc-dim'].filter(Boolean).join(' ')
+-  const inner = (
++  const main = (
+     <>
+       <Avatar p={p} color={isRoot ? '#E9B949' : color} size={38} />
+       <div className="oc-meta">
+         <div className="oc-name">{p.full_name}</div>
+         <div className="oc-pos">{[p.position, dept].filter(Boolean).join(' · ') || '-'}</div>
+       </div>
+-      {has && <span className={`oc-badge ${open ? 'is-open' : ''}`}>{node.size - 1}<ChevronRight size={14} /></span>}
+     </>
+   )
+   return (
+     <li>
+-      {has
+-        ? <button className={cls} style={{ '--c': color }} aria-expanded={open} onClick={() => ctx.toggle(p.id)} data-oc-match={ctx.match(p.id) ? '1' : undefined}>{inner}</button>
+-        : <div className={cls} style={{ '--c': color }} data-oc-match={ctx.match(p.id) ? '1' : undefined}>{inner}</div>}
++      <div className={cls} style={{ '--c': color }} data-oc-match={ctx.match(p.id) ? '1' : undefined}>
++        {ctx.canEdit
++          ? <button type="button" className="oc-hit" onClick={() => ctx.onEdit(p)} aria-label={`Edit ${p.full_name}`}>{main}</button>
++          : has
++            ? <button type="button" className="oc-hit" aria-expanded={open} onClick={() => ctx.toggle(p.id)}>{main}</button>
++            : <div className="oc-hit">{main}</div>}
++        <GradePill grade={p.grade} />
++        {has && <button type="button" className={`oc-badge ${open ? 'is-open' : ''}`} aria-expanded={open} aria-label={open ? 'Tutup bawahan' : 'Buka bawahan'} onClick={() => ctx.toggle(p.id)}>{node.size - 1}<ChevronRight size={14} /></button>}
++      </div>
+       {open && (
+         <ul>
+           {kids.map((k) => <MobileNode key={k.p.id} node={k} ctx={ctx} />)}
+@@ -197,11 +240,12 @@ function MobileNode({ node, ctx }) {
+ }
+ 
+ /* ---------------------------------------------------------------- main */
+-export default function OrgChartVisual({ employees, departments = [], isDesktop }) {
++export default function OrgChartVisual({ employees, departments = [], isDesktop, canEdit = false, onEdit }) {
+   const model = useModel(employees, departments)
+   const [collapsed, setCollapsed] = useState(() => new Set(model.nodes.filter((n) => n.depth >= 1 && n.children.length > 0).map((n) => n.p.id)))
+   const [openTeams, setOpenTeams] = useState(() => new Set())
+   const [q, setQ] = useState('')
++  const [gradeFilter, setGradeFilter] = useState(null) // 1..5 atau null
+   const [zoom, setZoom] = useState(1)
+   const [size, setSize] = useState({ w: 0, h: 0 })
+   const viewRef = useRef(null)
+@@ -213,10 +257,10 @@ export default function OrgChartVisual({ employees, departments = [], isDesktop
+   const query = norm(q.trim())
+   const { matches, forced } = useMemo(() => {
+     const m = new Set(), f = new Set()
+-    if (query.length >= 2) {
++    if (query.length >= 2 || gradeFilter) {
+       for (const n of model.nodes) {
+         const hay = norm(`${n.p.full_name} ${n.p.position || ''} ${model.deptName(n.p)}`)
+-        if (hay.includes(query)) {
++        if ((query.length < 2 || hay.includes(query)) && (!gradeFilter || n.p.grade === gradeFilter)) {
+           m.add(n.p.id)
+           let cur = model.parentOf.get(n.p.id), g = 0
+           while (cur && g++ < 50) { f.add(cur); cur = model.parentOf.get(cur) }
+@@ -224,17 +268,17 @@ export default function OrgChartVisual({ employees, departments = [], isDesktop
+       }
+     }
+     return { matches: m, forced: f }
+-  }, [query, model])
+-  const searching = query.length >= 2
++  }, [query, model, gradeFilter])
++  const searching = query.length >= 2 || !!gradeFilter
+ 
+   const ctx = useMemo(() => ({
+-    model, openTeams,
++    model, openTeams, canEdit, onEdit,
+     isCollapsed: (id) => collapsed.has(id) && !forced.has(id),
+     toggle: (id) => setCollapsed((s) => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n }),
+     openTeam: (id) => setOpenTeams((s) => new Set(s).add(id)),
+     match: (id) => matches.has(id),
+     dimmed: (id) => searching && !matches.has(id) && !forced.has(id),
+-  }), [model, collapsed, forced, matches, openTeams, searching])
++  }), [model, collapsed, forced, matches, openTeams, searching, canEdit, onEdit])
+ 
+   const expandAll = () => { setCollapsed(new Set()); setOpenTeams(new Set(model.nodes.map((n) => n.p.id))) }
+   const collapseAll = () => { setCollapsed(new Set(model.nodes.filter((n) => n.depth >= 1 && n.children.length > 0).map((n) => n.p.id))); setOpenTeams(new Set()) }
+@@ -320,6 +364,19 @@ export default function OrgChartVisual({ employees, departments = [], isDesktop
+           {model.legend.map((l) => <span key={l.id} className="lg" style={{ '--c': l.color }}><i />{l.name}</span>)}
+         </div>
+       )}
++      {model.gradeCounts.size > 0 && (
++        <div className="oc-legend oc-legend-grade" style={{ flexBasis: '100%' }} role="group" aria-label="Filter golongan">
++          {[5, 4, 3, 2, 1].filter((k) => model.gradeCounts.has(k)).map((k) => {
++            const g = GRADES[k]
++            return (
++              <button key={k} type="button" className={`lg lg-grade ${gradeFilter === k ? 'is-on' : ''}`} style={gradeStyle(g)} aria-pressed={gradeFilter === k}
++                onClick={() => setGradeFilter((cur) => (cur === k ? null : k))} title={`Sorot ${g.label}`}>
++                <i />{g.label} · {g.desc}<b>{model.gradeCounts.get(k)}</b>
++              </button>
++            )
++          })}
++        </div>
++      )}
+     </div>
+   )
+ 
+@@ -327,7 +384,7 @@ export default function OrgChartVisual({ employees, departments = [], isDesktop
+     return (
+       <div className="oc-wrap">
+         {toolbar}
+-        {searching && matches.size === 0 && <div className="oc-empty">Tidak ada yang cocok dengan “{q}”.</div>}
++        {searching && matches.size === 0 && <div className="oc-empty">{q.trim() ? `Tidak ada yang cocok dengan “${q}”.` : 'Tidak ada karyawan pada golongan ini.'}</div>}
+         <ul className="oc-outline">
+           {model.roots.map((r) => <MobileNode key={r.p.id} node={r} ctx={ctx} />)}
+         </ul>
+diff --git a/src/components/orgChart.css b/src/components/orgChart.css
+index cbfb52d..080ffeb 100644
+--- a/src/components/orgChart.css
++++ b/src/components/orgChart.css
+@@ -81,15 +81,13 @@
+ .oc-outline ul > li::before{ content:''; position:absolute; left:-12px; top:0; width:12px; height:34px; border-left:2px solid var(--oc-line); border-bottom:2px solid var(--oc-line); border-radius:0 0 0 12px; }
+ .oc-outline ul > li::after{ content:''; position:absolute; left:-12px; top:34px; bottom:0; border-left:2px solid var(--oc-line); }
+ .oc-outline ul > li:last-child::after{ display:none; }
+-.oc-row{ --c:#7A7370; width:100%; display:flex; align-items:center; gap:10px; padding:9px 10px 9px 12px; min-height:54px; background:#fff; border:1px solid #EADFD3; border-left:4px solid var(--c); border-radius:14px; box-shadow:var(--shadow-xs); text-align:left; font:inherit; color:inherit; transition:transform .12s, box-shadow .15s, opacity .2s; }
+-button.oc-row{ cursor:pointer; }
+-button.oc-row:active{ transform:scale(.99); }
++.oc-row{ --c:#7A7370; width:100%; display:flex; align-items:center; gap:8px; padding:9px 10px 9px 12px; min-height:54px; background:#fff; border:1px solid #EADFD3; border-left:4px solid var(--c); border-radius:14px; box-shadow:var(--shadow-xs); text-align:left; font:inherit; color:inherit; transition:transform .12s, box-shadow .15s, opacity .2s; }
+ .oc-row.is-root{ background:linear-gradient(135deg,#B8332A,#8E1F1A); border-color:#8E1F1A; border-left-color:#E9B949; box-shadow:var(--shadow-red); }
+ .oc-row.is-root .oc-name{ color:#fff; }
+ .oc-row.is-root .oc-pos{ color:rgba(255,255,255,.82); }
+ .oc-row .oc-name{ -webkit-line-clamp:1; font-size:13.5px; }
+ .oc-row .oc-pos{ -webkit-line-clamp:1; }
+-.oc-badge{ flex:none; display:inline-flex; align-items:center; gap:2px; height:24px; padding:0 7px 0 9px; border-radius:99px; font-size:11.5px; font-weight:800; background:color-mix(in srgb, var(--c) 13%, #fff); color:color-mix(in srgb, var(--c) 78%, #1a1410); }
++.oc-badge{ border:0; cursor:pointer; font:inherit; flex:none; display:inline-flex; align-items:center; gap:2px; height:24px; padding:0 7px 0 9px; border-radius:99px; font-size:11.5px; font-weight:800; background:color-mix(in srgb, var(--c) 13%, #fff); color:color-mix(in srgb, var(--c) 78%, #1a1410); }
+ .oc-row.is-root .oc-badge{ background:rgba(255,255,255,.18); color:#fff; }
+ .oc-badge svg{ transition:transform .2s var(--ease); }
+ .oc-badge.is-open svg{ transform:rotate(90deg); }
+@@ -103,3 +101,32 @@ button.oc-row:active{ transform:scale(.99); }
+   .oc-legend{ flex-wrap:nowrap; overflow-x:auto; padding-bottom:2px; margin:0 -12px; padding-inline:12px; scrollbar-width:none; }
+   .oc-legend::-webkit-scrollbar{ display:none; }
+ }
++
++/* ---------- golongan + klik untuk edit ---------- */
++.oc-chips{ display:flex; flex-wrap:wrap; align-items:center; gap:4px; margin-top:6px; }
++.oc-chips .oc-chip{ margin-top:0; }
++.oc-grade{ display:inline-flex; align-items:center; justify-content:center; flex:none; height:19px; padding:0 8px; border-radius:99px; font-size:10.5px; font-weight:800; letter-spacing:.01em; background:var(--gb,#B6D7A8); color:var(--gf,#2a2320); white-space:nowrap; }
++.oc-grade.sm{ min-width:22px; height:18px; padding:0 6px; font-size:10.5px; }
++.oc-card.is-root .oc-grade{ box-shadow:0 0 0 1.5px rgba(255,255,255,.75); }
++
++.oc-hit{ position:relative; flex:1; min-width:0; display:flex; align-items:center; gap:inherit; background:none; border:0; padding:0; margin:0; font:inherit; color:inherit; text-align:left; }
++.oc-card > .oc-hit{ gap:11px; }
++.oc-mini > .oc-hit{ gap:9px; }
++.oc-row > .oc-hit{ gap:10px; }
++.oc-hit.is-edit{ cursor:pointer; border-radius:12px; }
++.oc-hit.is-edit:focus-visible{ outline:2px solid #C9A58F; outline-offset:3px; }
++.oc-hit.is-edit:hover .oc-name{ text-decoration:underline; text-underline-offset:2px; text-decoration-thickness:1.5px; }
++.oc-pen{ position:absolute; top:-6px; right:-4px; padding:4px; box-sizing:content-box; border-radius:99px; background:#fff; color:#6b6058; box-shadow:var(--shadow-xs); opacity:0; transition:opacity .15s; pointer-events:none; }
++.oc-hit.is-edit:hover .oc-pen, .oc-hit.is-edit:focus-visible .oc-pen{ opacity:1; }
++.oc-mini .oc-meta{ display:block; }
++.oc-mini > .oc-hit .oc-grade{ margin-left:auto; }
++@media (hover:none){ .oc-pen{ display:none; } }
++
++/* legenda golongan (bisa diklik untuk menyorot) */
++.oc-legend .lg-grade{ cursor:pointer; font:inherit; font-size:11.5px; font-weight:600; color:#5b524b; transition:box-shadow .15s, background .15s; }
++.oc-legend .lg-grade i{ background:var(--gb); border-radius:4px; width:11px; height:11px; }
++.oc-legend .lg-grade b{ margin-left:2px; padding:0 6px; border-radius:99px; background:#f3ece4; font-size:10.5px; font-weight:800; }
++.oc-legend .lg-grade:hover{ background:#fbf7f3; }
++.oc-legend .lg-grade.is-on{ background:var(--gb); color:var(--gf); border-color:var(--gb); box-shadow:0 0 0 3px color-mix(in srgb, var(--gb) 35%, transparent); }
++.oc-legend .lg-grade.is-on i{ background:var(--gf); }
++.oc-legend .lg-grade.is-on b{ background:rgba(255,255,255,.28); color:inherit; }
+diff --git a/src/pages/OrgChart.jsx b/src/pages/OrgChart.jsx
+index 9ab67e8..a625498 100644
+--- a/src/pages/OrgChart.jsx
++++ b/src/pages/OrgChart.jsx
+@@ -1,11 +1,12 @@
+-import { useEffect, useState } from 'react'
++import { useEffect, useMemo, useState } from 'react'
+ import { ArrowLeft, ChevronDown, ChevronRight, Plus, Pencil, Trash2, Users, User, List, Network } from 'lucide-react'
+ import { supabase } from '../lib/supabaseClient'
+-import OrgChartVisual from '../components/OrgChartVisual'
++import OrgChartVisual, { GRADES } from '../components/OrgChartVisual'
+ import { useIsDesktop } from '../lib/useIsDesktop'
+ 
+-export default function OrgChart({ onBack, onToast }) {
++export default function OrgChart({ onBack, onToast, employee }) {
+   const isDesktop = useIsDesktop()
++  const canEdit = employee?.role === 'hr' || employee?.role === 'admin' // sama dengan is_hr() di database
+   const [data, setData] = useState(null)
+   const [expanded, setExpanded] = useState({})
+   const [editingDept, setEditingDept] = useState(null)   // null closed, {} new, {...} edit
+@@ -43,14 +44,16 @@ export default function OrgChart({ onBack, onToast }) {
+         <button className={view === 'chart' ? 'active' : ''} onClick={() => setView('chart')} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+           <Network size={15} /> Chart
+         </button>
+-        <button className={view === 'list' ? 'active' : ''} onClick={() => setView('list')} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+-          <List size={15} /> Kelola
+-        </button>
++        {canEdit && (
++          <button className={view === 'list' ? 'active' : ''} onClick={() => setView('list')} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
++            <List size={15} /> Kelola
++          </button>
++        )}
+       </div>
+ 
+-      {view === 'chart' && <OrgChartVisual employees={employees} departments={departments} isDesktop={isDesktop} />}
++      {view === 'chart' && <OrgChartVisual employees={employees} departments={departments} isDesktop={isDesktop} canEdit={canEdit} onEdit={setEditingEmp} />}
+ 
+-      {view === 'list' && (
++      {view === 'list' && canEdit && (
+       <div className="form-page">
+         {departments.length === 0 && (
+           <div className="empty-state"><p>Belum ada departemen. Mulai dengan menambah departemen pertama.</p></div>
+@@ -89,7 +92,7 @@ export default function OrgChart({ onBack, onToast }) {
+       </div>
+       )}
+ 
+-      {editingDept !== null && (
++      {canEdit && editingDept !== null && (
+         <DeptForm
+           row={editingDept}
+           departments={departments}
+@@ -99,7 +102,7 @@ export default function OrgChart({ onBack, onToast }) {
+         />
+       )}
+ 
+-      {editingEmp && (
++      {canEdit && editingEmp && (
+         <EmpForm
+           emp={editingEmp}
+           departments={departments}
+@@ -176,7 +179,7 @@ function EmpRow({ emp, onEdit }) {
+       </span>
+       <div className="info">
+         <div className="name">{emp.full_name}</div>
+-        <div className="sub">{emp.position || '-'}{manager ? ` · lapor ke ${manager}` : ''}</div>
++        <div className="sub">{emp.position || '-'}{emp.grade ? ` · Gol. ${GRADES[emp.grade]?.short}` : ''}{manager ? ` · lapor ke ${manager}` : ''}</div>
+       </div>
+       <div className="actions">
+         <button onClick={onEdit}><Pencil size={16} /></button>
+@@ -254,30 +257,58 @@ function DeptForm({ row, departments, employees, onClose, onSaved }) {
+ function EmpForm({ emp, departments, employees, onClose, onSaved }) {
+   const [departmentId, setDepartmentId] = useState(emp.department_id || '')
+   const [managerId, setManagerId] = useState(emp.manager_id || '')
++  const [grade, setGrade] = useState(emp.grade ? String(emp.grade) : '')
++  const [position, setPosition] = useState(emp.position || '')
+   const [error, setError] = useState('')
+   const [saving, setSaving] = useState(false)
+ 
+-  const managerOptions = employees.filter((e) => e.id !== emp.id)
++  // Atasan tidak boleh diri sendiri atau siapa pun di bawahnya (mencegah lingkaran)
++  const managerOptions = useMemo(() => {
++    const kids = new Map()
++    employees.forEach((e) => { if (e.manager_id) kids.set(e.manager_id, [...(kids.get(e.manager_id) || []), e.id]) })
++    const below = new Set([emp.id])
++    const stack = [emp.id]
++    while (stack.length) for (const k of kids.get(stack.pop()) || []) if (!below.has(k)) { below.add(k); stack.push(k) }
++    return employees.filter((e) => !below.has(e.id)).sort((a, b) => a.full_name.localeCompare(b.full_name, 'id'))
++  }, [employees, emp.id])
++  const reports = employees.filter((e) => e.manager_id === emp.id).length
+ 
+   async function submit(ev) {
+     ev.preventDefault()
+     setError('')
+     setSaving(true)
+-    const [{ error: e1 }, { error: e2 }] = await Promise.all([
+-      supabase.rpc('update_employee_department', { p_employee_id: emp.id, p_department_id: departmentId || null }),
+-      supabase.rpc('update_employee_manager', { p_employee_id: emp.id, p_manager_id: managerId || null }),
+-    ])
++    const { error } = await supabase.rpc('update_employee_org', {
++      p_employee_id: emp.id,
++      p_department_id: departmentId || null,
++      p_manager_id: managerId || null,
++      p_grade: grade ? Number(grade) : null,
++      p_position: position,
++    })
+     setSaving(false)
+-    if (e1 || e2) { setError((e1 || e2).message); return }
+-    onSaved('Posisi karyawan diperbarui')
++    if (error) { setError(error.message); return }
++    onSaved('Struktur karyawan diperbarui')
+   }
+ 
+   return (
+     <div className="sheet-overlay" onClick={onClose}>
+       <div className="sheet" onClick={(e) => e.stopPropagation()}>
+         <div className="sheet-handle" />
+-        <div className="sheet-title-row"><h3>{emp.full_name}</h3></div>
++        <div className="sheet-title-row">
++          <h3>{emp.full_name}</h3>
++        </div>
++        {reports > 0 && <p className="sub-text" style={{ margin: '-4px 0 12px' }}>{reports} orang melapor langsung ke {emp.full_name}</p>}
+         <form onSubmit={submit}>
++          <div className="field">
++            <label>Jabatan</label>
++            <input value={position} onChange={(e) => setPosition(e.target.value)} placeholder="Contoh: Brand Marketing Strategy Manager" />
++          </div>
++          <div className="field">
++            <label>Golongan</label>
++            <select value={grade} onChange={(e) => setGrade(e.target.value)}>
++              <option value="">- Belum ditentukan -</option>
++              {[5, 4, 3, 2, 1].map((k) => <option key={k} value={k}>{GRADES[k].label} · {GRADES[k].desc}</option>)}
++            </select>
++          </div>
+           <div className="field">
+             <label>Departemen</label>
+             <select value={departmentId} onChange={(e) => setDepartmentId(e.target.value)}>
+@@ -289,7 +320,7 @@ function EmpForm({ emp, departments, employees, onClose, onSaved }) {
+             <label>Melapor ke (atasan langsung)</label>
+             <select value={managerId} onChange={(e) => setManagerId(e.target.value)}>
+               <option value="">- Tidak ada atasan -</option>
+-              {managerOptions.map((e) => <option key={e.id} value={e.id}>{e.full_name}</option>)}
++              {managerOptions.map((e) => <option key={e.id} value={e.id}>{e.full_name}{e.position ? ` — ${e.position}` : ''}</option>)}
+             </select>
+           </div>
+           {error && <p className="error-text">{error}</p>}
+diff --git a/supabase/migrations/20260930_org_chart_data_grades_reporting_lines.sql b/supabase/migrations/20260930_org_chart_data_grades_reporting_lines.sql
+new file mode 100644
+index 0000000..6d751c0
+--- /dev/null
++++ b/supabase/migrations/20260930_org_chart_data_grades_reporting_lines.sql
+@@ -0,0 +1,16 @@
++
++-- Backup kondisi sebelum penyesuaian (RLS aktif tanpa policy = tidak terbaca dari API publik)
++create table if not exists public.employees_org_backup_20260930 as
++  select id, employee_code, full_name, manager_id, department_id, "position", grade, now() as backed_up_at from public.employees;
++alter table public.employees_org_backup_20260930 enable row level security;
++
++-- Golongan dari data-karyawan.xlsx (by kode karyawan)
++update public.employees e set grade = v.g
++from (values ('CK001',5),('CK002',2),('CK003',1),('CK005',1),('CK006',1),('CK007',1),('CK008',1),('CK009',1),('CK010',1),('CK011',1),('CK012',1),('CK013',1),('CK015',2),('CK016',1),('CK017',1),('CK019',1),('CK020',2),('CK021',1),('CK022',1),('CK023',1),('CK026',2),('CK027',1),('CK028',5),('CK029',1),('CK030',1),('CK032',5),('CK033',1),('CK034',1),('CK035',1),('CK036',1),('CK037',1),('CK039',1),('CK042',1),('CK043',1),('CK044',1),('CK047',1),('CK048',1),('CK049',2),('CK051',1),('CK054',1),('CK057',1),('CK063',1),('CK067',3),('CK069',1),('CK070',1),('CK071',2),('CK075',1),('CK078',5),('CK079',1),('CK080',1),('CK083',2),('CK086',3),('CK089',1),('CK090',1),('CK093',1),('CK096',3),('CK098',1),('CK099',1),('CK100',1),('CK104',1),('CK106',1),('CK107',3),('CK109',1),('CK110',1),('CK112',1),('CK113',2),('CK114',1),('CK116',2),('CK117',2),('CK118',1),('CK120',3),('CK121',4),('CK122',2),('CK127',3),('CK128',1),('PJ001',5),('PJ002',2),('PJ003',1),('PJ004',1),('PJ006',1),('PJ008',1),('PJ009',1),('PJ010',1),('PJ012',1),('PJ015',3),('PJ016',1),('PJ017',1),('PJ018',1),('PJ021',1),('PK001',5),('PK004',1),('PK005',1),('PK006',1),('PK007',1),('PK008',1),('PK010',1),('PK011',1),('PK012',1),('PK013',1),('PK014',1),('PK015',1),('PK016',1),('PK019',1),('PK026',3),('PK027',1),('PK028',1),('PK029',1),('PK030',1),('PK035',1),('PK040',1),('PK044',1),('PK046',1),('PK049',1),('PK050',1),('PK054',1),('PK056',1),('PK057',1),('PK058',1),('PK059',1),('PK063',1),('PK067',1),('PK069',1),('PK071',1),('PK074',1),('PK076',1),('PK078',1),('PK079',1),('PK080',1),('PK081',1),('PK084',1),('PK085',1),('PK086',1),('PK088',1),('PK089',1),('PK090',1),('PK092',1),('PK093',1),('PK095',1),('PK096',1),('PK097',1),('PK098',1),('PK099',1),('PK100',1),('PK101',1),('PK102',1)) as v(code, g)
++where e.employee_code = v.code;
++
++-- Atasan langsung mengikuti Struktur_Organisasi_Napocut_2027.xlsx
++update public.employees e set manager_id = m.id
++from (values ('CK048','CK020'),('CK089','CK020'),('CK075','CK020'),('CK049','CK067'),('CK112','CK049'),('CK106','CK049'),('CK098','CK049'),('CK110','CK086'),('CK114','CK086'),('CK054','CK002'),('CK109','CK002'),('PJ012','PJ002'),('PJ010','PJ002'),('PJ006','PJ002'),('PJ008','PJ002'),('PJ003','PJ002'),('PJ009','PJ002'),('PJ016','PJ002'),('CK010','PJ002'),('CK009','PJ002'),('CK003','PJ002'),('CK005','PJ002'),('PK004','PJ002'),('PJ004','PJ018'),('PK029','PJ018'),('PJ017','PJ018'),('CK047','PJ018'),('PJ021','PJ018')) as x(emp_code, mgr_code)
++join public.employees m on m.employee_code = x.mgr_code
++where e.employee_code = x.emp_code;
+diff --git a/supabase/migrations/20260930_org_chart_grade_and_secure_edit.sql b/supabase/migrations/20260930_org_chart_grade_and_secure_edit.sql
+new file mode 100644
+index 0000000..d571cbf
+--- /dev/null
++++ b/supabase/migrations/20260930_org_chart_grade_and_secure_edit.sql
+@@ -0,0 +1,14 @@
++-- Sudah diterapkan ke project Supabase (usdnfufdadpiwreqhjhc). Disimpan di repo sebagai catatan.
++
++-- 1) Golongan (1..5 = Golongan I..V)
++alter table public.employees add column if not exists grade smallint;
++alter table public.employees drop constraint if exists employees_grade_check;
++alter table public.employees add constraint employees_grade_check check (grade is null or grade between 1 and 5);
++comment on column public.employees.grade is 'Golongan karyawan: 1=I (Staff), 2=II (SPV/Leader), 3=III (Manager), 4=IV (Head), 5=V (BOD & Advisor)';
++
++-- 2) get_org_chart ikut mengirim golongan (emp.grade)
++-- 3) update_employee_org(p_employee_id, p_department_id, p_manager_id, p_grade, p_position):
++--    hanya HR/Admin (is_hr()), menolak atasan diri sendiri / bawahannya (cegah loop).
++-- 4) update_employee_manager, update_employee_department, upsert_department, delete_department
++--    sekarang juga mewajibkan is_hr() (sebelumnya bisa dipanggil semua user login).
++-- Definisi lengkap fungsi: lihat `select pg_get_functiondef('public.update_employee_org'::regproc)` di database.

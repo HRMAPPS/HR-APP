@@ -215,7 +215,7 @@ function PageRouter({ page, employee, onBack, onToast, onNavigate }) {
     case 'calendar':
       return <CalendarPage onBack={onBack} onToast={onToast} onNavigate={onNavigate} />
     case 'org-chart':
-      return <OrgChart onBack={onBack} onToast={onToast} />
+      return <OrgChart onBack={onBack} onToast={onToast} employee={employee} />
     case 'hr-dashboard':
       return <HRDashboard onBack={onBack} onToast={onToast} />
     case 'team-report':

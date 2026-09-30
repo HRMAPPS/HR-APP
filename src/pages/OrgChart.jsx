@@ -1,11 +1,12 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { ArrowLeft, ChevronDown, ChevronRight, Plus, Pencil, Trash2, Users, User, List, Network } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
-import OrgChartVisual from '../components/OrgChartVisual'
+import OrgChartVisual, { GRADES } from '../components/OrgChartVisual'
 import { useIsDesktop } from '../lib/useIsDesktop'
 
-export default function OrgChart({ onBack, onToast }) {
+export default function OrgChart({ onBack, onToast, employee }) {
   const isDesktop = useIsDesktop()
+  const canEdit = employee?.role === 'hr' || employee?.role === 'admin' // sama dengan is_hr() di database
   const [data, setData] = useState(null)
   const [expanded, setExpanded] = useState({})
   const [editingDept, setEditingDept] = useState(null)   // null closed, {} new, {...} edit
@@ -43,14 +44,16 @@ export default function OrgChart({ onBack, onToast }) {
         <button className={view === 'chart' ? 'active' : ''} onClick={() => setView('chart')} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           <Network size={15} /> Chart
         </button>
-        <button className={view === 'list' ? 'active' : ''} onClick={() => setView('list')} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <List size={15} /> Kelola
-        </button>
+        {canEdit && (
+          <button className={view === 'list' ? 'active' : ''} onClick={() => setView('list')} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <List size={15} /> Kelola
+          </button>
+        )}
       </div>
 
-      {view === 'chart' && <OrgChartVisual employees={employees} departments={departments} isDesktop={isDesktop} />}
+      {view === 'chart' && <OrgChartVisual employees={employees} departments={departments} isDesktop={isDesktop} canEdit={canEdit} onEdit={setEditingEmp} />}
 
-      {view === 'list' && (
+      {view === 'list' && canEdit && (
       <div className="form-page">
         {departments.length === 0 && (
           <div className="empty-state"><p>Belum ada departemen. Mulai dengan menambah departemen pertama.</p></div>
@@ -89,7 +92,7 @@ export default function OrgChart({ onBack, onToast }) {
       </div>
       )}
 
-      {editingDept !== null && (
+      {canEdit && editingDept !== null && (
         <DeptForm
           row={editingDept}
           departments={departments}
@@ -99,7 +102,7 @@ export default function OrgChart({ onBack, onToast }) {
         />
       )}
 
-      {editingEmp && (
+      {canEdit && editingEmp && (
         <EmpForm
           emp={editingEmp}
           departments={departments}
@@ -176,7 +179,7 @@ function EmpRow({ emp, onEdit }) {
       </span>
       <div className="info">
         <div className="name">{emp.full_name}</div>
-        <div className="sub">{emp.position || '-'}{manager ? ` · lapor ke ${manager}` : ''}</div>
+        <div className="sub">{emp.position || '-'}{emp.grade ? ` · Gol. ${GRADES[emp.grade]?.short}` : ''}{manager ? ` · lapor ke ${manager}` : ''}</div>
       </div>
       <div className="actions">
         <button onClick={onEdit}><Pencil size={16} /></button>
@@ -254,30 +257,58 @@ function DeptForm({ row, departments, employees, onClose, onSaved }) {
 function EmpForm({ emp, departments, employees, onClose, onSaved }) {
   const [departmentId, setDepartmentId] = useState(emp.department_id || '')
   const [managerId, setManagerId] = useState(emp.manager_id || '')
+  const [grade, setGrade] = useState(emp.grade ? String(emp.grade) : '')
+  const [position, setPosition] = useState(emp.position || '')
   const [error, setError] = useState('')
   const [saving, setSaving] = useState(false)
 
-  const managerOptions = employees.filter((e) => e.id !== emp.id)
+  // Atasan tidak boleh diri sendiri atau siapa pun di bawahnya (mencegah lingkaran)
+  const managerOptions = useMemo(() => {
+    const kids = new Map()
+    employees.forEach((e) => { if (e.manager_id) kids.set(e.manager_id, [...(kids.get(e.manager_id) || []), e.id]) })
+    const below = new Set([emp.id])
+    const stack = [emp.id]
+    while (stack.length) for (const k of kids.get(stack.pop()) || []) if (!below.has(k)) { below.add(k); stack.push(k) }
+    return employees.filter((e) => !below.has(e.id)).sort((a, b) => a.full_name.localeCompare(b.full_name, 'id'))
+  }, [employees, emp.id])
+  const reports = employees.filter((e) => e.manager_id === emp.id).length
 
   async function submit(ev) {
     ev.preventDefault()
     setError('')
     setSaving(true)
-    const [{ error: e1 }, { error: e2 }] = await Promise.all([
-      supabase.rpc('update_employee_department', { p_employee_id: emp.id, p_department_id: departmentId || null }),
-      supabase.rpc('update_employee_manager', { p_employee_id: emp.id, p_manager_id: managerId || null }),
-    ])
+    const { error } = await supabase.rpc('update_employee_org', {
+      p_employee_id: emp.id,
+      p_department_id: departmentId || null,
+      p_manager_id: managerId || null,
+      p_grade: grade ? Number(grade) : null,
+      p_position: position,
+    })
     setSaving(false)
-    if (e1 || e2) { setError((e1 || e2).message); return }
-    onSaved('Posisi karyawan diperbarui')
+    if (error) { setError(error.message); return }
+    onSaved('Struktur karyawan diperbarui')
   }
 
   return (
     <div className="sheet-overlay" onClick={onClose}>
       <div className="sheet" onClick={(e) => e.stopPropagation()}>
         <div className="sheet-handle" />
-        <div className="sheet-title-row"><h3>{emp.full_name}</h3></div>
+        <div className="sheet-title-row">
+          <h3>{emp.full_name}</h3>
+        </div>
+        {reports > 0 && <p className="sub-text" style={{ margin: '-4px 0 12px' }}>{reports} orang melapor langsung ke {emp.full_name}</p>}
         <form onSubmit={submit}>
+          <div className="field">
+            <label>Jabatan</label>
+            <input value={position} onChange={(e) => setPosition(e.target.value)} placeholder="Contoh: Brand Marketing Strategy Manager" />
+          </div>
+          <div className="field">
+            <label>Golongan</label>
+            <select value={grade} onChange={(e) => setGrade(e.target.value)}>
+              <option value="">- Belum ditentukan -</option>
+              {[5, 4, 3, 2, 1].map((k) => <option key={k} value={k}>{GRADES[k].label} · {GRADES[k].desc}</option>)}
+            </select>
+          </div>
           <div className="field">
             <label>Departemen</label>
             <select value={departmentId} onChange={(e) => setDepartmentId(e.target.value)}>
@@ -289,7 +320,7 @@ function EmpForm({ emp, departments, employees, onClose, onSaved }) {
             <label>Melapor ke (atasan langsung)</label>
             <select value={managerId} onChange={(e) => setManagerId(e.target.value)}>
               <option value="">- Tidak ada atasan -</option>
-              {managerOptions.map((e) => <option key={e.id} value={e.id}>{e.full_name}</option>)}
+              {managerOptions.map((e) => <option key={e.id} value={e.id}>{e.full_name}{e.position ? ` — ${e.position}` : ''}</option>)}
             </select>
           </div>
           {error && <p className="error-text">{error}</p>}

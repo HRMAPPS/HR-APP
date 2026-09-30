@@ -1,11 +1,21 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
-import { ChevronRight, ChevronDown, ChevronsDownUp, ChevronsUpDown, Maximize2, Minus, Plus, Search, X } from 'lucide-react'
+import { ChevronRight, ChevronDown, ChevronsDownUp, ChevronsUpDown, Maximize2, Minus, Pencil, Plus, Search, X } from 'lucide-react'
 import './orgChart.css'
 
 const PALETTE = ['#4F6BED', '#0E9F86', '#E8833A', '#B34BC4', '#2E90D1', '#D9467A', '#7A8B2C', '#8A5A44', '#5B6B7F', '#C79A1E']
 const NEUTRAL = '#7A7370'
 const TEAM_MIN = 3        // >= 3 anggota tanpa bawahan dikelompokkan jadi satu panel tim
 const TEAM_PREVIEW = 8    // jumlah anggota yang tampil sebelum "lihat semua"
+
+// Golongan (employees.grade 1..5). Warna mengikuti Excel Struktur Organisasi.
+export const GRADES = {
+  5: { short: 'V', label: 'Golongan V', desc: 'BOD & Advisor', bg: '#4285F4', fg: '#fff' },
+  4: { short: 'IV', label: 'Golongan IV', desc: 'Head', bg: '#B4A7D6', fg: '#2a2320' },
+  3: { short: 'III', label: 'Golongan III', desc: 'Manager', bg: '#F9CB9C', fg: '#2a2320' },
+  2: { short: 'II', label: 'Golongan II', desc: 'SPV/Leader', bg: '#76A5AF', fg: '#fff' },
+  1: { short: 'I', label: 'Golongan I', desc: 'Staff', bg: '#B6D7A8', fg: '#2a2320' },
+}
+const gradeStyle = (g) => ({ '--gb': g.bg, '--gf': g.fg })
 
 const initials = (n) => (n || '?').trim().split(/\s+/).slice(0, 2).map((s) => s[0]).join('').toUpperCase()
 const norm = (s) => (s || '').toLowerCase()
@@ -54,7 +64,8 @@ function useModel(employees, departments) {
     const nodes = []
     const walk = (n) => { nodes.push(n); n.children.forEach(walk) }
     roots.forEach(walk)
-    return { roots, nodes, parentOf, colorOf, deptName, legend }
+    const gradeCounts = employees.reduce((m, e) => (e.grade ? m.set(e.grade, (m.get(e.grade) || 0) + 1) : m), new Map())
+    return { roots, nodes, parentOf, colorOf, deptName, legend, gradeCounts }
   }, [employees, departments])
 }
 
@@ -65,6 +76,23 @@ function Avatar({ p, color, size }) {
     <span className="oc-av" style={{ width: size, height: size, fontSize: Math.round(size * 0.36), background: `linear-gradient(135deg, ${color}, color-mix(in srgb, ${color} 70%, #1a1410))` }}>
       {p.avatar_url && !bad ? <img src={p.avatar_url} alt="" loading="lazy" onError={() => setBad(true)} /> : initials(p.full_name)}
     </span>
+  )
+}
+
+function GradePill({ grade, full }) {
+  const g = GRADES[grade]
+  if (!g) return null
+  return <span className={`oc-grade ${full ? '' : 'sm'}`} style={gradeStyle(g)} title={`${g.label} · ${g.desc}`}>{full ? `Gol. ${g.short}` : g.short}</span>
+}
+
+// Area nama: tombol untuk edit jika boleh, div biasa jika tidak
+function Hit({ p, ctx, className = '', children }) {
+  if (!ctx.canEdit) return <div className={`oc-hit ${className}`}>{children}</div>
+  return (
+    <button type="button" className={`oc-hit is-edit ${className}`} onClick={() => ctx.onEdit(p)} title="Klik untuk edit struktur" aria-label={`Edit ${p.full_name}`}>
+      {children}
+      <Pencil size={12} className="oc-pen" />
+    </button>
   )
 }
 
@@ -86,12 +114,19 @@ function Card({ node, ctx }) {
   const cls = ['oc-card', isRoot && 'is-root', ctx.match(p.id) && 'is-match', ctx.dimmed(p.id) && 'oc-dim'].filter(Boolean).join(' ')
   return (
     <div className={cls} style={{ '--c': color }} data-oc-match={ctx.match(p.id) ? '1' : undefined}>
-      <Avatar p={p} color={isRoot ? '#E9B949' : color} size={44} />
-      <div className="oc-meta">
-        <div className="oc-name" title={p.full_name}>{p.full_name}</div>
-        <div className="oc-pos" title={p.position || ''}>{p.position || '-'}</div>
-        {dept && <span className="oc-chip">{dept}</span>}
-      </div>
+      <Hit p={p} ctx={ctx}>
+        <Avatar p={p} color={isRoot ? '#E9B949' : color} size={44} />
+        <div className="oc-meta">
+          <div className="oc-name" title={p.full_name}>{p.full_name}</div>
+          <div className="oc-pos" title={p.position || ''}>{p.position || '-'}</div>
+          {(dept || p.grade) && (
+            <div className="oc-chips">
+              {dept && <span className="oc-chip">{dept}</span>}
+              <GradePill grade={p.grade} full />
+            </div>
+          )}
+        </div>
+      </Hit>
       {has && (
         <button className={`oc-toggle ${open ? '' : 'is-closed'}`} aria-expanded={open}
           aria-label={open ? 'Tutup bawahan' : 'Buka bawahan'} onClick={() => ctx.toggle(p.id)}>
@@ -116,11 +151,14 @@ function TeamPanel({ parent, members, ctx }) {
           return (
             <div key={m.p.id} className={['oc-mini', ctx.match(m.p.id) && 'is-match', ctx.dimmed(m.p.id) && 'oc-dim'].filter(Boolean).join(' ')}
               style={{ '--c': color }} data-oc-match={ctx.match(m.p.id) ? '1' : undefined}>
-              <Avatar p={m.p} color={color} size={30} />
-              <div className="oc-meta">
-                <div className="oc-name" title={m.p.full_name}>{m.p.full_name}</div>
-                <div className="oc-pos" title={m.p.position || ''}>{m.p.position || '-'}</div>
-              </div>
+              <Hit p={m.p} ctx={ctx}>
+                <Avatar p={m.p} color={color} size={30} />
+                <div className="oc-meta">
+                  <div className="oc-name" title={m.p.full_name}>{m.p.full_name}</div>
+                  <div className="oc-pos" title={m.p.position || ''}>{m.p.position || '-'}</div>
+                </div>
+                <GradePill grade={m.p.grade} />
+              </Hit>
             </div>
           )
         })}
@@ -171,21 +209,26 @@ function MobileNode({ node, ctx }) {
   }
 
   const cls = ['oc-row', isRoot && 'is-root', ctx.match(p.id) && 'is-match', ctx.dimmed(p.id) && 'oc-dim'].filter(Boolean).join(' ')
-  const inner = (
+  const main = (
     <>
       <Avatar p={p} color={isRoot ? '#E9B949' : color} size={38} />
       <div className="oc-meta">
         <div className="oc-name">{p.full_name}</div>
         <div className="oc-pos">{[p.position, dept].filter(Boolean).join(' · ') || '-'}</div>
       </div>
-      {has && <span className={`oc-badge ${open ? 'is-open' : ''}`}>{node.size - 1}<ChevronRight size={14} /></span>}
     </>
   )
   return (
     <li>
-      {has
-        ? <button className={cls} style={{ '--c': color }} aria-expanded={open} onClick={() => ctx.toggle(p.id)} data-oc-match={ctx.match(p.id) ? '1' : undefined}>{inner}</button>
-        : <div className={cls} style={{ '--c': color }} data-oc-match={ctx.match(p.id) ? '1' : undefined}>{inner}</div>}
+      <div className={cls} style={{ '--c': color }} data-oc-match={ctx.match(p.id) ? '1' : undefined}>
+        {ctx.canEdit
+          ? <button type="button" className="oc-hit" onClick={() => ctx.onEdit(p)} aria-label={`Edit ${p.full_name}`}>{main}</button>
+          : has
+            ? <button type="button" className="oc-hit" aria-expanded={open} onClick={() => ctx.toggle(p.id)}>{main}</button>
+            : <div className="oc-hit">{main}</div>}
+        <GradePill grade={p.grade} />
+        {has && <button type="button" className={`oc-badge ${open ? 'is-open' : ''}`} aria-expanded={open} aria-label={open ? 'Tutup bawahan' : 'Buka bawahan'} onClick={() => ctx.toggle(p.id)}>{node.size - 1}<ChevronRight size={14} /></button>}
+      </div>
       {open && (
         <ul>
           {kids.map((k) => <MobileNode key={k.p.id} node={k} ctx={ctx} />)}
@@ -197,11 +240,12 @@ function MobileNode({ node, ctx }) {
 }
 
 /* ---------------------------------------------------------------- main */
-export default function OrgChartVisual({ employees, departments = [], isDesktop }) {
+export default function OrgChartVisual({ employees, departments = [], isDesktop, canEdit = false, onEdit }) {
   const model = useModel(employees, departments)
   const [collapsed, setCollapsed] = useState(() => new Set(model.nodes.filter((n) => n.depth >= 1 && n.children.length > 0).map((n) => n.p.id)))
   const [openTeams, setOpenTeams] = useState(() => new Set())
   const [q, setQ] = useState('')
+  const [gradeFilter, setGradeFilter] = useState(null) // 1..5 atau null
   const [zoom, setZoom] = useState(1)
   const [size, setSize] = useState({ w: 0, h: 0 })
   const viewRef = useRef(null)
@@ -213,10 +257,10 @@ export default function OrgChartVisual({ employees, departments = [], isDesktop 
   const query = norm(q.trim())
   const { matches, forced } = useMemo(() => {
     const m = new Set(), f = new Set()
-    if (query.length >= 2) {
+    if (query.length >= 2 || gradeFilter) {
       for (const n of model.nodes) {
         const hay = norm(`${n.p.full_name} ${n.p.position || ''} ${model.deptName(n.p)}`)
-        if (hay.includes(query)) {
+        if ((query.length < 2 || hay.includes(query)) && (!gradeFilter || n.p.grade === gradeFilter)) {
           m.add(n.p.id)
           let cur = model.parentOf.get(n.p.id), g = 0
           while (cur && g++ < 50) { f.add(cur); cur = model.parentOf.get(cur) }
@@ -224,17 +268,17 @@ export default function OrgChartVisual({ employees, departments = [], isDesktop 
       }
     }
     return { matches: m, forced: f }
-  }, [query, model])
-  const searching = query.length >= 2
+  }, [query, model, gradeFilter])
+  const searching = query.length >= 2 || !!gradeFilter
 
   const ctx = useMemo(() => ({
-    model, openTeams,
+    model, openTeams, canEdit, onEdit,
     isCollapsed: (id) => collapsed.has(id) && !forced.has(id),
     toggle: (id) => setCollapsed((s) => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n }),
     openTeam: (id) => setOpenTeams((s) => new Set(s).add(id)),
     match: (id) => matches.has(id),
     dimmed: (id) => searching && !matches.has(id) && !forced.has(id),
-  }), [model, collapsed, forced, matches, openTeams, searching])
+  }), [model, collapsed, forced, matches, openTeams, searching, canEdit, onEdit])
 
   const expandAll = () => { setCollapsed(new Set()); setOpenTeams(new Set(model.nodes.map((n) => n.p.id))) }
   const collapseAll = () => { setCollapsed(new Set(model.nodes.filter((n) => n.depth >= 1 && n.children.length > 0).map((n) => n.p.id))); setOpenTeams(new Set()) }
@@ -320,6 +364,19 @@ export default function OrgChartVisual({ employees, departments = [], isDesktop 
           {model.legend.map((l) => <span key={l.id} className="lg" style={{ '--c': l.color }}><i />{l.name}</span>)}
         </div>
       )}
+      {model.gradeCounts.size > 0 && (
+        <div className="oc-legend oc-legend-grade" style={{ flexBasis: '100%' }} role="group" aria-label="Filter golongan">
+          {[5, 4, 3, 2, 1].filter((k) => model.gradeCounts.has(k)).map((k) => {
+            const g = GRADES[k]
+            return (
+              <button key={k} type="button" className={`lg lg-grade ${gradeFilter === k ? 'is-on' : ''}`} style={gradeStyle(g)} aria-pressed={gradeFilter === k}
+                onClick={() => setGradeFilter((cur) => (cur === k ? null : k))} title={`Sorot ${g.label}`}>
+                <i />{g.label} · {g.desc}<b>{model.gradeCounts.get(k)}</b>
+              </button>
+            )
+          })}
+        </div>
+      )}
     </div>
   )
 
@@ -327,7 +384,7 @@ export default function OrgChartVisual({ employees, departments = [], isDesktop 
     return (
       <div className="oc-wrap">
         {toolbar}
-        {searching && matches.size === 0 && <div className="oc-empty">Tidak ada yang cocok dengan “{q}”.</div>}
+        {searching && matches.size === 0 && <div className="oc-empty">{q.trim() ? `Tidak ada yang cocok dengan “${q}”.` : 'Tidak ada karyawan pada golongan ini.'}</div>}
         <ul className="oc-outline">
           {model.roots.map((r) => <MobileNode key={r.p.id} node={r} ctx={ctx} />)}
         </ul>
