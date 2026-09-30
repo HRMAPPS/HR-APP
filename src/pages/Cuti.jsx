@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabaseClient'
 import { useBackHandler } from '../lib/backStack'
 import { useIsDesktop } from '../lib/useIsDesktop'
 import CutiRequestDesktop from './CutiRequestDesktop'
+import { RequestListPage, DetailDrawer, SelectFilter, SearchFilter, RowChevron, StatusPill, fmtDate, fmtStamp, fmtDateTime } from '../components/RequestDesktop'
 
 const MONTHS_ID = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember']
 
@@ -47,117 +48,48 @@ export default function Cuti({ onBack, startNew, onToast, employee }) {
   })
 
   if (isDesktop) {
+    const yr = String(new Date().getFullYear())
+    const approvedDays = items.filter((i) => i.status === 'approved' && i.start_date?.startsWith(yr)).reduce((s, i) => s + Number(i.total_days || 0), 0)
+    const pendingN = items.filter((i) => i.status === 'pending').length
     return (
-      <div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-          <h1 style={{ fontSize: 26, margin: '4px 0' }}>Cuti</h1>
-          <button className="primary-btn" style={{ width: 'auto', padding: '11px 20px' }} onClick={() => setShowForm(true)}>
-            <Plus size={16} style={{ verticalAlign: -2 }} /> Ajukan Cuti
-          </button>
-        </div>
-        <p style={{ color: 'var(--text-muted)', fontSize: 14, margin: '0 0 20px' }}>Riwayat pengajuan cuti Anda.</p>
-
-        <div style={{ display: 'flex', gap: 10, marginBottom: 16, alignItems: 'flex-end' }}>
-          <div>
-            <label style={{ fontSize: 12.5, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Status</label>
-            <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} style={{ padding: '8px 10px', borderRadius: 8, border: '1px solid var(--border)', fontSize: 13.5 }}>
-              <option value="">-- Semua Status --</option>
-              <option value="pending">Menunggu</option>
-              <option value="approved">Disetujui</option>
-              <option value="rejected">Ditolak</option>
-              <option value="cancelled">Dibatalkan</option>
-            </select>
-          </div>
-          <div>
-            <label style={{ fontSize: 12.5, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Bulan</label>
-            <select value={monthFilter} onChange={(e) => setMonthFilter(e.target.value)} style={{ padding: '8px 10px', borderRadius: 8, border: '1px solid var(--border)', fontSize: 13.5 }}>
-              <option value="">-- Semua Bulan --</option>
-              {MONTHS_ID.map((m, i) => <option key={m} value={String(i)}>{m}</option>)}
-            </select>
-          </div>
-          <div style={{ marginLeft: 'auto' }}>
-            <label style={{ fontSize: 12.5, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Cari</label>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, border: '1px solid var(--border)', borderRadius: 8, padding: '7px 10px' }}>
-              <Search size={14} color="var(--text-muted)" />
-              <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Cari jenis / alasan..."
-                style={{ border: 'none', outline: 'none', fontSize: 13.5, width: 200 }} />
-            </div>
-          </div>
-        </div>
-
-        <div style={{ background: '#fff', border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden' }}>
-          <div style={{
-            display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr 0.8fr 0.8fr', gap: 10, padding: '10px 16px',
-            background: '#faf8f5', fontSize: 12, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase',
-            borderBottom: '1px solid var(--border)',
-          }}>
-            <div>Tanggal Diajukan</div>
-            <div>Jenis Cuti</div>
-            <div>Mulai</div>
-            <div>Selesai</div>
-            <div>Status</div>
-            <div>Aksi</div>
-          </div>
-
-          {loading ? (
-            <div style={{ padding: 24, textAlign: 'center', color: 'var(--text-muted)', fontSize: 13.5 }}>Memuat...</div>
-          ) : filtered.length === 0 ? (
-            <div style={{ padding: 24, textAlign: 'center', color: 'var(--text-muted)', fontSize: 13.5 }}>Tidak ada data.</div>
-          ) : (
-            filtered.map((it) => (
-              <div key={it.id} style={{
-                display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr 0.8fr 0.8fr', gap: 10, padding: '12px 16px',
-                borderBottom: '1px solid #f1ece6', fontSize: 13.5, alignItems: 'center',
-              }}>
-                <div>{it.created_at ? new Date(it.created_at).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) : '-'}</div>
-                <div>{it.leave_types?.name || 'Cuti'}</div>
-                <div>{it.start_date}</div>
-                <div>{it.end_date}</div>
-                <div><span className={`status-${it.status}`}>{statusLabel(it.status)}</span></div>
-                <div>
-                  <button onClick={() => setDetailRow(it)} style={{
-                    background: 'none', border: '1px solid var(--border)', borderRadius: 8, padding: '5px 12px',
-                    fontSize: 12.5, cursor: 'pointer', color: 'var(--text)',
-                  }}>
-                    Detail
-                  </button>
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-
-        <p style={{ fontSize: 12.5, color: 'var(--text-muted)', marginTop: 10 }}>
-          Menampilkan {filtered.length} dari {items.length} pengajuan.
-        </p>
-
-        {detailRow && (
-          <div className="modal-overlay" style={{ position: 'fixed', inset: 0, background: 'rgba(20,15,10,.45)', zIndex: 40, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-            onClick={() => setDetailRow(null)}>
-            <div onClick={(e) => e.stopPropagation()} style={{
-              width: '100%', maxWidth: 480, background: '#fff', borderRadius: 16, padding: 24,
-              boxShadow: '0 20px 60px rgba(20,15,10,.3)',
-            }}>
-              <h3 style={{ margin: '0 0 14px', color: 'var(--red)' }}>Detail Pengajuan Cuti</h3>
-              <div style={{ borderTop: '1px solid var(--border)', paddingTop: 14, fontSize: 14, lineHeight: 1.8 }}>
-                <div>Jenis cuti: <strong>{detailRow.leave_types?.name || 'Cuti'}</strong></div>
-                <div>Tanggal: <strong>{detailRow.start_date} – {detailRow.end_date} ({detailRow.total_days} hari)</strong></div>
-                <div>Status: <strong>{statusLabel(detailRow.status)}</strong></div>
-                {detailRow.decided_at && (
-                  <div>Diputuskan pada: <strong>{new Date(detailRow.decided_at).toLocaleString('id-ID')}</strong></div>
-                )}
-                <div style={{ marginTop: 8 }}>Alasan:<br />{detailRow.reason || '-'}</div>
-              </div>
-              <button onClick={() => setDetailRow(null)} style={{
-                marginTop: 20, background: 'none', border: '1px solid var(--border)', borderRadius: 8,
-                padding: '8px 16px', fontSize: 13.5, cursor: 'pointer', float: 'right',
-              }}>
-                Tutup
-              </button>
-            </div>
-          </div>
+      <RequestListPage
+        title="Cuti" subtitle="Riwayat pengajuan cuti Anda." actionLabel="Ajukan Cuti" onAction={() => setShowForm(true)}
+        kpis={[
+          { label: `Cuti disetujui ${yr}`, value: `${approvedDays} hari`, tone: 'g' },
+          { label: 'Menunggu persetujuan', value: pendingN, tone: pendingN ? 'w' : '' },
+          { label: 'Total pengajuan', value: items.length },
+        ]}
+        filters={
+          <>
+            <SelectFilter label="Status" value={statusFilter} onChange={setStatusFilter} options={[['', 'Semua status'], ['pending', 'Menunggu'], ['approved', 'Disetujui'], ['rejected', 'Ditolak'], ['cancelled', 'Dibatalkan']]} />
+            <SelectFilter label="Bulan" value={monthFilter} onChange={setMonthFilter} options={[['', 'Semua bulan'], ...MONTHS_ID.map((m, i) => [String(i), m])]} />
+            <SearchFilter value={query} onChange={setQuery} placeholder="Cari jenis atau alasan..." />
+          </>
+        }
+        columns={['Diajukan', 'Jenis cuti', 'Periode', 'Durasi', 'Status']}
+        loading={loading} rows={filtered} total={items.length} empty="Tidak ada pengajuan cuti yang cocok."
+        renderRow={(it) => (
+          <tr key={it.id} tabIndex={0} onClick={() => setDetailRow(it)} onKeyDown={(e) => { if (e.key === 'Enter') setDetailRow(it) }}>
+            <td>{fmtStamp(it.created_at)}</td>
+            <td><b>{it.leave_types?.name || 'Cuti'}</b></td>
+            <td>{fmtDate(it.start_date)}{it.end_date !== it.start_date ? ` – ${fmtDate(it.end_date)}` : ''}</td>
+            <td>{Number(it.total_days)} hari</td>
+            <td><StatusPill status={it.status} /></td>
+            <RowChevron />
+          </tr>
         )}
-      </div>
+        drawer={detailRow && (
+          <DetailDrawer title="Detail pengajuan cuti" status={detailRow.status} reason={detailRow.reason} onClose={() => setDetailRow(null)}
+            items={[
+              ['Jenis cuti', detailRow.leave_types?.name || 'Cuti'],
+              ['Mulai', fmtDate(detailRow.start_date)],
+              ['Selesai', fmtDate(detailRow.end_date)],
+              ['Durasi', `${Number(detailRow.total_days)} hari`],
+              ['Diajukan', fmtStamp(detailRow.created_at)],
+              ['Diputuskan', detailRow.decided_at ? fmtDateTime(detailRow.decided_at) : 'Belum diputuskan'],
+            ]} />
+        )}
+      />
     )
   }
 
