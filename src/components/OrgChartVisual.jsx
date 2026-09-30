@@ -178,6 +178,14 @@ function elbow(px, py, cx, cy, busY) {
   return `M${px} ${py}V${busY - r}Q${px} ${busY} ${px + dir * r} ${busY}H${cx - dir * r}Q${cx} ${busY} ${cx} ${busY + r}V${cy}`
 }
 
+// baris golongan sama: turun dari bawah atasan -> horizontal di bawah baris -> naik ke bawah kartu anak
+function uturn(px, py, cx, cy, busY) {
+  if (Math.abs(cx - px) < 1) return `M${px} ${py}V${cy}`
+  const dir = cx > px ? 1 : -1
+  const r = Math.max(0, Math.min(12, Math.abs(cx - px) / 2, busY - py, busY - cy))
+  return `M${px} ${py}V${busY - r}Q${px} ${busY} ${px + dir * r} ${busY}H${cx - dir * r}Q${cx} ${busY} ${cx} ${busY - r}V${cy}`
+}
+
 function TierChart({ roots, ctx }) {
   const layout = useMemo(() => buildTierLayout(roots, ctx.isCollapsed), [roots, ctx.isCollapsed])
   const boxRef = useRef(null)
@@ -210,10 +218,8 @@ function TierChart({ roots, ctx }) {
       if (!a || !b || !row) continue
       const qa = rel(a), qb = rel(b)
       if (e.lateral) {
-        // golongan sama dengan atasan: garis putus-putus horizontal di samping kartu
-        const y = qa.t + Math.min(44, (qa.b - qa.t) / 2)
-        const [x1, x2] = qb.l >= qa.r ? [qa.r, qb.l] : [qa.l, qb.r]
-        paths.push({ d: `M${x1} ${y}H${x2}`, lat: true })
+        // golongan sama dengan atasan: satu baris, tapi garis tetap keluar dari bawah atasan
+        paths.push({ d: uturn((qa.l + qa.r) / 2, qa.b, (qb.l + qb.r) / 2, qb.b, Math.max(qa.b, qb.b) + 24) })
       } else {
         paths.push({ d: elbow((qa.l + qa.r) / 2, qa.b, (qb.l + qb.r) / 2, qb.t, row.b + ROW_GAP / 2) })
       }
@@ -234,7 +240,7 @@ function TierChart({ roots, ctx }) {
     <div ref={boxRef} className="oc-tier" style={{ width: layout.width + LABEL_W, '--oc-label': `${LABEL_W}px`, '--oc-rowgap': `${ROW_GAP}px` }}>
       <svg className="oc-lines" aria-hidden="true">
         {geo.bands.map((b) => <rect key={b.key} className="oc-band" x={0} y={b.y} width={geo.w} height={b.h} rx={18} />)}
-        {geo.paths.map((p, i) => <path key={i} d={p.d} className={p.lat ? 'oc-lat' : undefined} />)}
+        {geo.paths.map((p, i) => <path key={i} d={p.d} />)}
       </svg>
       {layout.rows.map((r) => {
         const meta = rowMeta(r.row)

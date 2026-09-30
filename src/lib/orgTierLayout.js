@@ -8,7 +8,7 @@
 //   baris 4 = Gol. II
 //   baris 5 = Gol. I
 // - Golongan yang sama dengan atasannya TETAP di baris golongannya (tidak turun baris);
-//   orang itu diletakkan di samping atasannya dan dihubungkan garis putus-putus horizontal.
+//   orang itu diletakkan di samping atasannya, garis penghubung tetap keluar dari bawah atasan.
 // - Orang tanpa golongan ditaruh 1 baris di bawah atasannya.
 // - Anggota tanpa bawahan dikelompokkan jadi panel tim. Jabatan yang sama dan jumlahnya
 //   lebih dari 2 dipisah jadi panel sendiri (mis. Reseller, Online Sales, SPG).
