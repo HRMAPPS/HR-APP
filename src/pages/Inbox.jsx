@@ -4,6 +4,8 @@ import { supabase } from '../lib/supabaseClient'
 import ApprovalCenter from '../components/ApprovalCenter'
 import DesktopInbox from '../components/DesktopInbox'
 import { useIsDesktop } from '../lib/useIsDesktop'
+import Avatar from '../components/Avatar'
+import { useAvatarsByName } from '../lib/useAvatarsByName'
 
 const APPROVAL_TABLES = ['leave_requests', 'overtime_requests', 'reimbursement_requests', 'shift_change_requests', 'absence_requests']
 
@@ -17,6 +19,7 @@ export default function Inbox({ employee, onToast, onNavigate, onRead }) {
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
   const [approvalCount, setApprovalCount] = useState(0)
+  const avatars = useAvatarsByName(items.map((n) => n.actor_name))
 
   async function load() {
     setLoading(true)
@@ -72,9 +75,13 @@ export default function Inbox({ employee, onToast, onNavigate, onRead }) {
         ) : items.map((n) => (
           <button key={n.id} className="list-item" style={{ width: '100%', border: 'none', textAlign: 'left', cursor: 'pointer' }}
             onClick={() => openNotification(n)}>
-            <div className="avatar" style={{ color: '#9a938c' }}>
-              {n.actor_name ? initials(n.actor_name) : <User size={18} />}
-            </div>
+            {n.actor_name && avatars[n.actor_name]
+              ? <Avatar url={avatars[n.actor_name]} name={n.actor_name} size={44} />
+              : (
+                <div className="avatar" style={{ color: '#9a938c' }}>
+                  {n.actor_name ? initials(n.actor_name) : <User size={18} />}
+                </div>
+              )}
             <div className="info">
               <div className="name" style={{ fontWeight: n.is_read ? 500 : 700 }}>{n.title}</div>
               {n.body && <div className="sub">{n.body}</div>}

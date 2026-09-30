@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react'
 import { ChevronRight, User, Bell, CalendarDays, AlarmClock, Receipt, MapPin, RefreshCw } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
 import { ApprovalCategoryPage } from './ApprovalCenter'
+import Avatar from './Avatar'
+import { useAvatarsByName } from '../lib/useAvatarsByName'
 
 const FOLDERS = [
   { key: 'notifikasi', label: 'Notifikasi', icon: Bell },
@@ -19,6 +21,7 @@ function initials(name) {
 }
 
 function NotificationList({ items, loading, onOpen }) {
+  const avatars = useAvatarsByName(items.map((n) => n.actor_name))
   if (loading) return <div className="empty-state"><p>Memuat...</p></div>
   if (items.length === 0) return <div className="empty-state"><h3>Belum ada notifikasi</h3><p>Notifikasi Anda akan tampil di sini.</p></div>
   return (
@@ -26,9 +29,11 @@ function NotificationList({ items, loading, onOpen }) {
       {items.map((n) => (
         <button key={n.id} onClick={() => onOpen(n)} className="approval-card" style={{ width: 'calc(100% - 32px)', textAlign: 'left', cursor: 'pointer' }}>
           <div className="top-row">
-            {n.actor_name
-              ? <div className="approval-avatar-fallback" style={{ background: 'var(--blue)', color: '#fff' }}>{initials(n.actor_name)}</div>
-              : <div className="approval-avatar-fallback"><User size={20} /></div>}
+            {n.actor_name && avatars[n.actor_name]
+              ? <Avatar url={avatars[n.actor_name]} name={n.actor_name} size={40} />
+              : n.actor_name
+                ? <div className="approval-avatar-fallback" style={{ background: 'var(--blue)', color: '#fff' }}>{initials(n.actor_name)}</div>
+                : <div className="approval-avatar-fallback"><User size={20} /></div>}
             <div className="body">
               <div className="name" style={{ fontWeight: n.is_read ? 500 : 700 }}>{n.title}</div>
               {n.body && <div className="desc">{n.body}</div>}

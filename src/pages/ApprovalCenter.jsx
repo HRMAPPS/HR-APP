@@ -5,6 +5,7 @@ import {
   ClipboardCheck, Filter,
 } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
+import Avatar from '../components/Avatar'
 
 const CATEGORIES = [
   { key: 'reimbursement_requests', label: 'Reimbursement', icon: Receipt },
@@ -156,7 +157,7 @@ function ApprovalList({ category, onBack, onOpen, onToast }) {
                 borderRadius: 14, margin: '0 16px 10px', padding: 14, boxShadow: 'var(--shadow-sm)',
               }}>
                 <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
-                  <div className="avatar" style={{ width: 36, height: 36, fontSize: 12 }}>{initials(r.requester_name)}</div>
+                  <Avatar url={r.requester_avatar} name={r.requester_name} size={36} fontSize={12} />
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontWeight: 600, fontSize: 15 }}>{r.requester_name}</div>
                     <div style={{ fontSize: 13.5, color: 'var(--text-muted)', marginTop: 2 }}>{titleFor(category.key, r)}</div>
@@ -278,7 +279,7 @@ function ApprovalDetail({ table, id, onBack, onToast, onDecided }) {
       </div>
 
       <div style={{ padding: '18px 16px 8px', display: 'flex', alignItems: 'center', gap: 12 }}>
-        <div className="avatar" style={{ width: 46, height: 46, fontSize: 15 }}>{initials(detail.requester_name)}</div>
+        <Avatar url={detail.requester_avatar} name={detail.requester_name} size={46} fontSize={15} />
         <div>
           <div style={{ fontWeight: 700, fontSize: 16 }}>{detail.requester_name}</div>
           <div style={{ fontSize: 12.5, color: 'var(--text-muted)' }}>{submittedAt}</div>
