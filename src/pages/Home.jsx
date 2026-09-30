@@ -5,6 +5,7 @@ import { HOME_QUICK_APPS } from '../lib/menuConfig'
 import { useAttendance } from '../lib/useAttendance'
 import { useIsDesktop } from '../lib/useIsDesktop'
 import CameraCapture from '../components/CameraCapture'
+import HomeLeavePanel from '../components/HomeLeavePanel'
 import { jakartaHour, greetingID } from '../lib/dateUtils'
 import { linkifyText } from '../lib/linkify'
 
@@ -125,7 +126,7 @@ export default function Home({ employee, onNavigate, onOpenAllApps }) {
           ))}
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '260px 1fr', gap: 20, alignItems: 'start' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '240px minmax(0, 1fr) 290px', gap: 20, alignItems: 'start' }}>
           <div style={{ background: '#fff', borderRadius: 16, padding: 20, boxShadow: 'var(--shadow-sm)' }}>
             <div style={{ fontWeight: 700, marginBottom: 14 }}>Quick Links</div>
             {[
@@ -215,6 +216,8 @@ export default function Home({ employee, onNavigate, onOpenAllApps }) {
               </div>
             ))}
           </div>
+
+          <HomeLeavePanel onNavigate={onNavigate} />
         </div>
 
         {overlays}
