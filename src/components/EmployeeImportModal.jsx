@@ -21,7 +21,7 @@ export default function EmployeeImportModal({ employees, onClose, onDone }) {
 
   useEffect(() => {
     supabase.rpc('get_hr_shifts').then(({ data }) => setShifts(data || []))
-    supabase.from('departments').select('name').then(({ data }) => setDepartments((data || []).map((d) => d.name)))
+    supabase.from('departments').select('id,name').then(({ data }) => setDepartments(data || []))
   }, [])
 
   async function onFile(ev) {

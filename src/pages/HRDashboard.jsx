@@ -320,7 +320,7 @@ function EmployeeForm({ row, employees, onClose, onSaved }) {
 
   useEffect(() => {
     supabase.rpc('get_hr_shifts').then(({ data }) => setShifts(data || []))
-    supabase.from('departments').select('name').order('name').then(({ data }) => setDepartments((data || []).map((d) => d.name)))
+    supabase.from('departments').select('id,name').order('name').then(({ data }) => setDepartments(data || []))
   }, [])
 
   const managerOptions = employees.filter((e) => e.id !== row.id)
@@ -336,9 +336,12 @@ function EmployeeForm({ row, employees, onClose, onSaved }) {
     setSaving(true)
     // samakan huruf dengan daftar resmi; departemen baru otomatis didaftarkan
     const typed = form.department.trim()
-    const canonical = departments.find((d) => d.toLowerCase() === typed.toLowerCase())
-    form.department = canonical || typed
-    if (typed && !canonical) await supabase.from('departments').insert({ name: typed })
+    let dept = departments.find((d) => d.name.toLowerCase() === typed.toLowerCase())
+    if (typed && !dept) {
+      const { data: created } = await supabase.from('departments').insert({ name: typed }).select('id,name').single()
+      dept = created || null
+    }
+    form.department = dept ? dept.name : typed
     const daysParam = form.default_shift_id && form.default_days.length < 7 ? form.default_days.map(Number) : null
     let res
     if (row.id) {
@@ -359,6 +362,9 @@ function EmployeeForm({ row, employees, onClose, onSaved }) {
     }
     setSaving(false)
     if (res.error) { setError(res.error.message); return }
+    // samakan department_id (dipakai Struktur Organisasi) dengan departemen yang dipilih
+    const empId = row.id || res.data?.id
+    if (empId) await supabase.rpc('update_employee_department', { p_employee_id: empId, p_department_id: dept ? dept.id : null })
     onSaved(row.id ? 'Data karyawan diperbarui' : 'Karyawan ditambahkan')
   }
 
@@ -377,7 +383,7 @@ function EmployeeForm({ row, employees, onClose, onSaved }) {
           <div className="field"><label>Jabatan</label><input value={form.position} onChange={(e) => setForm((f) => ({ ...f, position: e.target.value }))} /></div>
           <div className="field"><label>Departemen</label>
             <input list="dept-options" placeholder="Pilih atau ketik departemen baru" value={form.department} onChange={(e) => setForm((f) => ({ ...f, department: e.target.value }))} />
-            <datalist id="dept-options">{departments.map((d) => <option key={d} value={d} />)}</datalist>
+            <datalist id="dept-options">{departments.map((d) => <option key={d.id} value={d.name} />)}</datalist>
           </div>
           <div className="field">
             <label>Atasan langsung</label>

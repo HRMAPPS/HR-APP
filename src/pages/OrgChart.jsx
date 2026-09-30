@@ -48,7 +48,7 @@ export default function OrgChart({ onBack, onToast }) {
         </button>
       </div>
 
-      {view === 'chart' && <OrgChartVisual employees={employees} isDesktop={isDesktop} />}
+      {view === 'chart' && <OrgChartVisual employees={employees} departments={departments} isDesktop={isDesktop} />}
 
       {view === 'list' && (
       <div className="form-page">

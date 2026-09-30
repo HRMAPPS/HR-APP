@@ -46,7 +46,7 @@ export async function readEmployeeFile(file) {
 
 // Validasi + susun rencana impor. existingEmployees: hasil get_hr_employees, shifts: hasil get_hr_shifts
 export function buildPlan(rows, existingEmployees, shifts, departments = []) {
-  const deptByLower = new Map(departments.map((d) => [d.toLowerCase(), d]))
+  const deptByLower = new Map(departments.map((d) => [d.name.toLowerCase(), d.name]))
   const existingByCode = new Map(existingEmployees.filter((e) => e.employee_code).map((e) => [e.employee_code.toLowerCase(), e]))
   const shiftByName = new Map(shifts.map((s) => [s.name.toLowerCase(), s]))
   const seen = new Set()
@@ -106,6 +106,13 @@ export function buildPlan(rows, existingEmployees, shifts, departments = []) {
 export async function runImport(items, existingEmployees, onProgress, existingDepartments = []) {
   const idByCode = new Map(existingEmployees.filter((e) => e.employee_code).map((e) => [e.employee_code.toLowerCase(), e.id]))
   let pending = items.filter((i) => i.status === 'ok')
+  // peta nama departemen -> id; departemen baru dari file didaftarkan dulu
+  const deptId = new Map((existingDepartments || []).map((d) => [d.name.toLowerCase(), d.id]))
+  const fresh = [...new Set(pending.map((i) => i.department).filter((n) => n && !deptId.has(n.toLowerCase())))]
+  if (fresh.length) {
+    const { data: created } = await supabase.from('departments').insert(fresh.map((name) => ({ name }))).select('id,name')
+    ;(created || []).forEach((d) => deptId.set(d.name.toLowerCase(), d.id))
+  }
   const ok = [], failed = []
   let total = pending.length, done = 0
 
@@ -125,14 +132,17 @@ export async function runImport(items, existingEmployees, onProgress, existingDe
       })
       done++
       if (error) failed.push({ row: it.row, code: it.code, error: error.message })
-      else { ok.push(it.code); if (data?.id) idByCode.set(it.code.toLowerCase(), data.id) }
+      else {
+        ok.push(it.code)
+        if (data?.id) {
+          idByCode.set(it.code.toLowerCase(), data.id)
+          const did = it.department && deptId.get(it.department.toLowerCase())
+          if (did) await supabase.rpc('update_employee_department', { p_employee_id: data.id, p_department_id: did })
+        }
+      }
       onProgress?.(done, total)
     }
     pending = pending.filter((i) => !ready.includes(i))
   }
-  // daftarkan departemen baru yang muncul di file
-  const known = new Set((existingDepartments || []).map((d) => d.toLowerCase()))
-  const fresh = [...new Set(items.filter((i) => ok.includes(i.code) && i.department && !known.has(i.department.toLowerCase())).map((i) => i.department))]
-  if (fresh.length) await supabase.from('departments').insert(fresh.map((name) => ({ name })))
   return { ok, failed }
 }
