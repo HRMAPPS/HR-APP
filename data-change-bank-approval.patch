@@ -1,0 +1,1460 @@
+diff --git a/phase2-hardening.patch b/phase2-hardening.patch
+deleted file mode 100644
+index d5be5c5..0000000
+--- a/phase2-hardening.patch
++++ /dev/null
+@@ -1,365 +0,0 @@
+-diff --git a/src/lib/employeeFiles.js b/src/lib/employeeFiles.js
+-new file mode 100644
+-index 0000000..7a16ca0
+---- /dev/null
+-+++ b/src/lib/employeeFiles.js
+-@@ -0,0 +1,57 @@
+-+import { supabase } from './supabaseClient'
+-+
+-+// Bucket 'employee-files' bersifat PRIVATE: file hanya bisa dibuka lewat signed URL
+-+// berumur pendek, dan hanya oleh pemilik / HR / atasan langsung (diatur di policy storage).
+-+const BUCKET = 'employee-files'
+-+const TTL = 120 // detik
+-+
+-+// Data lama menyimpan URL publik ".../object/public/employee-files/<path>"; ambil <path>-nya.
+-+export function employeeFilePath(urlOrPath) {
+-+  if (!urlOrPath) return null
+-+  const marker = `/${BUCKET}/`
+-+  const i = urlOrPath.indexOf(marker)
+-+  if (i === -1) return urlOrPath.startsWith('http') ? null : urlOrPath
+-+  return decodeURIComponent(urlOrPath.slice(i + marker.length).split('?')[0])
+-+}
+-+
+-+const safeName = (name) => String(name || 'file').replace(/[^\w.\-]+/g, '_').slice(-80)
+-+
+-+// Unggah ke folder <auth uid>/ lalu simpan baris di employee_files. Menyimpan PATH (bukan URL publik).
+-+export async function uploadEmployeeFile(file, employeeId) {
+-+  const { data: sess } = await supabase.auth.getSession()
+-+  const uid = sess?.session?.user?.id
+-+  if (!uid) throw new Error('Sesi berakhir, silakan masuk lagi')
+-+  const path = `${uid}/${Date.now()}-${safeName(file.name)}`
+-+  const { error: upErr } = await supabase.storage.from(BUCKET).upload(path, file)
+-+  if (upErr) throw upErr
+-+  const { error: insErr } = await supabase.from('employee_files').insert({
+-+    employee_id: employeeId, file_name: file.name, file_url: path,
+-+  })
+-+  if (insErr) {
+-+    await supabase.storage.from(BUCKET).remove([path]).catch(() => {}) // jangan tinggalkan file yatim
+-+    throw insErr
+-+  }
+-+}
+-+
+-+export async function getSignedEmployeeFileUrl(urlOrPath) {
+-+  const path = employeeFilePath(urlOrPath)
+-+  if (!path) return urlOrPath || null
+-+  const { data, error } = await supabase.storage.from(BUCKET).createSignedUrl(path, TTL)
+-+  return error || !data?.signedUrl ? null : data.signedUrl
+-+}
+-+
+-+// Buka tab dulu (sinkron) agar tidak diblokir pop-up blocker, lalu arahkan ke signed URL.
+-+export async function openEmployeeFile(urlOrPath) {
+-+  const w = window.open('', '_blank')
+-+  const url = await getSignedEmployeeFileUrl(urlOrPath)
+-+  if (!url) { if (w) w.close(); return false }
+-+  if (w) { w.opener = null; w.location.href = url } else { window.location.href = url }
+-+  return true
+-+}
+-+
+-+export async function removeEmployeeFile(id, urlOrPath) {
+-+  const { error } = await supabase.from('employee_files').delete().eq('id', id)
+-+  if (error) throw error
+-+  const path = employeeFilePath(urlOrPath)
+-+  if (path) await supabase.storage.from(BUCKET).remove([path]).catch(() => {})
+-+}
+-diff --git a/src/lib/i18nDict.js b/src/lib/i18nDict.js
+-index 6794186..01693ff 100644
+---- a/src/lib/i18nDict.js
+-+++ b/src/lib/i18nDict.js
+-@@ -3851,6 +3851,22 @@ export const PAIRS = [
+- [
+- "{0}{1} ({2} hari)",
+- "{0}{1} ({2} days)"
+-+],
+-+[
+-+"Kata sandi minimal 8 karakter",
+-+"Password must be at least 8 characters"
+-+],
+-+[
+-+"Minimal 8 karakter",
+-+"At least 8 characters"
+-+],
+-+[
+-+"Gagal menghapus file",
+-+"Failed to delete file"
+-+],
+-+[
+-+"Gagal membuka file",
+-+"Failed to open file"
+- ]
+- ]
+- export const ONEWAY = [
+-diff --git a/src/lib/useAuth.js b/src/lib/useAuth.js
+-index b7b3087..f8eb28f 100644
+---- a/src/lib/useAuth.js
+-+++ b/src/lib/useAuth.js
+-@@ -1,6 +1,14 @@
+- import { useEffect, useState } from 'react'
+- import { supabase } from './supabaseClient'
+- 
+-+// Hanya kolom non-sensitif. Data pribadi (NIK, rekening, NPWP, BPJS, alamat, dll.)
+-+// tidak boleh dibaca lewat tabel langsung; ambil lewat RPC get_profile_detail().
+-+export const EMPLOYEE_COLUMNS = [
+-+  'id', 'auth_user_id', 'employee_code', 'full_name', 'position', 'department', 'department_id',
+-+  'phone', 'email', 'avatar_url', 'manager_id', 'join_date', 'employment_status', 'role', 'grade',
+-+  'default_shift_id', 'default_work_days', 'created_at',
+-+].join(', ')
+-+
+- // Wraps Supabase Auth session state + the linked `employees` row for the
+- // logged-in user (employees.auth_user_id references auth.users.id).
+- export function useAuth() {
+-@@ -12,7 +20,7 @@ export function useAuth() {
+-     if (!userId) { setEmployee(null); return }
+-     const { data, error } = await supabase
+-       .from('employees')
+--      .select('*')
+-+      .select(EMPLOYEE_COLUMNS)
+-       .eq('auth_user_id', userId)
+-       .maybeSingle()
+-     if (!error) setEmployee(data)
+-diff --git a/src/lib/useProfileDetail.js b/src/lib/useProfileDetail.js
+-index c4f7f47..9df551e 100644
+---- a/src/lib/useProfileDetail.js
+-+++ b/src/lib/useProfileDetail.js
+-@@ -1,5 +1,6 @@
+- import { useEffect, useState } from 'react'
+- import { supabase } from './supabaseClient'
+-+import { uploadEmployeeFile, removeEmployeeFile } from './employeeFiles'
+- 
+- import { tx } from './i18n'
+- // Backs all the "Info saya" detail pages in Akun (Info personal, pekerjaan,
+-@@ -31,16 +32,7 @@ export function useProfileDetail() {
+-   async function uploadFile(file) {
+-     setSaving(true)
+-     try {
+--      const { data: auth } = await supabase.auth.getUser()
+--      const empId = data?.employee?.id
+--      const path = `${auth.user.id}/${Date.now()}-${file.name}`
+--      const { error: upErr } = await supabase.storage.from('employee-files').upload(path, file)
+--      if (upErr) throw upErr
+--      const { data: pub } = supabase.storage.from('employee-files').getPublicUrl(path)
+--      const { error: insErr } = await supabase.from('employee_files').insert({
+--        employee_id: empId, file_name: file.name, file_url: pub.publicUrl,
+--      })
+--      if (insErr) throw insErr
+-+      await uploadEmployeeFile(file, data?.employee?.id)
+-       await load()
+-       return { ok: true }
+-     } catch (e) {
+-@@ -50,13 +42,17 @@ export function useProfileDetail() {
+-     }
+-   }
+- 
+--  async function deleteFile(id) {
+-+  async function deleteFile(id, fileUrl) {
+-     setSaving(true)
+--    const { error } = await supabase.from('employee_files').delete().eq('id', id)
+--    setSaving(false)
+--    if (error) return { ok: false, message: error.message }
+--    await load()
+--    return { ok: true }
+-+    try {
+-+      await removeEmployeeFile(id, fileUrl)
+-+      await load()
+-+      return { ok: true }
+-+    } catch (e) {
+-+      return { ok: false, message: e.message }
+-+    } finally {
+-+      setSaving(false)
+-+    }
+-   }
+- 
+-   return {
+-diff --git a/src/pages/Login.jsx b/src/pages/Login.jsx
+-index 4997cb7..cf7863a 100644
+---- a/src/pages/Login.jsx
+-+++ b/src/pages/Login.jsx
+-@@ -26,7 +26,7 @@ export default function Login() {
+-     e.preventDefault()
+-     setError('')
+-     if (!employeeCode.trim()) { setError(tx("Kode karyawan wajib diisi. Minta kode ini ke HR.")); return }
+--    if (password.length < 6) { setError(tx("Kata sandi minimal 6 karakter")); return }
+-+    if (password.length < 8) { setError(tx("Kata sandi minimal 8 karakter")); return }
+-     if (password !== confirm) { setError(tx("Konfirmasi kata sandi tidak sama")); return }
+- 
+-     setLoading(true)
+-@@ -101,7 +101,7 @@ export default function Login() {
+-             <div className="field">
+-               <label>{tx("Kata sandi")}</label>
+-               <input type="password" value={password} onChange={(e) => setPassword(e.target.value)}
+--                placeholder={tx("Minimal 6 karakter")} required />
+-+                placeholder={tx("Minimal 8 karakter")} required />
+-             </div>
+-             <div className="field">
+-               <label>{tx("Konfirmasi kata sandi")}</label>
+-diff --git a/src/pages/ProfileDetail.jsx b/src/pages/ProfileDetail.jsx
+-index 38803b4..6f62806 100644
+---- a/src/pages/ProfileDetail.jsx
+-+++ b/src/pages/ProfileDetail.jsx
+-@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
+- import { ArrowLeft, Plus, Pencil, Trash2, FileText, Download, AlertTriangle } from 'lucide-react'
+- import { useProfileDetail } from '../lib/useProfileDetail'
+- import { supabase } from '../lib/supabaseClient'
+-+import { uploadEmployeeFile, openEmployeeFile, removeEmployeeFile } from '../lib/employeeFiles'
+- 
+- import { tx, locale } from '../lib/i18n'
+- const SECTION_TITLES = {
+-@@ -424,14 +425,7 @@ export function FilesList({ employeeId, onToast }) {
+-     if (!file) return
+-     setUploading(true)
+-     try {
+--      const path = `${employeeId}/${Date.now()}-${file.name}`
+--      const { error: upErr } = await supabase.storage.from('employee-files').upload(path, file)
+--      if (upErr) throw upErr
+--      const { data: pub } = supabase.storage.from('employee-files').getPublicUrl(path)
+--      const { error: insErr } = await supabase.from('employee_files').insert({
+--        employee_id: employeeId, file_name: file.name, file_url: pub.publicUrl,
+--      })
+--      if (insErr) throw insErr
+-+      await uploadEmployeeFile(file, employeeId)
+-       onToast(tx("File berhasil diunggah"))
+-       await load()
+-     } catch (err) {
+-@@ -442,11 +436,21 @@ export function FilesList({ employeeId, onToast }) {
+-   }
+- 
+-   async function handleDelete(id) {
+--    await supabase.from('employee_files').delete().eq('id', id)
+--    onToast(tx("File dihapus"))
+-+    const f = (files || []).find((x) => x.id === id)
+-+    try {
+-+      await removeEmployeeFile(id, f?.file_url)
+-+      onToast(tx("File dihapus"))
+-+    } catch (err) {
+-+      onToast(err.message || tx("Gagal menghapus file"))
+-+    }
+-     load()
+-   }
+- 
+-+  async function handleOpen(f) {
+-+    const ok = await openEmployeeFile(f.file_url)
+-+    if (!ok) onToast(tx("Gagal membuka file"))
+-+  }
+-+
+-   if (files === null) return <div className="empty-state"><p>{tx("Memuat...")}</p></div>
+- 
+-   return (
+-@@ -462,7 +466,7 @@ export function FilesList({ employeeId, onToast }) {
+-               <div className="sub">{new Date(f.created_at).toLocaleDateString(locale(), { day: '2-digit', month: 'short', year: 'numeric' })}</div>
+-             </div>
+-             <div className="actions">
+--              <a href={f.file_url} target="_blank" rel="noreferrer"><Download size={17} /></a>
+-+              <button onClick={() => handleOpen(f)}><Download size={17} /></button>
+-               <button onClick={() => handleDelete(f.id)}><Trash2 size={17} /></button>
+-             </div>
+-           </div>
+-diff --git a/supabase/migrations/20261001130000_phase2a_employees_column_privileges.sql b/supabase/migrations/20261001130000_phase2a_employees_column_privileges.sql
+-new file mode 100644
+-index 0000000..b9aaa16
+---- /dev/null
+-+++ b/supabase/migrations/20261001130000_phase2a_employees_column_privileges.sql
+-@@ -0,0 +1,19 @@
+-+-- FASE 2-A  [KRITIS - PII]
+-+-- Sebelumnya semua akun login bisa membaca NIK, rekening bank, NPWP, BPJS, alamat KTP,
+-+-- tanggal lahir, kontak darurat SEMUA karyawan lewat tabel employees.
+-+-- Sekarang hanya kolom non-sensitif yang bisa dibaca langsung. Data pribadi diambil lewat
+-+-- RPC SECURITY DEFINER (get_profile_detail untuk diri sendiri, get_hr_* untuk HR).
+-+--
+-+-- !!! JALANKAN SETELAH frontend baru ter-deploy (useAuth.js tidak lagi memakai select('*')). !!!
+-+-- Daftar kolom harus sama dengan EMPLOYEE_COLUMNS di src/lib/useAuth.js.
+-+
+-+revoke select on public.employees from authenticated;
+-+grant select (
+-+  id, auth_user_id, employee_code, full_name, position, department, department_id,
+-+  phone, email, avatar_url, manager_id, join_date, employment_status, role, grade,
+-+  default_shift_id, default_work_days, created_at
+-+) on public.employees to authenticated;
+-+
+-+-- Frontend tidak pernah menulis ke employees secara langsung (semua lewat RPC SECURITY DEFINER),
+-+-- jadi tutup tulis langsung. Trigger penjaga kolom dari fase 1 tetap ada sebagai lapisan kedua.
+-+revoke insert, update, delete, truncate on public.employees from authenticated;
+-diff --git a/supabase/migrations/20261001130100_phase2b_link_account_hardening.sql b/supabase/migrations/20261001130100_phase2b_link_account_hardening.sql
+-new file mode 100644
+-index 0000000..faffeb1
+---- /dev/null
+-+++ b/supabase/migrations/20261001130100_phase2b_link_account_hardening.sql
+-@@ -0,0 +1,49 @@
+-+-- FASE 2-B  [TINGGI] Pengambilalihan data karyawan lewat kode karyawan yang mudah ditebak (CK001, CK002, ...).
+-+-- Aturan baru: kode harus cocok DAN email akun harus
+-+--   (a) berdomain perusahaan (napocutid.com), atau
+-+--   (b) sama dengan employees.email / employees.personal_email yang diisi HR.
+-+-- Pesan galat dibuat seragam supaya kode karyawan tidak bisa ditebak lewat respons.
+-+--
+-+-- PENTING (di luar SQL): aktifkan "Confirm email" di Supabase Auth, kalau tidak aturan (a)
+-+-- bisa dilewati dengan mendaftar memakai alamat @napocutid.com milik orang lain tanpa verifikasi.
+-+create or replace function public.link_my_employee_account(p_employee_code text)
+-+returns employees
+-+language plpgsql
+-+security definer
+-+set search_path to 'public'
+-+as $function$
+-+declare
+-+  c_company_domain constant text := 'napocutid.com';
+-+  v_uid  uuid := auth.uid();
+-+  v_mail text := lower(btrim(coalesce(auth.jwt()->>'email', '')));
+-+  v_row  employees;
+-+begin
+-+  if v_uid is null then
+-+    raise exception 'Anda harus login terlebih dahulu';
+-+  end if;
+-+
+-+  if exists (select 1 from employees where auth_user_id = v_uid) then
+-+    raise exception 'Akun Anda sudah terhubung dengan data karyawan';
+-+  end if;
+-+
+-+  select * into v_row
+-+  from employees
+-+  where lower(btrim(employee_code)) = lower(btrim(coalesce(p_employee_code, '')))
+-+    and auth_user_id is null
+-+    and v_mail <> ''
+-+    and (   split_part(v_mail, '@', 2) = c_company_domain
+-+         or v_mail = lower(btrim(coalesce(email, '')))
+-+         or v_mail = lower(btrim(coalesce(personal_email, ''))) )
+-+  for update;
+-+
+-+  if v_row.id is null then
+-+    raise exception 'Kode karyawan tidak cocok, sudah terhubung, atau tidak dapat dipakai dengan email akun ini. Gunakan email perusahaan, atau minta HR mendaftarkan email pribadi Anda.';
+-+  end if;
+-+
+-+  update employees set auth_user_id = v_uid where id = v_row.id returning * into v_row;
+-+  return v_row;
+-+end;
+-+$function$;
+-+
+-+revoke execute on function public.link_my_employee_account(text) from public, anon;
+-+grant  execute on function public.link_my_employee_account(text) to authenticated;
+-diff --git a/supabase/migrations/20261001130200_phase2c_employee_files_private.sql b/supabase/migrations/20261001130200_phase2c_employee_files_private.sql
+-new file mode 100644
+-index 0000000..360c5b0
+---- /dev/null
+-+++ b/supabase/migrations/20261001130200_phase2c_employee_files_private.sql
+-@@ -0,0 +1,25 @@
+-+-- FASE 2-C  [TINGGI] Bucket employee-files (KTP, ijazah, dll.) sebelumnya PUBLIC:
+-+-- bisa dibaca dan di-list siapa pun tanpa login. Jadikan private; baca hanya oleh
+-+-- pemilik folder, HR, atau atasan langsung. Frontend memakai signed URL (src/lib/employeeFiles.js).
+-+--
+-+-- !!! JALANKAN SETELAH frontend baru ter-deploy. Link publik lama berhenti bekerja
+-+--     (saat ini hanya 1 file yatim dan 0 baris di employee_files, jadi tidak ada yang rusak). !!!
+-+update storage.buckets set public = false where id = 'employee-files';
+-+
+-+drop policy if exists "employee files read all" on storage.objects;
+-+drop policy if exists "employee files read allowed" on storage.objects;
+-+create policy "employee files read allowed" on storage.objects
+-+  for select to authenticated
+-+  using (
+-+    bucket_id = 'employee-files'
+-+    and (
+-+      (storage.foldername(name))[1] in (auth.uid()::text, public.current_employee_id()::text)
+-+      or public.is_hr()
+-+      or exists (
+-+        select 1 from public.employees e
+-+        where (e.auth_user_id::text = (storage.foldername(objects.name))[1]
+-+            or e.id::text           = (storage.foldername(objects.name))[1])
+-+          and e.manager_id = public.current_employee_id()
+-+      )
+-+    )
+-+  );
+diff --git a/src/components/ApprovalCenter.jsx b/src/components/ApprovalCenter.jsx
+index 60eb3fd..c289482 100644
+--- a/src/components/ApprovalCenter.jsx
++++ b/src/components/ApprovalCenter.jsx
+@@ -14,7 +14,7 @@ const CATEGORIES = [
+   { key: 'absence_requests', label: tx("Presensi"), icon: MapPin },
+   { key: 'overtime_requests', label: tx("Lembur"), icon: AlarmClock },
+   { key: 'shift_change_requests', label: tx("Perubahan shift"), icon: RefreshCw },
+-  { key: 'data_change_requests', label: tx("Perubahan data"), icon: UserCircle, noBacking: true },
++  { key: 'data_change_requests', label: tx("Perubahan data"), icon: UserCircle },
+   { key: 'formulir', label: tx("Formulir"), icon: FileText, noBacking: true },
+   { key: 'goal', label: tx("Goal"), icon: Target, noBacking: true },
+   { key: 'timesheet', label: 'Timesheet', icon: ListChecks, noBacking: true },
+@@ -185,6 +185,7 @@ function titleFor(category, r) {
+     case 'reimbursement_requests': return tx("Pengajuan reimbursement untuk {0}", [tx(d.category_name) || tx("Reimbursement")])
+     case 'shift_change_requests': return tx("Pengajuan ubah shift untuk {0}", [fmtDay(d.work_date)])
+     case 'absence_requests': return tx("Pengajuan presensi untuk {0}", [fmtDay(d.work_date)])
++    case 'data_change_requests': return tx("Pengajuan perubahan {0}", [fieldLabel(d.field_name)])
+     default: return ''
+   }
+ }
+@@ -212,11 +213,34 @@ function bulletsFor(category, r) {
+         lines.push(tx("Usulan: {0} - {1}", [d.requested_clock_in?.slice(0, 5) || '-', d.requested_clock_out?.slice(0, 5) || '-']))
+       }
+       break
++    case 'data_change_requests':
++      lines.push(d.field_name === 'bank_account'
++        ? tx("{0} menjadi {1}", [bankText(d.old_value), bankText(d.new_value)])
++        : tx("{0} menjadi {1}", [d.old_value || '-', d.new_value || '-']))
++      break
+   }
+   if (r.reason) lines.push(tx("Alasan: {0}", [r.reason]))
+   return lines
+ }
+ 
++const FIELD_LABELS = {
++  phone: () => tx("Nomor telepon"),
++  email: () => 'Email',
++  full_name: () => tx("Nama lengkap"),
++  bank_account: () => tx("Rekening bank"),
++}
++function fieldLabel(f) { return (FIELD_LABELS[f] || (() => f || '-'))() }
++
++// Rekening bank disimpan sebagai JSON {bank_name, bank_account_number, bank_account_holder}
++function parseBank(v) {
++  try { const o = typeof v === 'string' ? JSON.parse(v) : v; return o && typeof o === 'object' ? o : null } catch { return null }
++}
++function bankText(v) {
++  const b = parseBank(v)
++  if (!b || (!b.bank_name && !b.bank_account_number)) return '-'
++  return `${b.bank_name || '-'} ${b.bank_account_number || '-'} (${b.bank_account_holder || '-'})`
++}
++
+ function fmtDay(d) {
+   return d ? new Date(d).toLocaleDateString(locale(), { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' }) : '-'
+ }
+@@ -340,9 +364,27 @@ function FieldRows({ table, row }) {
+     if (row.requested_clock_in || row.requested_clock_out) {
+       rows.push([tx("Usulan jam"), `${row.requested_clock_in?.slice(0, 5) || '-'} - ${row.requested_clock_out?.slice(0, 5) || '-'}`])
+     }
++  } else if (table === 'data_change_requests') {
++    rows.push([tx("Data yang diubah"), fieldLabel(row.field_name)])
++    if (row.field_name === 'bank_account') {
++      const o = parseBank(row.old_value) || {}
++      const n = parseBank(row.new_value) || {}
++      rows.push([tx("Data saat ini"), bankText(o)])
++      rows.push([tx("Nama bank"), n.bank_name || '-'])
++      rows.push([tx("Nomor rekening"), n.bank_account_number || '-'])
++      rows.push([tx("Atas nama"), n.bank_account_holder || '-'])
++    } else {
++      rows.push([tx("Data saat ini"), row.old_value || '-'])
++      rows.push([tx("Data baru"), row.new_value || '-'])
++    }
+   }
+   return (
+     <>
++      {table === 'data_change_requests' && row.field_name === 'bank_account' && row.status === 'pending' && (
++        <div style={{ background: '#FBEEDD', color: '#8a5a0b', borderRadius: 10, padding: '10px 12px', fontSize: 13, marginBottom: 14 }}>
++          {tx("Verifikasi rekening langsung dengan karyawan sebelum menyetujui.")}
++        </div>
++      )}
+       {rows.map(([label, value]) => (
+         <div key={label} style={{ marginBottom: 12 }}>
+           <div style={{ fontSize: 12.5, color: 'var(--text-muted)' }}>{label}</div>
+@@ -362,7 +404,7 @@ function Timeline({ row, detail }) {
+     { label: tx("Diajukan oleh {0}", [detail.requester_name]), time: row.created_at, color: '#4356C4', done: true },
+   ]
+   if (row.status === 'pending') {
+-    items.push({ label: tx("Menunggu persetujuan dari {0}", [detail.manager_name || 'HR']), time: null, color: '#c58a12', pending: true })
++    items.push({ label: tx("Menunggu persetujuan dari {0}", [row.field_name ? 'HR' : (detail.manager_name || 'HR')]), time: null, color: '#c58a12', pending: true })
+   } else if (row.status === 'approved') {
+     items.push({ label: tx("Disetujui oleh {0}", [detail.approver_name || 'HR']), time: row.decided_at, color: '#1E8E5A', done: true })
+   } else if (row.status === 'rejected') {
+diff --git a/src/components/DesktopInbox.jsx b/src/components/DesktopInbox.jsx
+index 364f4f1..b0f8e15 100644
+--- a/src/components/DesktopInbox.jsx
++++ b/src/components/DesktopInbox.jsx
+@@ -1,5 +1,5 @@
+ import { useEffect, useState } from 'react'
+-import { ChevronRight, User, Bell, CalendarDays, AlarmClock, Receipt, MapPin, RefreshCw } from 'lucide-react'
++import { ChevronRight, User, Bell, CalendarDays, AlarmClock, Receipt, MapPin, RefreshCw, UserCircle } from 'lucide-react'
+ import { supabase } from '../lib/supabaseClient'
+ import { ApprovalCategoryPage } from './ApprovalCenter'
+ import Avatar from './Avatar'
+@@ -13,6 +13,7 @@ const FOLDERS = [
+   { key: 'reimbursement_requests', label: tx("Reimbursement"), icon: Receipt },
+   { key: 'absence_requests', label: tx("Presensi"), icon: MapPin },
+   { key: 'shift_change_requests', label: tx("Perubahan Shift"), icon: RefreshCw },
++  { key: 'data_change_requests', label: tx("Perubahan Data"), icon: UserCircle },
+ ]
+ 
+ const APPROVAL_TABLES = FOLDERS.filter((f) => f.key !== 'notifikasi').map((f) => f.key)
+diff --git a/src/lib/i18nDict.js b/src/lib/i18nDict.js
+index 01693ff..605280f 100644
+--- a/src/lib/i18nDict.js
++++ b/src/lib/i18nDict.js
+@@ -3867,6 +3867,38 @@ export const PAIRS = [
+ [
+ "Gagal membuka file",
+ "Failed to open file"
++],
++[
++"Pengajuan perubahan {0}",
++"Change request: {0}"
++],
++[
++"Rekening bank",
++"Bank account"
++],
++[
++"Verifikasi rekening langsung dengan karyawan sebelum menyetujui.",
++"Verify the account directly with the employee before approving."
++],
++[
++"Perubahan rekening menunggu persetujuan HR",
++"Bank account change awaiting HR approval"
++],
++[
++"Perubahan rekening diajukan dan menunggu persetujuan HR",
++"Bank account change submitted and awaiting HR approval"
++],
++[
++"Batalkan pengajuan",
++"Cancel request"
++],
++[
++"Pengajuan dibatalkan",
++"Request cancelled"
++],
++[
++"Perubahan data rekening bank perlu persetujuan HR.",
++"Changes to bank account details require HR approval."
+ ]
+ ]
+ export const ONEWAY = [
+diff --git a/src/pages/ApprovalCenter.jsx b/src/pages/ApprovalCenter.jsx
+deleted file mode 100644
+index 60eb3fd..0000000
+--- a/src/pages/ApprovalCenter.jsx
++++ /dev/null
+@@ -1,392 +0,0 @@
+-import { useEffect, useState } from 'react'
+-import {
+-  ChevronRight, ArrowLeft, Search, Check, X, Receipt, CalendarDays, MapPin,
+-  AlarmClock, RefreshCw, UserCircle, FileText, Target, ListChecks, CheckSquare, UserPlus, FolderInput,
+-  ClipboardCheck, Filter,
+-} from 'lucide-react'
+-import { supabase } from '../lib/supabaseClient'
+-import Avatar from '../components/Avatar'
+-
+-import { tx, locale } from '../lib/i18n'
+-const CATEGORIES = [
+-  { key: 'reimbursement_requests', label: tx("Reimbursement"), icon: Receipt },
+-  { key: 'leave_requests', label: tx("Cuti"), icon: CalendarDays },
+-  { key: 'absence_requests', label: tx("Presensi"), icon: MapPin },
+-  { key: 'overtime_requests', label: tx("Lembur"), icon: AlarmClock },
+-  { key: 'shift_change_requests', label: tx("Perubahan shift"), icon: RefreshCw },
+-  { key: 'data_change_requests', label: tx("Perubahan data"), icon: UserCircle, noBacking: true },
+-  { key: 'formulir', label: tx("Formulir"), icon: FileText, noBacking: true },
+-  { key: 'goal', label: tx("Goal"), icon: Target, noBacking: true },
+-  { key: 'timesheet', label: 'Timesheet', icon: ListChecks, noBacking: true },
+-  { key: 'task', label: tx("Task"), icon: CheckSquare, noBacking: true },
+-  { key: 'penambahan_karyawan', label: tx("Penambahan karyawan"), icon: UserPlus, noBacking: true },
+-  { key: 'pemindahan_karyawan', label: tx("Pemindahan karyawan"), icon: FolderInput, noBacking: true },
+-]
+-
+-const CAT_ICON_BG = '#EAF1FB'
+-const CAT_ICON_FG = '#3B6ECF'
+-
+-export default function ApprovalCenter({ onToast, onCountsChange, onOpenCategory }) {
+-  const [counts, setCounts] = useState({})
+-
+-  async function loadCounts() {
+-    const { data, error } = await supabase.rpc('get_approval_counts')
+-    if (!error) {
+-      setCounts(data || {})
+-      onCountsChange?.(Object.values(data || {}).reduce((a, b) => a + b, 0))
+-    }
+-  }
+-  useEffect(() => { loadCounts() }, [])
+-
+-  return (
+-    <div>
+-      {CATEGORIES.map((c) => {
+-        const Icon = c.icon
+-        const count = counts[c.key]
+-        return (
+-          <button key={c.key} className="menu-row" style={{ borderTop: '1px solid var(--border)' }}
+-            onClick={() => c.noBacking ? onToast?.(tx("{0} segera hadir", [c.label])) : onOpenCategory(c.key)}>
+-            <span style={{
+-              width: 34, height: 34, borderRadius: 9, background: CAT_ICON_BG, color: CAT_ICON_FG,
+-              display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+-            }}>
+-              <Icon size={17} />
+-            </span>
+-            {c.label}
+-            {count > 0 && (
+-              <span style={{ marginLeft: 8, background: '#C0392B', color: '#fff', fontSize: 11.5, fontWeight: 700, borderRadius: 10, padding: '1px 7px' }}>
+-                {count}
+-              </span>
+-            )}
+-            <ChevronRight size={18} className="chev" />
+-          </button>
+-        )
+-      })}
+-    </div>
+-  )
+-}
+-
+-// Halaman penuh (lewat App-level routing, bukan nested di tab Inbox) supaya
+-// header "Inbox" dan bottom nav ikut hilang saat masuk ke satu kategori.
+-export function ApprovalCategoryPage({ categoryKey, initialId, onBack, onToast }) {
+-  const [view, setView] = useState(initialId ? { screen: 'detail', id: initialId } : { screen: 'list' })
+-  const category = CATEGORIES.find((c) => c.key === categoryKey)
+-
+-  if (!category) {
+-    // Guards against a malformed/unknown deep link instead of crashing
+-    // on category.label below.
+-    return (
+-      <div>
+-        <div className="page-header"><button className="back-btn" onClick={onBack}><ArrowLeft size={22} /></button><h1>{tx("Tidak ditemukan")}</h1><span style={{ width: 22 }} /></div>
+-        <div className="empty-state"><p>{tx("Kategori pengajuan tidak dikenali.")}</p></div>
+-      </div>
+-    )
+-  }
+-
+-  if (view.screen === 'detail') {
+-    return (
+-      <ApprovalDetail
+-        table={categoryKey} id={view.id}
+-        onBack={() => (initialId ? onBack() : setView({ screen: 'list' }))}
+-        onToast={onToast}
+-        onDecided={() => {}}
+-      />
+-    )
+-  }
+-
+-  return (
+-    <ApprovalList
+-      category={category}
+-      onBack={onBack}
+-      onOpen={(id) => setView({ screen: 'detail', id })}
+-      onToast={onToast}
+-    />
+-  )
+-}
+-
+-function initials(name) {
+-  return (name || '?').split(' ').slice(0, 2).map((n) => n[0]).join('').toUpperCase()
+-}
+-
+-function ApprovalList({ category, onBack, onOpen, onToast }) {
+-  const [rows, setRows] = useState(null)
+-  const [query, setQuery] = useState('')
+-
+-  async function load() {
+-    const { data, error } = await supabase.rpc('get_my_approvals', { p_status: null })
+-    if (error) { onToast?.(error.message); return }
+-    setRows((data || []).filter((r) => r.category === category.key))
+-  }
+-  useEffect(() => { load() }, [])
+-
+-  const filtered = (rows || []).filter((r) => r.requester_name?.toLowerCase().includes(query.toLowerCase()))
+-
+-  // Kelompokkan per tanggal pengajuan (created_at), seperti referensi.
+-  const groups = []
+-  for (const r of filtered) {
+-    const dayKey = new Date(r.created_at).toLocaleDateString(locale(), { day: '2-digit', month: 'short', year: 'numeric' })
+-    let g = groups.find((g) => g.dayKey === dayKey)
+-    if (!g) { g = { dayKey, items: [] }; groups.push(g) }
+-    g.items.push(r)
+-  }
+-
+-  return (
+-    <div>
+-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '16px' }}>
+-        <button className="icon-btn" onClick={onBack} style={{ padding: 4 }}><ArrowLeft size={22} /></button>
+-        <h1 style={{ flex: 1, fontSize: 20, fontWeight: 700, margin: 0 }}>{category.label}</h1>
+-        <button className="icon-btn" style={{ padding: 4 }}><ClipboardCheck size={21} color="#5b554f" /></button>
+-        <button className="icon-btn" style={{ padding: 4 }}><Filter size={20} color="#5b554f" /></button>
+-      </div>
+-
+-      <div className="search-box">
+-        <Search size={18} />
+-        <input placeholder={tx("Cari...")} value={query} onChange={(e) => setQuery(e.target.value)} />
+-      </div>
+-
+-      {rows === null ? (
+-        <div className="empty-state"><p>{tx("Memuat...")}</p></div>
+-      ) : filtered.length === 0 ? (
+-        <div className="empty-state"><h3>{tx("Tidak ada pengajuan")}</h3><p>{tx("Pengajuan yang perlu Anda tinjau akan tampil di sini.")}</p></div>
+-      ) : (
+-        groups.map((g) => (
+-          <div key={g.dayKey}>
+-            <div style={{ fontSize: 12.5, color: 'var(--text-muted)', padding: '14px 16px 6px' }}>{g.dayKey}</div>
+-            {g.items.map((r) => (
+-              <button key={r.id} onClick={() => onOpen(r.id)} style={{
+-                width: '100%', display: 'block', textAlign: 'left', cursor: 'pointer', background: '#fff', border: 'none',
+-                borderRadius: 14, margin: '0 16px 10px', padding: 14, boxShadow: 'var(--shadow-sm)',
+-              }}>
+-                <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+-                  <Avatar url={r.requester_avatar} name={r.requester_name} size={36} fontSize={12} />
+-                  <div style={{ flex: 1, minWidth: 0 }}>
+-                    <div style={{ fontWeight: 600, fontSize: 15 }}>{r.requester_name}</div>
+-                    <div style={{ fontSize: 13.5, color: 'var(--text-muted)', marginTop: 2 }}>{titleFor(category.key, r)}</div>
+-                    <ul style={{ margin: '6px 0 0', padding: '0 0 0 16px', fontSize: 13.5, color: 'var(--text-muted)' }}>
+-                      {bulletsFor(category.key, r).map((b, i) => <li key={i}>{b}</li>)}
+-                    </ul>
+-                    <div style={{ marginTop: 8 }}><StatusPill status={r.status} /></div>
+-                  </div>
+-                </div>
+-              </button>
+-            ))}
+-          </div>
+-        ))
+-      )}
+-    </div>
+-  )
+-}
+-
+-function titleFor(category, r) {
+-  const d = r.details || {}
+-  switch (category) {
+-    case 'leave_requests': return tx("Pengajuan cuti untuk {0}", [d.type_name || tx("Cuti")])
+-    case 'overtime_requests': return tx("Pengajuan lembur untuk {0}", [fmtDay(d.work_date)])
+-    case 'reimbursement_requests': return tx("Pengajuan reimbursement untuk {0}", [tx(d.category_name) || tx("Reimbursement")])
+-    case 'shift_change_requests': return tx("Pengajuan ubah shift untuk {0}", [fmtDay(d.work_date)])
+-    case 'absence_requests': return tx("Pengajuan presensi untuk {0}", [fmtDay(d.work_date)])
+-    default: return ''
+-  }
+-}
+-
+-function bulletsFor(category, r) {
+-  const d = r.details || {}
+-  const lines = []
+-  switch (category) {
+-    case 'leave_requests':
+-      lines.push(d.start_date === d.end_date
+-        ? tx("{0} ({1} hari)", [fmtDay(d.start_date), d.total_days])
+-        : tx("{0} - {1} ({2} hari)", [fmtDay(d.start_date), fmtDay(d.end_date), d.total_days]))
+-      break
+-    case 'overtime_requests':
+-      lines.push(`Jam: ${d.start_time?.slice(0, 5)} - ${d.end_time?.slice(0, 5)}`)
+-      break
+-    case 'reimbursement_requests':
+-      lines.push(tx("Jumlah: Rp {0}", [Number(d.amount || 0).toLocaleString('id-ID')]))
+-      break
+-    case 'shift_change_requests':
+-      lines.push(tx("{0} menjadi {1}", [d.from_shift_name || '-', d.to_is_day_off ? 'Off' : (d.to_shift_name || '-')]))
+-      break
+-    case 'absence_requests':
+-      if (d.requested_clock_in || d.requested_clock_out) {
+-        lines.push(tx("Usulan: {0} - {1}", [d.requested_clock_in?.slice(0, 5) || '-', d.requested_clock_out?.slice(0, 5) || '-']))
+-      }
+-      break
+-  }
+-  if (r.reason) lines.push(tx("Alasan: {0}", [r.reason]))
+-  return lines
+-}
+-
+-function fmtDay(d) {
+-  return d ? new Date(d).toLocaleDateString(locale(), { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' }) : '-'
+-}
+-
+-function StatusPill({ status }) {
+-  const map = {
+-    pending: { label: tx("Menunggu persetujuan"), bg: '#FBEEDD', fg: '#B4650C' },
+-    approved: { label: tx("Disetujui"), bg: '#DCF3E6', fg: '#1E8E5A' },
+-    rejected: { label: tx("Ditolak"), bg: '#FBE1DD', fg: '#C0392B' },
+-    cancelled: { label: tx("Dibatalkan"), bg: '#eee', fg: '#888' },
+-  }
+-  const s = map[status] || map.pending
+-  return (
+-    <span style={{ background: s.bg, color: s.fg, fontSize: 11.5, fontWeight: 700, borderRadius: 8, padding: '4px 9px', whiteSpace: 'nowrap' }}>
+-      {s.label}
+-    </span>
+-  )
+-}
+-
+-function ApprovalDetail({ table, id, onBack, onToast, onDecided }) {
+-  const [detail, setDetail] = useState(null)
+-  const [busy, setBusy] = useState(false)
+-
+-  async function load() {
+-    const { data, error } = await supabase.rpc('get_request_detail', { p_table: table, p_id: id })
+-    if (error) { onToast?.(error.message); return }
+-    setDetail(data)
+-  }
+-  useEffect(() => { load() }, [table, id])
+-
+-  async function decide(approve) {
+-    setBusy(true)
+-    const { error } = await supabase.rpc('decide_request', { p_table: table, p_request_id: id, p_approve: approve })
+-    setBusy(false)
+-    if (error) { onToast?.(error.message); return }
+-    onToast?.(approve ? tx("Pengajuan disetujui") : tx("Pengajuan ditolak"))
+-    onDecided?.()
+-    load()
+-  }
+-
+-  if (!detail) {
+-    return (
+-      <div>
+-        <div className="page-header"><button className="back-btn" onClick={onBack}><ArrowLeft size={22} /></button><h1>Detail</h1><span style={{ width: 22 }} /></div>
+-        <div className="empty-state"><p>{tx("Memuat...")}</p></div>
+-      </div>
+-    )
+-  }
+-
+-  const r = detail.row
+-  const cat = CATEGORIES.find((c) => c.key === table)
+-  const submittedAt = new Date(r.created_at).toLocaleDateString(locale(), { day: '2-digit', month: 'short', year: 'numeric' }) +
+-    ' pukul ' + new Date(r.created_at).toLocaleTimeString(locale(), { hour: '2-digit', minute: '2-digit' })
+-
+-  return (
+-    <div>
+-      <div className="page-header">
+-        <button className="back-btn" onClick={onBack}><ArrowLeft size={22} /></button>
+-        <h1>{cat?.label}</h1>
+-        <span style={{ width: 22 }} />
+-      </div>
+-
+-      <div style={{ padding: '18px 16px 8px', display: 'flex', alignItems: 'center', gap: 12 }}>
+-        <Avatar url={detail.requester_avatar} name={detail.requester_name} size={46} fontSize={15} />
+-        <div>
+-          <div style={{ fontWeight: 700, fontSize: 16 }}>{detail.requester_name}</div>
+-          <div style={{ fontSize: 12.5, color: 'var(--text-muted)' }}>{submittedAt}</div>
+-        </div>
+-      </div>
+-      <div style={{ padding: '0 16px 14px' }}><StatusPill status={r.status} /></div>
+-
+-      <div className="section" style={{ margin: '0 16px' }}>
+-        <FieldRows table={table} row={r} />
+-
+-        {r.reason && (
+-          <div style={{ marginTop: 14 }}>
+-            <div style={{ fontSize: 12.5, color: 'var(--text-muted)' }}>{tx("Alasan")}</div>
+-            <div style={{ fontSize: 15, marginTop: 2 }}>{r.reason}</div>
+-          </div>
+-        )}
+-
+-        <div style={{ marginTop: 18 }}>
+-          <div style={{ fontSize: 12.5, color: 'var(--text-muted)', marginBottom: 8 }}>{tx("Status pengajuan")}</div>
+-          <Timeline row={r} detail={detail} />
+-        </div>
+-      </div>
+-
+-      {r.status === 'pending' && (
+-        <div style={{ display: 'flex', gap: 10, padding: 16 }}>
+-          <button onClick={() => decide(false)} disabled={busy} style={{
+-            flex: 1, padding: 13, borderRadius: 12, border: '1px solid #C0392B', background: '#fff', color: '#C0392B',
+-            fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, cursor: 'pointer',
+-          }}>
+-            <X size={17} />{' '}{tx("Tolak")}</button>
+-          <button onClick={() => decide(true)} disabled={busy} style={{
+-            flex: 1, padding: 13, borderRadius: 12, border: 'none', background: '#1E8E5A', color: '#fff',
+-            fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, cursor: 'pointer',
+-          }}>
+-            <Check size={17} />{' '}{tx("Setuju")}</button>
+-        </div>
+-      )}
+-    </div>
+-  )
+-}
+-
+-function FieldRows({ table, row }) {
+-  const rows = []
+-  if (table === 'leave_requests') {
+-    rows.push([tx("Tanggal"), tx("{0} - {1} ({2} hari)", [fmt(row.start_date), fmt(row.end_date), row.total_days])])
+-  } else if (table === 'overtime_requests') {
+-    rows.push([tx("Tanggal"), fmt(row.work_date)])
+-    rows.push([tx("Jam"), `${row.start_time?.slice(0, 5)} - ${row.end_time?.slice(0, 5)}`])
+-  } else if (table === 'reimbursement_requests') {
+-    rows.push([tx("Jumlah"), 'Rp ' + Number(row.amount).toLocaleString('id-ID')])
+-    if (row.description) rows.push([tx("Deskripsi"), row.description])
+-  } else if (table === 'shift_change_requests') {
+-    rows.push([tx("Tanggal"), fmt(row.work_date)])
+-    rows.push([tx("Menjadi"), row.to_is_day_off ? 'Off' : tx("Shift baru")])
+-  } else if (table === 'absence_requests') {
+-    rows.push([tx("Tanggal"), fmt(row.work_date)])
+-    if (row.requested_clock_in || row.requested_clock_out) {
+-      rows.push([tx("Usulan jam"), `${row.requested_clock_in?.slice(0, 5) || '-'} - ${row.requested_clock_out?.slice(0, 5) || '-'}`])
+-    }
+-  }
+-  return (
+-    <>
+-      {rows.map(([label, value]) => (
+-        <div key={label} style={{ marginBottom: 12 }}>
+-          <div style={{ fontSize: 12.5, color: 'var(--text-muted)' }}>{label}</div>
+-          <div style={{ fontSize: 15, fontWeight: 600, marginTop: 2 }}>{value}</div>
+-        </div>
+-      ))}
+-    </>
+-  )
+-}
+-
+-function fmt(d) {
+-  return d ? new Date(d).toLocaleDateString(locale(), { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' }) : '-'
+-}
+-
+-function Timeline({ row, detail }) {
+-  const items = [
+-    { label: tx("Diajukan oleh {0}", [detail.requester_name]), time: row.created_at, color: '#4356C4', done: true },
+-  ]
+-  if (row.status === 'pending') {
+-    items.push({ label: tx("Menunggu persetujuan dari {0}", [detail.manager_name || 'HR']), time: null, color: '#c58a12', pending: true })
+-  } else if (row.status === 'approved') {
+-    items.push({ label: tx("Disetujui oleh {0}", [detail.approver_name || 'HR']), time: row.decided_at, color: '#1E8E5A', done: true })
+-  } else if (row.status === 'rejected') {
+-    items.push({ label: tx("Ditolak oleh {0}", [detail.approver_name || 'HR']), time: row.decided_at, color: '#C0392B', done: true })
+-  }
+-
+-  return (
+-    <div>
+-      {items.map((it, i) => (
+-        <div key={i} style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+-            <span style={{ width: 10, height: 10, borderRadius: '50%', background: it.color, marginTop: 4 }} />
+-            {i < items.length - 1 && <span style={{ width: 2, flex: 1, background: '#e5e0da', minHeight: 20 }} />}
+-          </div>
+-          <div style={{ paddingBottom: 14 }}>
+-            <div style={{ fontSize: 14.5, fontWeight: it.pending ? 400 : 600 }}>{it.label}</div>
+-            {it.time && (
+-              <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>
+-                {new Date(it.time).toLocaleDateString(locale(), { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' })}, {new Date(it.time).toLocaleTimeString(locale(), { hour: '2-digit', minute: '2-digit' })}
+-              </div>
+-            )}
+-          </div>
+-        </div>
+-      ))}
+-    </div>
+-  )
+-}
+diff --git a/src/pages/DataChangeForm.jsx b/src/pages/DataChangeForm.jsx
+index f29aa7b..c545377 100644
+--- a/src/pages/DataChangeForm.jsx
++++ b/src/pages/DataChangeForm.jsx
+@@ -50,11 +50,12 @@ export default function DataChangeForm({ employee, onBack, onToast }) {
+         </div>
+         <div className="field">
+           <label>{tx("Data baru")}</label>
+-          <input value={newValue} onChange={(e) => setNewValue(e.target.value)} placeholder={tx("Masukkan data baru")} />
++          <input type={field === 'phone' ? 'tel' : field === 'email' ? 'email' : 'text'} value={newValue}
++            onChange={(e) => setNewValue(e.target.value)} placeholder={tx("Masukkan data baru")} maxLength={field === 'full_name' ? 100 : 254} />
+         </div>
+         <div className="field">
+           <label>{tx("Alasan")}</label>
+-          <textarea value={reason} onChange={(e) => setReason(e.target.value)} placeholder={tx("Tambahkan alasan...")} />
++          <textarea value={reason} onChange={(e) => setReason(e.target.value)} placeholder={tx("Tambahkan alasan...")} maxLength={500} />
+         </div>
+         {error && <p className="error-text">{error}</p>}
+         <button className="primary-btn" disabled={loading}>{loading ? tx("Mengirim...") : tx("Kirim pengajuan")}</button>
+diff --git a/src/pages/Inbox.jsx b/src/pages/Inbox.jsx
+index 5a24537..6bbf89f 100644
+--- a/src/pages/Inbox.jsx
++++ b/src/pages/Inbox.jsx
+@@ -8,7 +8,7 @@ import Avatar from '../components/Avatar'
+ import { useAvatarsByName } from '../lib/useAvatarsByName'
+ 
+ import { tx, locale } from '../lib/i18n'
+-const APPROVAL_TABLES = ['leave_requests', 'overtime_requests', 'reimbursement_requests', 'shift_change_requests', 'absence_requests']
++const APPROVAL_TABLES = ['leave_requests', 'overtime_requests', 'reimbursement_requests', 'shift_change_requests', 'absence_requests', 'data_change_requests']
+ 
+ function initials(name) {
+   return (name || '?').split(' ').slice(0, 2).map((n) => n[0]).join('').toUpperCase()
+diff --git a/src/pages/ProfileDetail.jsx b/src/pages/ProfileDetail.jsx
+index 6f62806..8adf45d 100644
+--- a/src/pages/ProfileDetail.jsx
++++ b/src/pages/ProfileDetail.jsx
+@@ -351,6 +351,21 @@ export function PayrollForm({ profile, onToast }) {
+     npwp: e.npwp || '', bpjs_kesehatan: e.bpjs_kesehatan || '', bpjs_ketenagakerjaan: e.bpjs_ketenagakerjaan || '',
+   })
+   const [error, setError] = useState('')
++  const [pending, setPending] = useState(null)
++
++  async function loadPending() {
++    const { data } = await supabase.rpc('my_pending_bank_change')
++    setPending(data || null)
++    return data || null
++  }
++  useEffect(() => { loadPending() }, [])
++
++  async function cancelPending() {
++    const { error: err } = await supabase.rpc('cancel_my_data_change', { p_id: pending.id })
++    if (err) { onToast(err.message); return }
++    onToast(tx("Pengajuan dibatalkan"))
++    loadPending()
++  }
+ 
+   async function submit(ev) {
+     ev.preventDefault()
+@@ -361,11 +376,24 @@ export function PayrollForm({ profile, onToast }) {
+       p_bpjs_kesehatan: form.bpjs_kesehatan || null, p_bpjs_ketenagakerjaan: form.bpjs_ketenagakerjaan || null,
+     })
+     if (!r.ok) { setError(r.message); return }
+-    onToast(tx("Info payroll disimpan"))
++    const p = await loadPending()
++    onToast(p ? tx("Perubahan rekening diajukan dan menunggu persetujuan HR") : tx("Info payroll disimpan"))
+   }
+ 
++  const maskAcc = (n) => (n ? '••••' + String(n).slice(-4) : '-')
++
+   return (
+     <form onSubmit={submit}>
++      {pending && (
++        <div style={{ background: '#FBEEDD', color: '#8a5a0b', borderRadius: 10, padding: '10px 12px', fontSize: 13, marginBottom: 14 }}>
++          <b>{tx("Perubahan rekening menunggu persetujuan HR")}</b>
++          <div style={{ marginTop: 4 }}>{pending.new_value?.bank_name} {maskAcc(pending.new_value?.bank_account_number)}</div>
++          <button type="button" onClick={cancelPending} style={{ marginTop: 8, background: 'none', border: 0, padding: 0, color: '#C0392B', fontWeight: 600, cursor: 'pointer' }}>
++            {tx("Batalkan pengajuan")}
++          </button>
++        </div>
++      )}
++      <p style={{ fontSize: 12.5, color: 'var(--text-muted)', margin: '0 0 12px' }}>{tx("Perubahan data rekening bank perlu persetujuan HR.")}</p>
+       <div className="field"><label>{tx("Nama bank")}</label><input value={form.bank_name} onChange={(ev) => setForm((f) => ({ ...f, bank_name: ev.target.value }))} /></div>
+       <div className="field"><label>{tx("Nomor rekening")}</label><input value={form.bank_account_number} onChange={(ev) => setForm((f) => ({ ...f, bank_account_number: ev.target.value }))} /></div>
+       <div className="field"><label>{tx("Atas nama")}</label><input value={form.bank_account_holder} onChange={(ev) => setForm((f) => ({ ...f, bank_account_holder: ev.target.value }))} /></div>
+diff --git a/supabase/migrations/20261001140000_data_change_and_bank_approval.sql b/supabase/migrations/20261001140000_data_change_and_bank_approval.sql
+new file mode 100644
+index 0000000..9426956
+--- /dev/null
++++ b/supabase/migrations/20261001140000_data_change_and_bank_approval.sql
+@@ -0,0 +1,446 @@
++-- =====================================================================
++-- Alur persetujuan "Perubahan Data" + persetujuan HR untuk ganti rekening bank
++--
++-- Sebelumnya:
++--  * data_change_requests tidak pernah bisa diproses (decide_request/get_my_approvals tidak mengenalnya)
++--  * field_name, old_value dan new_value tidak divalidasi (old_value dipercaya dari klien)
++--  * update_payroll_info langsung menimpa rekening bank (akun dibajak => rekening gaji bisa dialihkan)
++-- Sekarang:
++--  * phone / email / full_name / rekening bank => pengajuan, HANYA HR yang dapat menyetujui
++--    (atasan langsung tidak melihat rekening bawahannya)
++--  * nilai divalidasi & dinormalisasi di server; old_value diambil dari database
++--  * NPWP dan BPJS tetap langsung tersimpan (tidak mengalihkan pembayaran)
++-- =====================================================================
++
++-- ---------- 1) Constraint tabel (tabel masih kosong saat migration ini dibuat) ----------
++alter table public.data_change_requests
++  drop constraint if exists dcr_field_chk,
++  drop constraint if exists dcr_status_chk;
++alter table public.data_change_requests
++  add constraint dcr_field_chk  check (field_name in ('phone','email','full_name','bank_account')),
++  add constraint dcr_status_chk check (status in ('pending','approved','rejected','cancelled'));
++create unique index if not exists dcr_one_pending_per_field
++  on public.data_change_requests (employee_id, field_name) where status = 'pending';
++
++-- ---------- 2) Validasi & normalisasi (internal) ----------
++create or replace function public._normalize_data_change(p_field text, p_value text)
++returns text
++language plpgsql
++immutable
++set search_path to 'public'
++as $$
++declare v text := coalesce(p_value, '');
++begin
++  if p_field = 'phone' then
++    v := regexp_replace(v, '[\s\-\.\(\)]', '', 'g');
++    if v !~ '^\+?[0-9]{8,15}$' then raise exception 'Nomor telepon tidak valid (8-15 digit)'; end if;
++  elsif p_field = 'email' then
++    v := lower(btrim(v));
++    if length(v) > 254 or v !~ '^[^@\s]+@[^@\s]+\.[^@\s]+$' then raise exception 'Format email tidak valid'; end if;
++  elsif p_field = 'full_name' then
++    v := regexp_replace(btrim(v), '\s+', ' ', 'g');
++    if length(v) < 2 or length(v) > 100 or v ~ '[[:cntrl:]]' then raise exception 'Nama lengkap tidak valid'; end if;
++  else
++    raise exception 'Jenis data tidak dapat diubah lewat pengajuan ini';
++  end if;
++  return v;
++end $$;
++
++create or replace function public._apply_data_change(p_id uuid)
++returns void
++language plpgsql
++security definer
++set search_path to 'public'
++as $$
++declare r data_change_requests; j jsonb;
++begin
++  select * into r from data_change_requests where id = p_id;
++  if r.id is null then raise exception 'Pengajuan tidak ditemukan'; end if;
++
++  if r.field_name = 'bank_account' then
++    j := r.new_value::jsonb;
++    update employees set bank_name = j->>'bank_name',
++                         bank_account_number = j->>'bank_account_number',
++                         bank_account_holder = j->>'bank_account_holder'
++     where id = r.employee_id;
++  elsif r.field_name = 'phone' then
++    update employees set phone = public._normalize_data_change('phone', r.new_value) where id = r.employee_id;
++  elsif r.field_name = 'full_name' then
++    update employees set full_name = public._normalize_data_change('full_name', r.new_value) where id = r.employee_id;
++  elsif r.field_name = 'email' then
++    if exists (select 1 from employees where id <> r.employee_id
++                and lower(btrim(email)) = lower(btrim(r.new_value))) then
++      raise exception 'Email tersebut sudah dipakai karyawan lain';
++    end if;
++    update employees set email = public._normalize_data_change('email', r.new_value) where id = r.employee_id;
++  else
++    raise exception 'Jenis perubahan tidak dikenali';
++  end if;
++end $$;
++
++revoke execute on function public._normalize_data_change(text, text) from public, anon, authenticated;
++revoke execute on function public._apply_data_change(uuid)           from public, anon, authenticated;
++
++-- ---------- 3) Pengajuan perubahan data (signature tetap, frontend lama tetap jalan) ----------
++create or replace function public.submit_data_change_request(
++  p_field_name text, p_old_value text, p_new_value text, p_reason text)
++returns data_change_requests
++language plpgsql
++security definer
++set search_path to 'public'
++as $function$
++declare
++  v_emp uuid := current_employee_id();
++  v_name text;
++  v_new text;
++  v_old text;
++  v_row data_change_requests;
++  v_label text;
++begin
++  if v_emp is null then raise exception 'Profil karyawan tidak ditemukan'; end if;
++  if p_field_name not in ('phone', 'email', 'full_name') then
++    raise exception 'Jenis data tidak dapat diubah lewat pengajuan ini';
++  end if;
++
++  v_new := public._normalize_data_change(p_field_name, p_new_value);
++  execute format('select %I::text from employees where id = $1', p_field_name) into v_old using v_emp;   -- dari DB, bukan dari klien
++
++  if lower(btrim(coalesce(v_old, ''))) = lower(v_new) then
++    raise exception 'Data baru sama dengan data saat ini';
++  end if;
++  if p_field_name = 'email' and exists (
++       select 1 from employees where id <> v_emp and lower(btrim(email)) = v_new) then
++    raise exception 'Email tersebut tidak dapat digunakan';
++  end if;
++  if exists (select 1 from data_change_requests
++              where employee_id = v_emp and field_name = p_field_name and status = 'pending') then
++    raise exception 'Masih ada pengajuan serupa yang menunggu persetujuan';
++  end if;
++
++  insert into data_change_requests (employee_id, field_name, old_value, new_value, reason)
++  values (v_emp, p_field_name, v_old, v_new, left(btrim(coalesce(p_reason, '')), 500))
++  returning * into v_row;
++
++  select full_name into v_name from employees where id = v_emp;
++  v_label := case p_field_name when 'phone' then 'Nomor telepon' when 'email' then 'Email' else 'Nama lengkap' end;
++  insert into notifications (employee_id, title, body, category, related_table, related_id, actor_name)
++  select e.id, 'Pengajuan perubahan data baru', v_label, 'approval', 'data_change_requests', v_row.id, v_name
++    from employees e where e.role in ('hr', 'admin') and e.id <> v_emp;
++
++  return v_row;
++end;
++$function$;
++
++-- ---------- 4) Info payroll: NPWP/BPJS langsung, rekening bank => pengajuan ke HR ----------
++create or replace function public.update_payroll_info(
++  p_bank_name text default null, p_bank_account_number text default null, p_bank_account_holder text default null,
++  p_npwp text default null, p_bpjs_kesehatan text default null, p_bpjs_ketenagakerjaan text default null)
++returns employees
++language plpgsql
++security definer
++set search_path to 'public'
++as $function$
++declare
++  v_emp uuid := current_employee_id();
++  v_cur employees;
++  v_row employees;
++  v_bn text; v_an text; v_ah text;
++  v_cbn text; v_can text; v_cah text;
++  v_id uuid; v_name text;
++begin
++  if v_emp is null then raise exception 'Profil karyawan tidak ditemukan'; end if;
++  select * into v_cur from employees where id = v_emp;
++
++  update employees set
++    npwp = nullif(regexp_replace(coalesce(p_npwp, ''), '\s', '', 'g'), ''),
++    bpjs_kesehatan = nullif(regexp_replace(coalesce(p_bpjs_kesehatan, ''), '\s', '', 'g'), ''),
++    bpjs_ketenagakerjaan = nullif(regexp_replace(coalesce(p_bpjs_ketenagakerjaan, ''), '\s', '', 'g'), '')
++  where id = v_emp;
++
++  v_bn  := nullif(btrim(coalesce(p_bank_name, '')), '');
++  v_an  := nullif(regexp_replace(coalesce(p_bank_account_number, ''), '[\s\-\.]', '', 'g'), '');
++  v_ah  := nullif(regexp_replace(btrim(coalesce(p_bank_account_holder, '')), '\s+', ' ', 'g'), '');
++  v_cbn := nullif(btrim(coalesce(v_cur.bank_name, '')), '');
++  v_can := nullif(regexp_replace(coalesce(v_cur.bank_account_number, ''), '[\s\-\.]', '', 'g'), '');
++  v_cah := nullif(regexp_replace(btrim(coalesce(v_cur.bank_account_holder, '')), '\s+', ' ', 'g'), '');
++
++  if v_bn is distinct from v_cbn or v_an is distinct from v_can or v_ah is distinct from v_cah then
++    if v_bn is null or v_an is null or v_ah is null then
++      raise exception 'Lengkapi nama bank, nomor rekening, dan atas nama (tidak boleh dikosongkan)';
++    end if;
++    if v_an !~ '^[0-9]{5,25}$' then raise exception 'Nomor rekening hanya boleh berisi angka (5-25 digit)'; end if;
++    if length(v_bn) > 60 or length(v_ah) > 100 then raise exception 'Nama bank atau atas nama terlalu panjang'; end if;
++
++    delete from data_change_requests where employee_id = v_emp and field_name = 'bank_account' and status = 'pending';
++    insert into data_change_requests (employee_id, field_name, old_value, new_value, reason)
++    values (v_emp, 'bank_account',
++            jsonb_build_object('bank_name', v_cbn, 'bank_account_number', v_can, 'bank_account_holder', v_cah)::text,
++            jsonb_build_object('bank_name', v_bn, 'bank_account_number', v_an, 'bank_account_holder', v_ah)::text,
++            'Perubahan rekening gaji')
++    returning id into v_id;
++
++    insert into notifications (employee_id, title, body, category, related_table, related_id, actor_name)
++    select e.id, 'Pengajuan perubahan rekening bank', 'Perlu verifikasi HR sebelum gaji berikutnya', 'approval',
++           'data_change_requests', v_id, v_cur.full_name
++      from employees e where e.role in ('hr', 'admin') and e.id <> v_emp;
++  end if;
++
++  select * into v_row from employees where id = v_emp;
++  return v_row;
++end;
++$function$;
++
++create or replace function public.my_pending_bank_change()
++returns json
++language sql
++stable
++security definer
++set search_path to 'public'
++as $$
++  select row_to_json(x) from (
++    select id, created_at, new_value::jsonb as new_value
++      from data_change_requests
++     where employee_id = current_employee_id() and field_name = 'bank_account' and status = 'pending'
++     limit 1
++  ) x;
++$$;
++
++create or replace function public.cancel_my_data_change(p_id uuid)
++returns void
++language plpgsql
++security definer
++set search_path to 'public'
++as $$
++begin
++  update data_change_requests set status = 'cancelled', decided_at = now()
++   where id = p_id and employee_id = current_employee_id() and status = 'pending';
++  if not found then raise exception 'Pengajuan tidak ditemukan atau sudah diproses'; end if;
++end $$;
++
++revoke execute on function public.my_pending_bank_change(), public.cancel_my_data_change(uuid) from public, anon;
++grant  execute on function public.my_pending_bank_change(), public.cancel_my_data_change(uuid) to authenticated;
++
++-- ---------- 5) decide_request: kenali data_change_requests (khusus HR) ----------
++create or replace function public.decide_request(p_table text, p_request_id uuid, p_approve boolean)
++returns void
++language plpgsql
++security definer
++set search_path to 'public'
++as $function$
++declare
++  v_approver uuid := current_employee_id();
++  v_approver_name text;
++  v_employee_id uuid;
++  v_status text := case when p_approve then 'approved' else 'rejected' end;
++  v_label text;
++  v_absence absence_requests;
++begin
++  if v_approver is null then raise exception 'Profil karyawan tidak ditemukan'; end if;
++  if p_table not in ('leave_requests','overtime_requests','reimbursement_requests',
++                      'shift_change_requests','absence_requests','data_change_requests') then
++    raise exception 'Tabel tidak dikenali';
++  end if;
++
++  execute format('select employee_id from %I where id = $1 and status = ''pending''', p_table)
++    into v_employee_id using p_request_id;
++
++  if v_employee_id is null then
++    raise exception 'Pengajuan tidak ditemukan atau sudah diproses';
++  end if;
++
++  if v_employee_id = v_approver then
++    raise exception 'Anda tidak dapat menyetujui/menolak pengajuan Anda sendiri';
++  end if;
++
++  if p_table = 'data_change_requests' then
++    if not is_hr() then raise exception 'Hanya HR yang dapat memproses perubahan data'; end if;
++  elsif not can_decide_for(v_employee_id) then
++    raise exception 'Anda tidak berwenang menyetujui/menolak pengajuan ini';
++  end if;
++
++  select full_name into v_approver_name from employees where id = v_approver;
++
++  execute format(
++    'update %I set status = $1, approver_id = $2, decided_at = now()
++       where id = $3 and status = ''pending'' returning employee_id',
++    p_table
++  ) into v_employee_id using v_status, v_approver, p_request_id;
++
++  if v_employee_id is null then
++    raise exception 'Pengajuan tidak ditemukan atau sudah diproses';
++  end if;
++
++  if p_table = 'data_change_requests' and p_approve then
++    perform public._apply_data_change(p_request_id);
++  end if;
++
++  if p_table = 'absence_requests' and p_approve then
++    select * into v_absence from absence_requests where id = p_request_id;
++    if v_absence.requested_clock_in is not null or v_absence.requested_clock_out is not null then
++      insert into attendance (employee_id, work_date, clock_in, clock_out)
++      values (
++        v_absence.employee_id, v_absence.work_date,
++        case when v_absence.requested_clock_in is not null then (v_absence.work_date + v_absence.requested_clock_in) else null end,
++        case when v_absence.requested_clock_out is not null then (v_absence.work_date + v_absence.requested_clock_out) else null end
++      )
++      on conflict (employee_id, work_date) do update
++        set clock_in = coalesce(excluded.clock_in, attendance.clock_in),
++            clock_out = coalesce(excluded.clock_out, attendance.clock_out);
++    end if;
++  end if;
++
++  if p_table = 'shift_change_requests' and p_approve then
++    insert into shift_schedules (employee_id, work_date, shift_id, is_day_off)
++    select sc.employee_id, sc.work_date,
++           case when sc.to_is_day_off then null else sc.to_shift_id end,
++           coalesce(sc.to_is_day_off, false)
++    from shift_change_requests sc where sc.id = p_request_id
++    on conflict (employee_id, work_date) do update
++      set shift_id = excluded.shift_id, is_day_off = excluded.is_day_off;
++  end if;
++
++  v_label := case p_table
++    when 'leave_requests' then 'Pengajuan cuti'
++    when 'overtime_requests' then 'Pengajuan lembur'
++    when 'reimbursement_requests' then 'Pengajuan reimbursement'
++    when 'shift_change_requests' then 'Pengajuan ubah shift'
++    when 'absence_requests' then 'Pengajuan absensi'
++    when 'data_change_requests' then 'Pengajuan perubahan data'
++  end;
++
++  insert into notifications (employee_id, title, body, category, related_table, related_id, actor_name)
++  values (
++    v_employee_id,
++    v_label || ' Anda',
++    v_label || ' telah ' || (case when p_approve then 'disetujui' else 'ditolak' end),
++    p_table, p_table, p_request_id, v_approver_name
++  );
++end;
++$function$;
++
++-- ---------- 6) get_request_detail: data_change_requests hanya untuk pemohon / HR ----------
++create or replace function public.get_request_detail(p_table text, p_id uuid)
++returns json
++language plpgsql
++security definer
++set search_path to 'public'
++as $function$
++declare
++  v_result json;
++  v_emp uuid;
++  v_apr uuid;
++  v_ok boolean;
++begin
++  if current_employee_id() is null then raise exception 'Profil karyawan tidak ditemukan'; end if;
++  if p_table not in ('leave_requests','overtime_requests','reimbursement_requests','shift_change_requests',
++                      'absence_requests','data_change_requests') then
++    raise exception 'Tabel tidak dikenali';
++  end if;
++
++  execute format($f$
++    select json_build_object(
++      'row', row_to_json(t),
++      'requester_name', emp.full_name,
++      'requester_avatar', emp.avatar_url,
++      'manager_name', mgr.full_name,
++      'approver_name', apr.full_name
++    )
++    from %1$I t
++    join employees emp on emp.id = t.employee_id
++    left join employees mgr on mgr.id = emp.manager_id
++    left join employees apr on apr.id = t.approver_id
++    where t.id = $1
++  $f$, p_table)
++  into v_result
++  using p_id;
++
++  if v_result is null then raise exception 'Data tidak ditemukan'; end if;
++
++  v_emp := (v_result->'row'->>'employee_id')::uuid;
++  v_apr := nullif(v_result->'row'->>'approver_id', '')::uuid;
++  if p_table = 'data_change_requests' then
++    v_ok := v_emp = current_employee_id() or is_hr();
++  else
++    v_ok := v_emp = current_employee_id() or v_apr = current_employee_id() or can_decide_for(v_emp);
++  end if;
++  if not v_ok then raise exception 'Data tidak ditemukan'; end if;
++  return v_result;
++end;
++$function$;
++
++-- ---------- 7) get_my_approvals: tambah kategori data_change_requests (HR saja) ----------
++create or replace function public.get_my_approvals(p_status text default 'pending')
++returns json
++language plpgsql
++security definer
++set search_path to 'public'
++as $function$
++declare v_result json; v_me uuid := current_employee_id();
++begin
++  if v_me is null then raise exception 'Profil karyawan tidak ditemukan'; end if;
++
++  select coalesce(json_agg(x order by x.created_at desc), '[]'::json) into v_result from (
++    select 'leave_requests' as category, lr.id, lr.employee_id, lr.created_at, lr.status,
++           emp.full_name as requester_name, emp.avatar_url as requester_avatar, mgr.full_name as manager_name,
++           lr.reason,
++           jsonb_build_object('type_name', lt.name, 'start_date', lr.start_date, 'end_date', lr.end_date, 'total_days', lr.total_days) as details
++    from leave_requests lr
++    join employees emp on emp.id = lr.employee_id
++    left join employees mgr on mgr.id = emp.manager_id
++    left join leave_types lt on lt.id = lr.leave_type_id
++    where (p_status is null or lr.status = p_status) and can_decide_for(lr.employee_id)
++
++    union all
++    select 'overtime_requests', ot.id, ot.employee_id, ot.created_at, ot.status,
++           emp.full_name, emp.avatar_url, mgr.full_name, ot.reason,
++           jsonb_build_object('work_date', ot.work_date, 'start_time', ot.start_time, 'end_time', ot.end_time)
++    from overtime_requests ot
++    join employees emp on emp.id = ot.employee_id
++    left join employees mgr on mgr.id = emp.manager_id
++    where (p_status is null or ot.status = p_status) and can_decide_for(ot.employee_id)
++
++    union all
++    select 'reimbursement_requests', rr.id, rr.employee_id, rr.created_at, rr.status,
++           emp.full_name, emp.avatar_url, mgr.full_name, rr.description,
++           jsonb_build_object('category_name', rc.name, 'amount', rr.amount)
++    from reimbursement_requests rr
++    join employees emp on emp.id = rr.employee_id
++    left join employees mgr on mgr.id = emp.manager_id
++    left join reimbursement_categories rc on rc.id = rr.category_id
++    where (p_status is null or rr.status = p_status) and can_decide_for(rr.employee_id)
++
++    union all
++    select 'shift_change_requests', sc.id, sc.employee_id, sc.created_at, sc.status,
++           emp.full_name, emp.avatar_url, mgr.full_name, sc.reason,
++           jsonb_build_object('work_date', sc.work_date, 'to_is_day_off', sc.to_is_day_off, 'to_shift_name', tsh.name,
++                               'from_shift_name', fsh.name)
++    from shift_change_requests sc
++    join employees emp on emp.id = sc.employee_id
++    left join employees mgr on mgr.id = emp.manager_id
++    left join shifts tsh on tsh.id = sc.to_shift_id
++    left join shifts fsh on fsh.id = sc.from_shift_id
++    where (p_status is null or sc.status = p_status) and can_decide_for(sc.employee_id)
++
++    union all
++    select 'absence_requests', ar.id, ar.employee_id, ar.created_at, ar.status,
++           emp.full_name, emp.avatar_url, mgr.full_name, ar.reason,
++           jsonb_build_object('work_date', ar.work_date, 'requested_clock_in', ar.requested_clock_in,
++                               'requested_clock_out', ar.requested_clock_out)
++    from absence_requests ar
++    join employees emp on emp.id = ar.employee_id
++    left join employees mgr on mgr.id = emp.manager_id
++    where (p_status is null or ar.status = p_status) and can_decide_for(ar.employee_id)
++
++    union all
++    select 'data_change_requests', dc.id, dc.employee_id, dc.created_at, dc.status,
++           emp.full_name, emp.avatar_url, mgr.full_name, dc.reason,
++           jsonb_build_object('field_name', dc.field_name, 'old_value', dc.old_value, 'new_value', dc.new_value)
++    from data_change_requests dc
++    join employees emp on emp.id = dc.employee_id
++    left join employees mgr on mgr.id = emp.manager_id
++    where (p_status is null or dc.status = p_status) and is_hr()
++  ) x;
++
++  return v_result;
++end;
++$function$;
