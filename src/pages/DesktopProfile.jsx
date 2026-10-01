@@ -6,6 +6,7 @@ import {
   PersonalForm, EmergencyForm, FamilyList, EducationList,
   PayrollForm, AdditionalForm, FilesList, WarningsList,
 } from './ProfileDetail'
+import coverLogo from '../assets/napocut-cover.png'
 import './DesktopProfile.css'
 
 const MENU = [
@@ -127,7 +128,7 @@ export default function DesktopProfile({ employee, onSignOut, onToast, onAvatarC
   return (
     <div className="dpx">
       <section className="dpx-hero">
-        <div className="dpx-cover" />
+        <div className="dpx-cover" style={{ backgroundImage: `url(${coverLogo})` }} />
         <div className="dpx-hero-in">
           <div className="dpx-avatar">
             <AvatarUploader

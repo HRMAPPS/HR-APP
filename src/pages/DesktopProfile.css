@@ -3,9 +3,7 @@
 
 /* Hero */
 .dpx-hero{background:#fff;border-radius:22px;box-shadow:var(--shadow-md);overflow:hidden;margin-bottom:20px}
-.dpx-cover{height:112px;background:
-  radial-gradient(120% 140% at 0% 0%,#d9503f 0%,transparent 55%),
-  linear-gradient(115deg,var(--red-dark),var(--red) 60%,#d97a5f)}
+.dpx-cover{height:112px;background-color:#fbf8f4;background-repeat:no-repeat;background-position:center;background-size:auto 58%;border-bottom:1px solid var(--border)}
 .dpx-hero-in{display:grid;grid-template-columns:auto 1fr;gap:6px 24px;align-items:end;padding:0 28px 24px}
 .dpx-avatar{margin-top:-52px;padding:5px;background:#fff;border-radius:50%;box-shadow:var(--shadow-md);width:fit-content}
 .dpx-id h1{margin:0;font-size:26px;font-weight:800;letter-spacing:-.02em;line-height:1.2}
