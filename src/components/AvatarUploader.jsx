@@ -3,6 +3,7 @@ import { Camera } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
 import ViewablePhoto from './PhotoViewer'
 
+import { tx } from '../lib/i18n'
 // Avatar bulat dengan tombol kamera untuk ganti foto profil.
 // Alur: pilih gambar -> potong persegi (center-crop) & kecilkan ke 512px (JPEG)
 //       -> upload ke bucket "avatars" di folder <auth.uid()>/ -> RPC set_my_avatar(url).
@@ -21,7 +22,7 @@ async function toSquareJpeg(file) {
     const img = await new Promise((resolve, reject) => {
       const i = new Image()
       i.onload = () => resolve(i)
-      i.onerror = () => reject(new Error('Gambar tidak bisa dibaca. Gunakan JPG, PNG, atau WEBP.'))
+      i.onerror = () => reject(new Error(tx("Gambar tidak bisa dibaca. Gunakan JPG, PNG, atau WEBP.")))
       i.src = url
     })
     const side = Math.min(img.naturalWidth, img.naturalHeight)
@@ -32,7 +33,7 @@ async function toSquareJpeg(file) {
     canvas.height = OUT_SIZE
     canvas.getContext('2d').drawImage(img, sx, sy, side, side, 0, 0, OUT_SIZE, OUT_SIZE)
     const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/jpeg', 0.85))
-    if (!blob) throw new Error('Gagal memproses gambar')
+    if (!blob) throw new Error(tx("Gagal memproses gambar"))
     return blob
   } finally {
     URL.revokeObjectURL(url)
@@ -60,7 +61,7 @@ export default function AvatarUploader({ name, url, size = 68, fontSize = 20, on
     e.target.value = ''
     if (!file) return
     if (!file.type.startsWith('image/')) return onToast?.('File harus berupa gambar')
-    if (file.size > MAX_INPUT_MB * 1024 * 1024) return onToast?.(`Ukuran gambar maksimal ${MAX_INPUT_MB} MB`)
+    if (file.size > MAX_INPUT_MB * 1024 * 1024) return onToast?.(tx("Ukuran gambar maksimal {0} MB", [MAX_INPUT_MB]))
 
     setBusy(true)
     let path = null
@@ -78,7 +79,7 @@ export default function AvatarUploader({ name, url, size = 68, fontSize = 20, on
       await onChanged?.(pub.publicUrl)
     } catch (err) {
       if (path) await supabase.storage.from('avatars').remove([path]).catch(() => {})
-      onToast?.(err.message || 'Gagal mengunggah foto')
+      onToast?.(err.message || tx("Gagal mengunggah foto"))
     } finally {
       setBusy(false)
     }
@@ -93,7 +94,7 @@ export default function AvatarUploader({ name, url, size = 68, fontSize = 20, on
       onToast?.('Foto profil dihapus')
       await onChanged?.(null)
     } catch (err) {
-      onToast?.(err.message || 'Gagal menghapus foto')
+      onToast?.(err.message || tx("Gagal menghapus foto"))
     } finally {
       setBusy(false)
     }
@@ -113,8 +114,8 @@ export default function AvatarUploader({ name, url, size = 68, fontSize = 20, on
           type="button"
           onClick={() => inputRef.current?.click()}
           disabled={busy}
-          title="Ganti foto profil"
-          aria-label="Ganti foto profil"
+          title={tx("Ganti foto profil")}
+          aria-label={tx("Ganti foto profil")}
           style={{
             position: 'absolute', right: -2, bottom: -2, width: 28, height: 28, borderRadius: '50%',
             border: '2px solid #fff', background: 'var(--blue)', color: '#fff', cursor: busy ? 'default' : 'pointer',
@@ -125,13 +126,11 @@ export default function AvatarUploader({ name, url, size = 68, fontSize = 20, on
         </button>
         <input ref={inputRef} type="file" accept="image/jpeg,image/png,image/webp,image/*" onChange={handleFile} style={{ display: 'none' }} />
       </div>
-      {busy && <div style={{ fontSize: 11.5, color: 'var(--text-muted)', marginTop: 6 }}>Mengunggah…</div>}
+      {busy && <div style={{ fontSize: 11.5, color: 'var(--text-muted)', marginTop: 6 }}>{tx("Mengunggah…")}</div>}
       {!busy && url && (
         <button type="button" onClick={handleRemove} style={{
           background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: 11.5, cursor: 'pointer', marginTop: 6, textDecoration: 'underline',
-        }}>
-          Hapus foto
-        </button>
+        }}>{tx("Hapus foto")}</button>
       )}
     </div>
   )

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { supabase } from './supabaseClient'
 import { todayStr } from './dateUtils'
 
+import { tx } from './i18n'
 function haversineMeters(lat1, lng1, lat2, lng2) {
   const R = 6371000
   const toRad = (d) => (d * Math.PI) / 180
@@ -90,10 +91,10 @@ export function useAttendance(employee) {
         p_face_descriptor: faceDescriptor || null,
       })
       if (error) throw error
-      result = { ok: true, message: kind === 'in' ? 'Berhasil clock in' : 'Berhasil clock out' }
+      result = { ok: true, message: kind === 'in' ? tx("Berhasil clock in") : tx("Berhasil clock out") }
       await load()
     } catch (e) {
-      result = { ok: false, message: e.message || 'Gagal memproses absensi' }
+      result = { ok: false, message: e.message || tx("Gagal memproses absensi") }
     } finally {
       setBusy(false)
       onDone?.(result)

@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabaseClient'
 import { todayStr } from '../lib/dateUtils'
 import { RequestShell, StatTiles, RecentList, StatusPill, fmtDate } from '../components/RequestDesktop'
 
+import { tx } from '../lib/i18n'
 const toMin = (t) => { const [h, m] = t.split(':'); return +h * 60 + +m }
 const fmtDur = (m) => `${Math.floor(m / 60)} j ${String(m % 60).padStart(2, '0')} m`
 // Overtime that ends after midnight (end < start) counts into the next day.
@@ -35,8 +36,8 @@ export default function LemburRequestDesktop({ onCancel, onDone, onToast }) {
   async function submit(e) {
     e.preventDefault()
     setError('')
-    if (!date || !start || !end) { setError('Lengkapi tanggal dan jam lembur'); return }
-    if (start === end) { setError('Jam selesai tidak boleh sama dengan jam mulai'); return }
+    if (!date || !start || !end) { setError(tx("Lengkapi tanggal dan jam lembur")); return }
+    if (start === end) { setError(tx("Jam selesai tidak boleh sama dengan jam mulai")); return }
     setBusy(true)
     const { error: err } = await supabase.rpc('submit_overtime_request', {
       p_work_date: date, p_start_time: start, p_end_time: end, p_reason: reason,
@@ -49,32 +50,32 @@ export default function LemburRequestDesktop({ onCancel, onDone, onToast }) {
 
   const form = (
     <form onSubmit={submit}>
-      <h2>Detail lembur</h2>
-      <p className="rq-lead">Isi tanggal dan jam lembur. Pengajuan akan diteruskan ke atasan untuk disetujui.</p>
+      <h2>{tx("Detail lembur")}</h2>
+      <p className="rq-lead">{tx("Isi tanggal dan jam lembur. Pengajuan akan diteruskan ke atasan untuk disetujui.")}</p>
       <div className="rq-grid">
-        <label className="rq-fld full"><span>Tanggal lembur</span>
+        <label className="rq-fld full"><span>{tx("Tanggal lembur")}</span>
           <input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
         </label>
-        <label className="rq-fld"><span>Jam mulai</span>
+        <label className="rq-fld"><span>{tx("Jam mulai")}</span>
           <input type="time" value={start} onChange={(e) => setStart(e.target.value)} />
         </label>
-        <label className="rq-fld"><span>Jam selesai</span>
+        <label className="rq-fld"><span>{tx("Jam selesai")}</span>
           <input type="time" value={end} onChange={(e) => setEnd(e.target.value)} />
         </label>
         {dur != null && (
           <div className="rq-sum">
-            <span>Total durasi lembur{overnight ? ' (melewati tengah malam)' : ''}</span>
+            <span>{tx("Total durasi lembur")}{overnight ? tx(" (melewati tengah malam)") : ''}</span>
             <b>{fmtDur(dur)}</b>
           </div>
         )}
-        <label className="rq-fld full"><span>Alasan</span>
-          <textarea value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Jelaskan pekerjaan yang perlu diselesaikan..." />
+        <label className="rq-fld full"><span>{tx("Alasan")}</span>
+          <textarea value={reason} onChange={(e) => setReason(e.target.value)} placeholder={tx("Jelaskan pekerjaan yang perlu diselesaikan...")} />
         </label>
         {error && <p className="rq-err" role="alert">{error}</p>}
       </div>
       <div className="rq-actions">
-        <button className="primary-btn" disabled={busy}>{busy ? 'Mengirim...' : 'Kirim pengajuan'}</button>
-        <button type="button" className="rq-ghost" onClick={onCancel}>Batal</button>
+        <button className="primary-btn" disabled={busy}>{busy ? tx("Mengirim...") : tx("Kirim pengajuan")}</button>
+        <button type="button" className="rq-ghost" onClick={onCancel}>{tx("Batal")}</button>
       </div>
     </form>
   )
@@ -82,10 +83,10 @@ export default function LemburRequestDesktop({ onCancel, onDone, onToast }) {
   const aside = (
     <>
       <StatTiles tiles={[
-        ['Lembur disetujui bulan ini', history ? fmtDur(approvedMin) : '…', 'g'],
-        ['Menunggu persetujuan', history ? pending : '…', pending ? 'w' : ''],
+        [tx("Lembur disetujui bulan ini"), history ? fmtDur(approvedMin) : '…', 'g'],
+        [tx("Menunggu persetujuan"), history ? pending : '…', pending ? 'w' : ''],
       ]} />
-      <RecentList title="Pengajuan terakhir" rows={history && history.slice(0, 5)} empty="Belum ada pengajuan lembur."
+      <RecentList title={tx("Pengajuan terakhir")} rows={history && history.slice(0, 5)} empty={tx("Belum ada pengajuan lembur.")}
         render={(r) => (
           <>
             <div>
@@ -98,5 +99,5 @@ export default function LemburRequestDesktop({ onCancel, onDone, onToast }) {
     </>
   )
 
-  return <RequestShell title="Ajukan Lembur" subtitle="Ajukan lembur dan pantau riwayat pengajuan Anda." onBack={onCancel} form={form} aside={aside} />
+  return <RequestShell title={tx("Ajukan Lembur")} subtitle={tx("Ajukan lembur dan pantau riwayat pengajuan Anda.")} onBack={onCancel} form={form} aside={aside} />
 }

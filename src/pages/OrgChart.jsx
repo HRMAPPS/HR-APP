@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabaseClient'
 import OrgChartVisual, { GRADES } from '../components/OrgChartVisual'
 import { useIsDesktop } from '../lib/useIsDesktop'
 
+import { tx } from '../lib/i18n'
 export default function OrgChart({ onBack, onToast, employee }) {
   const isDesktop = useIsDesktop()
   const canEdit = employee?.role === 'hr' || employee?.role === 'admin' // sama dengan is_hr() di database
@@ -27,7 +28,7 @@ export default function OrgChart({ onBack, onToast, employee }) {
     return (
       <div>
         <Header onBack={onBack} />
-        <div className="empty-state"><p>Memuat...</p></div>
+        <div className="empty-state"><p>{tx("Memuat...")}</p></div>
       </div>
     )
   }
@@ -42,12 +43,10 @@ export default function OrgChart({ onBack, onToast, employee }) {
 
       <div className="tabs" style={{ padding: '10px 16px 0' }}>
         <button className={view === 'chart' ? 'active' : ''} onClick={() => setView('chart')} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <Network size={15} /> Chart
-        </button>
+          <Network size={15} />{' '}{tx("Chart")}</button>
         {canEdit && (
           <button className={view === 'list' ? 'active' : ''} onClick={() => setView('list')} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <List size={15} /> Kelola
-          </button>
+            <List size={15} />{' '}{tx("Kelola")}</button>
         )}
       </div>
 
@@ -56,7 +55,7 @@ export default function OrgChart({ onBack, onToast, employee }) {
       {view === 'list' && canEdit && (
       <div className="form-page">
         {departments.length === 0 && (
-          <div className="empty-state"><p>Belum ada departemen. Mulai dengan menambah departemen pertama.</p></div>
+          <div className="empty-state"><p>{tx("Belum ada departemen. Mulai dengan menambah departemen pertama.")}</p></div>
         )}
 
         {roots.map((dept) => (
@@ -75,9 +74,7 @@ export default function OrgChart({ onBack, onToast, employee }) {
 
         {unassigned.length > 0 && (
           <div style={{ marginTop: 18 }}>
-            <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-muted)', margin: '0 0 8px 2px' }}>
-              Belum punya departemen
-            </div>
+            <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-muted)', margin: '0 0 8px 2px' }}>{tx("Belum punya departemen")}</div>
             {unassigned.map((e) => <EmpRow key={e.id} emp={e} onEdit={() => setEditingEmp(e)} />)}
           </div>
         )}
@@ -87,8 +84,7 @@ export default function OrgChart({ onBack, onToast, employee }) {
           style={{ marginTop: 18, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
           onClick={() => setEditingDept({})}
         >
-          <Plus size={18} /> Tambah departemen
-        </button>
+          <Plus size={18} />{' '}{tx("Tambah departemen")}</button>
       </div>
       )}
 
@@ -119,7 +115,7 @@ function Header({ onBack }) {
   return (
     <div className="page-header">
       <button className="back-btn" onClick={onBack}><ArrowLeft size={22} /></button>
-      <h1>Struktur Organisasi</h1>
+      <h1>{tx("Struktur Organisasi")}</h1>
       <span style={{ width: 22 }} />
     </div>
   )
@@ -141,7 +137,7 @@ function DeptNode({ dept, depth, departments, employees, expanded, onToggle, onE
         </span>
         <div className="info">
           <div className="name">{dept.name}</div>
-          {dept.head_name && <div className="sub">Kepala: {dept.head_name}</div>}
+          {dept.head_name && <div className="sub">{tx("Kepala:")}{' '}{dept.head_name}</div>}
         </div>
         <div className="actions">
           <button onClick={() => onEditDept(dept)}><Pencil size={16} /></button>
@@ -179,7 +175,7 @@ function EmpRow({ emp, onEdit }) {
       </span>
       <div className="info">
         <div className="name">{emp.full_name}</div>
-        <div className="sub">{emp.position || '-'}{emp.grade ? ` · Gol. ${GRADES[emp.grade]?.short}` : ''}{manager ? ` · lapor ke ${manager}` : ''}</div>
+        <div className="sub">{emp.position || '-'}{emp.grade ? tx("· Gol. {0}", [GRADES[emp.grade]?.short]) : ''}{manager ? tx("· lapor ke {0}", [manager]) : ''}</div>
       </div>
       <div className="actions">
         <button onClick={onEdit}><Pencil size={16} /></button>
@@ -200,14 +196,14 @@ function DeptForm({ row, departments, employees, onClose, onSaved }) {
   async function submit(ev) {
     ev.preventDefault()
     setError('')
-    if (!form.name.trim()) { setError('Nama departemen wajib diisi'); return }
+    if (!form.name.trim()) { setError(tx("Nama departemen wajib diisi")); return }
     setSaving(true)
     const { error } = await supabase.rpc('upsert_department', {
       p_id: row.id || null, p_name: form.name, p_parent_id: form.parent_id || null, p_head_employee_id: form.head_employee_id || null,
     })
     setSaving(false)
     if (error) { setError(error.message); return }
-    onSaved(row.id ? 'Departemen diperbarui' : 'Departemen ditambahkan')
+    onSaved(row.id ? tx("Departemen diperbarui") : tx("Departemen ditambahkan"))
   }
 
   async function remove() {
@@ -222,20 +218,20 @@ function DeptForm({ row, departments, employees, onClose, onSaved }) {
     <div className="sheet-overlay" onClick={onClose}>
       <div className="sheet" onClick={(e) => e.stopPropagation()}>
         <div className="sheet-handle" />
-        <div className="sheet-title-row"><h3>{row.id ? 'Edit Departemen' : 'Tambah Departemen'}</h3></div>
+        <div className="sheet-title-row"><h3>{row.id ? tx("Edit Departemen") : tx("Tambah Departemen")}</h3></div>
         <form onSubmit={submit}>
-          <div className="field"><label>Nama departemen</label><input value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} /></div>
+          <div className="field"><label>{tx("Nama departemen")}</label><input value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} /></div>
           <div className="field">
-            <label>Induk departemen (opsional)</label>
+            <label>{tx("Induk departemen (opsional)")}</label>
             <select value={form.parent_id} onChange={(e) => setForm((f) => ({ ...f, parent_id: e.target.value }))}>
-              <option value="">- Tidak ada (level teratas) -</option>
+              <option value="">{tx("- Tidak ada (level teratas) -")}</option>
               {otherDepts.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
             </select>
           </div>
           <div className="field">
-            <label>Kepala departemen (opsional)</label>
+            <label>{tx("Kepala departemen (opsional)")}</label>
             <select value={form.head_employee_id} onChange={(e) => setForm((f) => ({ ...f, head_employee_id: e.target.value }))}>
-              <option value="">- Belum ditentukan -</option>
+              <option value="">{tx("- Belum ditentukan -")}</option>
               {employees.map((e) => <option key={e.id} value={e.id}>{e.full_name}</option>)}
             </select>
           </div>
@@ -243,10 +239,9 @@ function DeptForm({ row, departments, employees, onClose, onSaved }) {
           <div style={{ display: 'flex', gap: 10 }}>
             {row.id && (
               <button type="button" className="primary-btn" style={{ background: '#fbe1dd', color: '#c0392b' }} onClick={remove} disabled={saving}>
-                <Trash2 size={16} style={{ verticalAlign: -3 }} /> Hapus
-              </button>
+                <Trash2 size={16} style={{ verticalAlign: -3 }} />{' '}{tx("Hapus")}</button>
             )}
-            <button className="primary-btn" disabled={saving}>{saving ? 'Menyimpan...' : 'Simpan'}</button>
+            <button className="primary-btn" disabled={saving}>{saving ? tx("Menyimpan...") : tx("Simpan")}</button>
           </div>
         </form>
       </div>
@@ -296,35 +291,35 @@ function EmpForm({ emp, departments, employees, onClose, onSaved }) {
         <div className="sheet-title-row">
           <h3>{emp.full_name}</h3>
         </div>
-        {reports > 0 && <p className="sub-text" style={{ margin: '-4px 0 12px' }}>{reports} orang melapor langsung ke {emp.full_name}</p>}
+        {reports > 0 && <p className="sub-text" style={{ margin: '-4px 0 12px' }}>{reports}{' '}{tx("orang melapor langsung ke")}{' '}{emp.full_name}</p>}
         <form onSubmit={submit}>
           <div className="field">
-            <label>Jabatan</label>
-            <input value={position} onChange={(e) => setPosition(e.target.value)} placeholder="Contoh: Brand Marketing Strategy Manager" />
+            <label>{tx("Jabatan")}</label>
+            <input value={position} onChange={(e) => setPosition(e.target.value)} placeholder={tx("Contoh: Brand Marketing Strategy Manager")} />
           </div>
           <div className="field">
-            <label>Golongan</label>
+            <label>{tx("Golongan")}</label>
             <select value={grade} onChange={(e) => setGrade(e.target.value)}>
-              <option value="">- Belum ditentukan -</option>
+              <option value="">{tx("- Belum ditentukan -")}</option>
               {[5, 4, 3, 2, 1].map((k) => <option key={k} value={k}>{GRADES[k].label} · {GRADES[k].desc}</option>)}
             </select>
           </div>
           <div className="field">
-            <label>Departemen</label>
+            <label>{tx("Departemen")}</label>
             <select value={departmentId} onChange={(e) => setDepartmentId(e.target.value)}>
-              <option value="">- Belum punya departemen -</option>
+              <option value="">{tx("- Belum punya departemen -")}</option>
               {departments.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
             </select>
           </div>
           <div className="field">
-            <label>Melapor ke (atasan langsung)</label>
+            <label>{tx("Melapor ke (atasan langsung)")}</label>
             <select value={managerId} onChange={(e) => setManagerId(e.target.value)}>
-              <option value="">- Tidak ada atasan -</option>
+              <option value="">{tx("- Tidak ada atasan -")}</option>
               {managerOptions.map((e) => <option key={e.id} value={e.id}>{e.full_name}{e.position ? ` — ${e.position}` : ''}</option>)}
             </select>
           </div>
           {error && <p className="error-text">{error}</p>}
-          <button className="primary-btn" disabled={saving}>{saving ? 'Menyimpan...' : 'Simpan'}</button>
+          <button className="primary-btn" disabled={saving}>{saving ? tx("Menyimpan...") : tx("Simpan")}</button>
         </form>
       </div>
     </div>

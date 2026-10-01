@@ -3,6 +3,7 @@ import { ArrowLeft, ScanFace, CheckCircle2, RefreshCcw } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
 import { loadFaceModels, extractFaceDescriptor } from '../lib/faceRecognition'
 
+import { tx } from '../lib/i18n'
 // Self-service face registration: employee looks at the camera, we detect
 // exactly one face and turn it into a 128-number descriptor, then send it
 // to enroll_face() which stores it against their own employee_id. This is
@@ -22,7 +23,7 @@ export default function FaceEnrollment({ employee, onBack, onToast }) {
     let cancelled = false
     loadFaceModels()
       .then(() => { if (!cancelled) setModelsReady(true) })
-      .catch(() => { if (!cancelled) setError('Gagal memuat model pengenalan wajah. Periksa koneksi internet dan coba lagi.') })
+      .catch(() => { if (!cancelled) setError(tx("Gagal memuat model pengenalan wajah. Periksa koneksi internet dan coba lagi.")) })
 
     supabase.rpc('get_my_face_status').then(({ data, error: e }) => {
       if (!cancelled && !e) setStatus(!!data)
@@ -42,7 +43,7 @@ export default function FaceEnrollment({ employee, onBack, onToast }) {
         if (videoRef.current) videoRef.current.srcObject = stream
         setCameraReady(true)
       } catch (e) {
-        setError('Tidak bisa mengakses kamera. Izinkan akses kamera di browser, lalu coba lagi.')
+        setError(tx("Tidak bisa mengakses kamera. Izinkan akses kamera di browser, lalu coba lagi."))
       }
     }
     start()
@@ -59,7 +60,7 @@ export default function FaceEnrollment({ employee, onBack, onToast }) {
     try {
       const descriptor = await extractFaceDescriptor(videoRef.current)
       if (!descriptor) {
-        setError('Wajah tidak terdeteksi dengan jelas. Pastikan wajah terlihat penuh dan pencahayaan cukup, lalu coba lagi.')
+        setError(tx("Wajah tidak terdeteksi dengan jelas. Pastikan wajah terlihat penuh dan pencahayaan cukup, lalu coba lagi."))
         return
       }
       setPreview({ descriptor })
@@ -75,7 +76,7 @@ export default function FaceEnrollment({ employee, onBack, onToast }) {
     const { error: e } = await supabase.rpc('enroll_face', { p_descriptor: preview.descriptor })
     setSubmitting(false)
     if (e) {
-      onToast?.(e.message || 'Gagal mendaftarkan wajah')
+      onToast?.(e.message || tx("Gagal mendaftarkan wajah"))
       return
     }
     onToast?.('Wajah berhasil didaftarkan')
@@ -90,14 +91,14 @@ export default function FaceEnrollment({ employee, onBack, onToast }) {
       streamRef.current = stream
       if (videoRef.current) videoRef.current.srcObject = stream
       setCameraReady(true)
-    }).catch(() => setError('Tidak bisa mengakses kamera. Izinkan akses kamera di browser, lalu coba lagi.'))
+    }).catch(() => setError(tx("Tidak bisa mengakses kamera. Izinkan akses kamera di browser, lalu coba lagi.")))
   }
 
   return (
     <div>
       <div className="page-header">
         <button className="back-btn" onClick={onBack}><ArrowLeft size={22} /></button>
-        <h1>Daftar Wajah</h1>
+        <h1>{tx("Daftar Wajah")}</h1>
         <span style={{ width: 22 }} />
       </div>
 
@@ -108,8 +109,8 @@ export default function FaceEnrollment({ employee, onBack, onToast }) {
         }}>
           <ScanFace size={18} />
           {status
-            ? 'Wajah kamu sudah terdaftar. Kamu bisa mendaftar ulang jika wajahmu berubah signifikan (kacamata, jenggot, dll).'
-            : 'Daftarkan wajahmu sekali di sini. Setelah terdaftar, Clock In/Out akan memverifikasi wajahmu setiap kali absen.'}
+            ? tx("Wajah kamu sudah terdaftar. Kamu bisa mendaftar ulang jika wajahmu berubah signifikan (kacamata, jenggot, dll).")
+            : tx("Daftarkan wajahmu sekali di sini. Setelah terdaftar, Clock In/Out akan memverifikasi wajahmu setiap kali absen.")}
         </div>
 
         {!preview ? (
@@ -130,9 +131,7 @@ export default function FaceEnrollment({ employee, onBack, onToast }) {
               </svg>
             )}
             {!modelsReady && !error && (
-              <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 13.5 }}>
-                Memuat model wajah...
-              </div>
+              <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 13.5 }}>{tx("Memuat model wajah...")}</div>
             )}
           </div>
         ) : (
@@ -141,10 +140,8 @@ export default function FaceEnrollment({ employee, onBack, onToast }) {
             width: '100%', aspectRatio: '3 / 4', background: '#E1F3EA', borderRadius: 16, gap: 10,
           }}>
             <CheckCircle2 size={48} color="#1E8E5A" />
-            <div style={{ color: '#1E8E5A', fontWeight: 700, fontSize: 15.5 }}>Wajah terdeteksi</div>
-            <div style={{ color: '#1E8E5A', fontSize: 13, textAlign: 'center', padding: '0 24px' }}>
-              Pastikan ini benar-benar wajahmu, lalu simpan.
-            </div>
+            <div style={{ color: '#1E8E5A', fontWeight: 700, fontSize: 15.5 }}>{tx("Wajah terdeteksi")}</div>
+            <div style={{ color: '#1E8E5A', fontSize: 13, textAlign: 'center', padding: '0 24px' }}>{tx("Pastikan ini benar-benar wajahmu, lalu simpan.")}</div>
           </div>
         )}
 
@@ -155,7 +152,7 @@ export default function FaceEnrollment({ employee, onBack, onToast }) {
             cursor: (!cameraReady || !modelsReady || error || detecting) ? 'not-allowed' : 'pointer',
             opacity: (!cameraReady || !modelsReady || error || detecting) ? 0.6 : 1,
           }}>
-            {detecting ? 'Mendeteksi wajah...' : 'Ambil Foto'}
+            {detecting ? tx("Mendeteksi wajah...") : tx("Ambil Foto")}
           </button>
         ) : (
           <div style={{ display: 'flex', gap: 10, marginTop: 18 }}>
@@ -164,14 +161,13 @@ export default function FaceEnrollment({ employee, onBack, onToast }) {
               borderRadius: 12, padding: '14px', fontWeight: 700, fontSize: 15, display: 'flex',
               alignItems: 'center', justifyContent: 'center', gap: 8, cursor: 'pointer',
             }}>
-              <RefreshCcw size={16} /> Ambil Ulang
-            </button>
+              <RefreshCcw size={16} />{' '}{tx("Ambil Ulang")}</button>
             <button onClick={handleConfirm} disabled={submitting} style={{
               flex: 1, background: 'var(--blue)', color: '#fff', border: 'none', borderRadius: 12,
               padding: '14px', fontWeight: 700, fontSize: 15, cursor: submitting ? 'not-allowed' : 'pointer',
               opacity: submitting ? 0.6 : 1,
             }}>
-              {submitting ? 'Menyimpan...' : 'Simpan'}
+              {submitting ? tx("Menyimpan...") : tx("Simpan")}
             </button>
           </div>
         )}

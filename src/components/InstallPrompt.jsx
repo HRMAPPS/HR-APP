@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Download, X } from 'lucide-react'
 
+import { tx } from '../lib/i18n'
 function isIos() {
   return /iphone|ipad|ipod/i.test(window.navigator.userAgent)
 }
@@ -52,13 +53,13 @@ export default function InstallPrompt() {
       <div style={{ flex: 1, fontSize: 13 }}>
         {deferredPrompt ? (
           <>
-            <strong>Install aplikasi ini</strong>
-            <div style={{ color: 'var(--text-muted)', marginTop: 1 }}>Akses lebih cepat langsung dari layar utama HP.</div>
+            <strong>{tx("Install aplikasi ini")}</strong>
+            <div style={{ color: 'var(--text-muted)', marginTop: 1 }}>{tx("Akses lebih cepat langsung dari layar utama HP.")}</div>
           </>
         ) : (
           <>
-            <strong>Tambahkan ke Layar Utama</strong>
-            <div style={{ color: 'var(--text-muted)', marginTop: 1 }}>Tap tombol Share di Safari, lalu pilih "Add to Home Screen".</div>
+            <strong>{tx("Tambahkan ke Layar Utama")}</strong>
+            <div style={{ color: 'var(--text-muted)', marginTop: 1 }}>{tx("Tap tombol Share di Safari, lalu pilih \"Add to Home Screen\".")}</div>
           </>
         )}
       </div>

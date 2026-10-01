@@ -9,6 +9,7 @@ import HomeLeavePanel from '../components/HomeLeavePanel'
 import { jakartaHour, greetingID } from '../lib/dateUtils'
 import { linkifyText } from '../lib/linkify'
 
+import { tx, locale } from '../lib/i18n'
 // Small "Oleh <avatar> <name>" byline used under each announcement in
 // the list. Falls back to a generic person icon when there's no photo.
 function AnnouncementByline({ author, authorAvatarUrl }) {
@@ -25,7 +26,7 @@ function AnnouncementByline({ author, authorAvatarUrl }) {
 
 function formatTime(iso) {
   if (!iso) return null
-  return new Date(iso).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
+  return new Date(iso).toLocaleTimeString(locale(), { hour: '2-digit', minute: '2-digit' })
 }
 
 function initials(name) {
@@ -81,11 +82,11 @@ export default function Home({ employee, onNavigate, onOpenAllApps }) {
   const shift = data?.shift
   const att = data?.attendance_today
   const today = new Date()
-  const todayLabel = today.toLocaleDateString('id-ID', {
+  const todayLabel = today.toLocaleDateString(locale(), {
     weekday: 'short', day: '2-digit', month: 'short', year: 'numeric'
   }).replace('.', '')
   const hour = jakartaHour()
-  const greeting = hour < 11 ? 'Good morning' : hour < 15 ? 'Good afternoon' : hour < 19 ? 'Good evening' : 'Good night'
+  const greeting = hour < 11 ? tx("Good morning") : hour < 15 ? tx("Good afternoon") : hour < 19 ? tx("Good evening") : tx("Good night")
 
   const overlays = (
     <>
@@ -98,7 +99,7 @@ export default function Home({ employee, onNavigate, onOpenAllApps }) {
           onClose={() => setCameraMode(null)}
         />
       )}
-      {busy && !cameraMode && <div className="toast">Memproses absensi...</div>}
+      {busy && !cameraMode && <div className="toast">{tx("Memproses absensi...")}</div>}
       {toast && <div className="toast">{toast}</div>}
     </>
   )
@@ -107,15 +108,15 @@ export default function Home({ employee, onNavigate, onOpenAllApps }) {
     return (
       <div>
         <h1 style={{ fontSize: 26, margin: '4px 0 2px' }}>{greeting}, {employee?.full_name?.split(' ')[0] || ''}!</h1>
-        <p style={{ color: 'var(--text-muted)', margin: '0 0 24px' }}>It's {todayLabel}</p>
+        <p style={{ color: 'var(--text-muted)', margin: '0 0 24px' }}>{tx("It's")}{' '}{todayLabel}</p>
 
-        <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 10 }}>Shortcut</div>
+        <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 10 }}>{tx("Shortcut")}</div>
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 28 }}>
           {[
-            ['Live attendance', 'presensi'],
+            [tx("Live attendance"), 'presensi'],
             ['Request time off', 'cuti-new'],
             ['Request overtime', 'lembur-new'],
-            ['More request', '__ALL_APPS__'],
+            [tx("More request"), '__ALL_APPS__'],
           ].map(([label, target]) => (
             <button key={label} onClick={() => target === '__ALL_APPS__' ? onOpenAllApps() : onNavigate(target)} style={{
               padding: '11px 20px', borderRadius: 24, border: '1px solid var(--border)', background: '#fff',
@@ -128,11 +129,11 @@ export default function Home({ employee, onNavigate, onOpenAllApps }) {
 
         <div style={{ display: 'grid', gridTemplateColumns: '240px minmax(0, 1fr) 290px', gap: 20, alignItems: 'start' }}>
           <div style={{ background: '#fff', borderRadius: 16, padding: 20, boxShadow: 'var(--shadow-sm)' }}>
-            <div style={{ fontWeight: 700, marginBottom: 14 }}>Quick Links</div>
+            <div style={{ fontWeight: 700, marginBottom: 14 }}>{tx("Quick Links")}</div>
             {[
-              [User, 'Employee profile', 'account'],
-              [ClipboardList, 'My Attendance Logs', 'absensi'],
-              [Building2, 'Struktur Organisasi', 'org-chart'],
+              [User, tx("Employee profile"), 'account'],
+              [ClipboardList, tx("My Attendance Logs"), 'absensi'],
+              [Building2, tx("Struktur Organisasi"), 'org-chart'],
             ].map(([Icon, label, target]) => (
               <button key={label} onClick={() => onNavigate(target)} style={{
                 display: 'flex', alignItems: 'center', gap: 10, width: '100%', background: 'none', border: 'none',
@@ -145,11 +146,11 @@ export default function Home({ employee, onNavigate, onOpenAllApps }) {
 
           <div style={{ background: '#fff', borderRadius: 16, padding: 20, boxShadow: 'var(--shadow-sm)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-              <div style={{ fontWeight: 700, fontSize: 15 }}>Announcement</div>
-              <a href="#" style={{ fontSize: 13, color: 'var(--blue)', textDecoration: 'none' }}>Lihat semua</a>
+              <div style={{ fontWeight: 700, fontSize: 15 }}>{tx("Announcement")}</div>
+              <a href="#" style={{ fontSize: 13, color: 'var(--blue)', textDecoration: 'none' }}>{tx("Lihat semua")}</a>
             </div>
             {announcements.length === 0 ? (
-              <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>Belum ada pengumuman.</p>
+              <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>{tx("Belum ada pengumuman.")}</p>
             ) : announcements.map((a) => (
               <div
                 key={a.id}
@@ -166,14 +167,14 @@ export default function Home({ employee, onNavigate, onOpenAllApps }) {
                     <span style={{ fontWeight: 600, fontSize: 13.5 }}>{a.author || 'napocut'}</span>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
                       <span style={{ fontSize: 12, color: '#a39c94', whiteSpace: 'nowrap' }}>
-                        {new Date(a.published_at).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })}
+                        {new Date(a.published_at).toLocaleDateString(locale(), { day: '2-digit', month: 'short', year: 'numeric' })}
                       </span>
                       <button
                         onClick={() => {
                           navigator.clipboard.writeText(`${a.title}\n\n${a.body || ''}`.trim())
-                          flash('Pengumuman disalin')
+                          flash(tx("Pengumuman disalin"))
                         }}
-                        title="Salin pengumuman"
+                        title={tx("Salin pengumuman")}
                         style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', display: 'flex', padding: 2 }}
                       >
                         <Copy size={15} />
@@ -187,7 +188,7 @@ export default function Home({ employee, onNavigate, onOpenAllApps }) {
                         fontSize: 11, fontWeight: 600, color: 'var(--blue)', background: '#eef2ff',
                         borderRadius: 20, padding: '2px 10px', whiteSpace: 'nowrap', height: 'fit-content',
                       }}>
-                        {a.category}
+                        {tx(a.category)}
                       </span>
                     )}
                   </div>
@@ -209,7 +210,7 @@ export default function Home({ employee, onNavigate, onOpenAllApps }) {
                         color: 'var(--blue)', textDecoration: 'none',
                       }}
                     >
-                      <Paperclip size={13} /> {a.attachment_name || 'Lampiran'}
+                      <Paperclip size={13} /> {a.attachment_name || tx("Lampiran")}
                     </a>
                   )}
                 </div>
@@ -236,14 +237,13 @@ export default function Home({ employee, onNavigate, onOpenAllApps }) {
       </div>
 
       <div className="shift-card">
-        <div className="shift-card__header">
-          Jadwal shift untuk {todayLabel}
+        <div className="shift-card__header">{tx("Jadwal shift untuk")}{' '}{todayLabel}
         </div>
         <div className="shift-card__body">
           {(!shift || shift?.is_day_off) ? (
             <>
-              <div className="shift-card__role">Tidak ada shift hari ini</div>
-              <div className="shift-card__time">Selamat menikmati hari libur!</div>
+              <div className="shift-card__role">{tx("Tidak ada shift hari ini")}</div>
+              <div className="shift-card__time">{tx("Selamat menikmati hari libur!")}</div>
             </>
           ) : (
             <>
@@ -254,18 +254,15 @@ export default function Home({ employee, onNavigate, onOpenAllApps }) {
 
               <div className="clock-buttons">
                 <button onClick={() => setCameraMode('in')} disabled={busy || !!att?.clock_in}>
-                  <LogIn size={18} /> Clock In
-                </button>
+                  <LogIn size={18} />{' '}{tx("Clock In")}</button>
                 <button onClick={() => setCameraMode('out')} disabled={busy || !att?.clock_in || !!att?.clock_out}>
-                  <LogOut size={18} /> Clock Out
-                </button>
+                  <LogOut size={18} />{' '}{tx("Clock Out")}</button>
               </div>
 
               {att?.clock_in && (
                 <div className="shift-card__status">
-                  <div>
-                    Anda telah berhasil clock in pada pukul {formatTime(att.clock_in)}
-                    {att.clock_out && <> · clock out pukul {formatTime(att.clock_out)}</>}
+                  <div>{tx("Anda telah berhasil clock in pada pukul")}{' '}{formatTime(att.clock_in)}
+                    {att.clock_out && <>{' '}{tx("· clock out pukul")}{' '}{formatTime(att.clock_out)}</>}
                   </div>
                 </div>
               )}
@@ -281,7 +278,7 @@ export default function Home({ employee, onNavigate, onOpenAllApps }) {
             <button
               key={app.key}
               className="quick-item"
-              onClick={() => app.page === '__ALL_APPS__' ? onOpenAllApps() : (app.page ? onNavigate(app.page) : flash(`${app.label} segera hadir`))}
+              onClick={() => app.page === '__ALL_APPS__' ? onOpenAllApps() : (app.page ? onNavigate(app.page) : flash(tx("{0} segera hadir", [app.label])))}
             >
               <span className="ic" style={{ background: app.bg, color: app.fg }}>
                 <Icon size={22} />
@@ -295,8 +292,8 @@ export default function Home({ employee, onNavigate, onOpenAllApps }) {
       {team.length > 0 && (
         <div className="section">
           <div className="section-title">
-            <h2>Laporan tim saya</h2>
-            <a href="#" onClick={(e) => { e.preventDefault(); onNavigate('team-report') }}>Lihat aktivitas</a>
+            <h2>{tx("Laporan tim saya")}</h2>
+            <a href="#" onClick={(e) => { e.preventDefault(); onNavigate('team-report') }}>{tx("Lihat aktivitas")}</a>
           </div>
           <TeamAvatarStack team={team} />
         </div>
@@ -305,8 +302,8 @@ export default function Home({ employee, onNavigate, onOpenAllApps }) {
       {announcements.length > 0 && (
         <div className="section">
           <div className="section-title">
-            <h2>Pengumuman</h2>
-            <a href="#">Lihat semua</a>
+            <h2>{tx("Pengumuman")}</h2>
+            <a href="#">{tx("Lihat semua")}</a>
           </div>
           {announcements.map((a) => (
             <div
@@ -317,7 +314,7 @@ export default function Home({ employee, onNavigate, onOpenAllApps }) {
               <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10 }}>
                 <strong style={{ fontSize: 14.5 }}>{a.title}</strong>
                 <span style={{ fontSize: 12, color: '#a39c94', whiteSpace: 'nowrap' }}>
-                  {new Date(a.published_at).toLocaleDateString('id-ID', { day: '2-digit', month: 'short' })}
+                  {new Date(a.published_at).toLocaleDateString(locale(), { day: '2-digit', month: 'short' })}
                 </span>
               </div>
               <AnnouncementByline author={a.author} authorAvatarUrl={a.author_avatar_url} />

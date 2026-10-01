@@ -4,7 +4,8 @@ import { supabase } from '../lib/supabaseClient'
 import { useBackHandler } from '../lib/backStack'
 import { useIsDesktop } from '../lib/useIsDesktop'
 
-const STATUS_LABEL = { pending: 'Menunggu', approved: 'Disetujui', rejected: 'Ditolak' }
+import { tx, locale } from '../lib/i18n'
+const STATUS_LABEL = { pending: tx("Menunggu"), approved: tx("Disetujui"), rejected: tx("Ditolak") }
 const rupiah = (n) => Number(n || 0).toLocaleString('id-ID')
 
 export default function Reimbursement(props) {
@@ -38,33 +39,33 @@ function ReimbursementMobile({ onBack, startNew, onToast }) {
     <div>
       <div className="page-header">
         <button className="back-btn" onClick={onBack}><ArrowLeft size={22} /></button>
-        <h1>Benefit Reimbursement</h1>
+        <h1>{tx("Benefit Reimbursement")}</h1>
         <span style={{ width: 22 }} />
       </div>
 
       <div className="section" style={{ margin: '10px 16px 0' }}>
-        <h4 style={{ margin: '0 0 10px' }}>Saldo saya</h4>
+        <h4 style={{ margin: '0 0 10px' }}>{tx("Saldo saya")}</h4>
         <div style={{ textAlign: 'center', color: '#a39c94', padding: '10px 0' }}>
           <FileQuestion size={40} />
-          <p style={{ fontWeight: 700, color: '#262220', margin: '10px 0 4px' }}>Tidak ada kebijakan yang dibuat</p>
-          <p style={{ fontSize: 13.5 }}>Kebijakan reimburse akan muncul jika Anda telah membuatnya.</p>
+          <p style={{ fontWeight: 700, color: '#262220', margin: '10px 0 4px' }}>{tx("Tidak ada kebijakan yang dibuat")}</p>
+          <p style={{ fontSize: 13.5 }}>{tx("Kebijakan reimburse akan muncul jika Anda telah membuatnya.")}</p>
         </div>
       </div>
 
       <div style={{ padding: '14px 16px 0' }}>
-        {loading && <p style={{ color: '#a39c94' }}>Memuat...</p>}
+        {loading && <p style={{ color: '#a39c94' }}>{tx("Memuat...")}</p>}
         {!loading && items.length === 0 && (
           <div className="empty-state">
             <FileQuestion size={40} color="#c8c1b9" />
-            <h3>Tidak ada pengajuan</h3>
-            <p>Anda dapat mengajukan reimburse melalui tombol di bawah ini.</p>
+            <h3>{tx("Tidak ada pengajuan")}</h3>
+            <p>{tx("Anda dapat mengajukan reimburse melalui tombol di bawah ini.")}</p>
           </div>
         )}
         {!loading && items.map((it) => (
           <div key={it.id} className="shift-hist-row" style={{ borderRadius: 12, marginBottom: 8 }}>
             <div className="top">
               <div>
-                <div className="date">{it.reimbursement_categories?.name || 'Reimbursement'}</div>
+                <div className="date">{it.reimbursement_categories?.name || tx("Reimbursement")}</div>
                 <div className="desc">Rp {rupiah(it.amount)}</div>
               </div>
               <span className={`status-${it.status}`}>{STATUS_LABEL[it.status] || it.status}</span>
@@ -73,7 +74,7 @@ function ReimbursementMobile({ onBack, startNew, onToast }) {
         ))}
       </div>
 
-      <button className="fab-bottom-btn" onClick={() => setShowForm(true)}>Ajukan reimburse</button>
+      <button className="fab-bottom-btn" onClick={() => setShowForm(true)}>{tx("Ajukan reimburse")}</button>
     </div>
   )
 }
@@ -96,14 +97,14 @@ function ReimbursementForm({ onDone, onCancel, onToast }) {
   async function submit(e) {
     e.preventDefault()
     setError('')
-    if (!amount || Number(amount) <= 0) { setError('Masukkan nominal yang valid'); return }
+    if (!amount || Number(amount) <= 0) { setError(tx("Masukkan nominal yang valid")); return }
     setLoading(true)
     const { error } = await supabase.rpc('submit_reimbursement_request', {
       p_category_id: categoryId || null, p_amount: Number(amount), p_description: description, p_receipt_url: null,
     })
     setLoading(false)
     if (error) { setError(error.message); return }
-    onToast('Pengajuan reimburse terkirim')
+    onToast(tx("Pengajuan reimburse terkirim"))
     onDone()
   }
 
@@ -111,26 +112,26 @@ function ReimbursementForm({ onDone, onCancel, onToast }) {
     <div>
       <div className="page-header">
         <button className="back-btn" onClick={onCancel}><ArrowLeft size={22} /></button>
-        <h1>Ajukan Reimburse</h1>
+        <h1>{tx("Ajukan Reimburse")}</h1>
         <span style={{ width: 22 }} />
       </div>
       <form className="form-page" onSubmit={submit}>
         <div className="field">
-          <label>Kategori</label>
+          <label>{tx("Kategori")}</label>
           <select value={categoryId} onChange={(e) => setCategoryId(e.target.value)}>
-            {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+            {categories.map((c) => <option key={c.id} value={c.id}>{tx(c.name)}</option>)}
           </select>
         </div>
         <div className="field">
-          <label>Nominal (Rp)</label>
+          <label>{tx("Nominal (Rp)")}</label>
           <input type="number" min="1" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0" />
         </div>
         <div className="field">
-          <label>Keterangan</label>
-          <textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Tambahkan keterangan..." />
+          <label>{tx("Keterangan")}</label>
+          <textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder={tx("Tambahkan keterangan...")} />
         </div>
         {error && <p className="error-text">{error}</p>}
-        <button className="primary-btn" disabled={loading}>{loading ? 'Mengirim...' : 'Kirim pengajuan'}</button>
+        <button className="primary-btn" disabled={loading}>{loading ? tx("Mengirim...") : tx("Kirim pengajuan")}</button>
       </form>
     </div>
   )
@@ -175,40 +176,39 @@ function ReimbursementDesktop({ startNew, onToast }) {
 
   return (
     <div className="dsk-page">
-      <h1 className="dsk-title">Benefit Reimbursement</h1>
-      <p className="dsk-sub">Ringkasan pengajuan reimburse Anda</p>
+      <h1 className="dsk-title">{tx("Benefit Reimbursement")}</h1>
+      <p className="dsk-sub">{tx("Ringkasan pengajuan reimburse Anda")}</p>
 
       <div className="dsk-stats">
-        <div><b>{summary.count}</b><span>total pengajuan</span></div>
-        <div><b>{summary.pending}</b><span>menunggu</span></div>
-        <div><b>Rp {rupiah(summary.approvedTotal)}</b><span>disetujui</span></div>
+        <div><b>{summary.count}</b><span>{tx("total pengajuan")}</span></div>
+        <div><b>{summary.pending}</b><span>{tx("menunggu")}</span></div>
+        <div><b>Rp {rupiah(summary.approvedTotal)}</b><span>{tx("disetujui")}</span></div>
       </div>
 
       <div className="dsk-toolbar">
-        <button className="dsk-outline-btn" onClick={() => setModal(true)}>AJUKAN REIMBURSE</button>
+        <button className="dsk-outline-btn" onClick={() => setModal(true)}>{tx("AJUKAN REIMBURSE")}</button>
         <div className="dsk-filters">
           <label>Status
             <select value={status} onChange={(e) => setStatus(e.target.value)}>
-              <option value="">-- Semua --</option>
+              <option value="">{tx("-- Semua --")}</option>
               {Object.entries(STATUS_LABEL).map(([k, l]) => <option key={k} value={k}>{l}</option>)}
             </select>
           </label>
-          <label style={{ width: 220 }}>Cari
-            <div className="dsk-search"><Search size={15} /><input value={q} onChange={(e) => setQ(e.target.value)} /></div>
+          <label style={{ width: 220 }}>{tx("Cari")}<div className="dsk-search"><Search size={15} /><input value={q} onChange={(e) => setQ(e.target.value)} /></div>
           </label>
         </div>
       </div>
 
       <div className="dsk-table-wrap">
         <table className="dsk-table">
-          <thead><tr><th>Tanggal</th><th>Kategori</th><th>Keterangan</th><th>Nominal</th><th>Status</th></tr></thead>
+          <thead><tr><th>{tx("Tanggal")}</th><th>{tx("Kategori")}</th><th>{tx("Keterangan")}</th><th>{tx("Nominal")}</th><th>Status</th></tr></thead>
           <tbody>
-            {loading ? <tr><td colSpan={5} className="empty">Memuat...</td></tr>
-              : rows.length === 0 ? <tr><td colSpan={5} className="empty">Tidak ada data.</td></tr>
+            {loading ? <tr><td colSpan={5} className="empty">{tx("Memuat...")}</td></tr>
+              : rows.length === 0 ? <tr><td colSpan={5} className="empty">{tx("Tidak ada data.")}</td></tr>
               : rows.map((r) => (
                 <tr key={r.id}>
-                  <td>{new Date(r.created_at).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })}</td>
-                  <td>{r.reimbursement_categories?.name || 'Reimbursement'}</td>
+                  <td>{new Date(r.created_at).toLocaleDateString(locale(), { day: '2-digit', month: 'short', year: 'numeric' })}</td>
+                  <td>{r.reimbursement_categories?.name || tx("Reimbursement")}</td>
                   <td className="wrap">{r.description || '-'}</td>
                   <td>Rp {rupiah(r.amount)}</td>
                   <td><span className={`status-${r.status}`}>{STATUS_LABEL[r.status] || r.status}</span></td>
@@ -233,11 +233,11 @@ function ReimbursementModal({ categories, onClose, onDone }) {
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
   const dirty = !!(amount || description)
-  const guard = () => { if (!dirty || confirm('Batalkan pengisian formulir?')) onClose() }
+  const guard = () => { if (!dirty || confirm(tx("Batalkan pengisian formulir?"))) onClose() }
 
   async function submit() {
     setError('')
-    if (!amount || Number(amount) <= 0) { setError('Masukkan nominal yang valid'); return }
+    if (!amount || Number(amount) <= 0) { setError(tx("Masukkan nominal yang valid")); return }
     setBusy(true)
     const { error } = await supabase.rpc('submit_reimbursement_request', {
       p_category_id: categoryId || null, p_amount: Number(amount), p_description: description, p_receipt_url: null,
@@ -251,23 +251,20 @@ function ReimbursementModal({ categories, onClose, onDone }) {
     <div className="modal-overlay dcuti-overlay" onClick={guard}>
       <div className="dcuti-modal narrow" onClick={(e) => e.stopPropagation()}>
         <div className="dcuti-modal-body">
-          <h2>Ajukan Reimburse</h2>
-          <label className="fld">Kategori
-            <select value={categoryId} onChange={(e) => setCategoryId(e.target.value)}>
-              {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+          <h2>{tx("Ajukan Reimburse")}</h2>
+          <label className="fld">{tx("Kategori")}<select value={categoryId} onChange={(e) => setCategoryId(e.target.value)}>
+              {categories.map((c) => <option key={c.id} value={c.id}>{tx(c.name)}</option>)}
             </select>
           </label>
-          <label className="fld" style={{ marginTop: 18 }}>Nominal (Rp)
-            <input type="number" min="1" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0" />
+          <label className="fld" style={{ marginTop: 18 }}>{tx("Nominal (Rp)")}<input type="number" min="1" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0" />
           </label>
-          <label className="fld" style={{ marginTop: 18 }}>Keterangan
-            <textarea rows={3} value={description} onChange={(e) => setDescription(e.target.value)} />
+          <label className="fld" style={{ marginTop: 18 }}>{tx("Keterangan")}<textarea rows={3} value={description} onChange={(e) => setDescription(e.target.value)} />
           </label>
           {error && <p className="error-text" style={{ marginTop: 10 }}>{error}</p>}
         </div>
         <div className="dcuti-modal-foot">
-          <button className="dcal-outline-btn" disabled={busy} onClick={submit}>{busy ? 'MENGIRIM...' : 'KIRIM'}</button>
-          <button className="dcal-outline-btn" onClick={guard}>BATAL</button>
+          <button className="dcal-outline-btn" disabled={busy} onClick={submit}>{busy ? tx("MENGIRIM...") : tx("KIRIM")}</button>
+          <button className="dcal-outline-btn" onClick={guard}>{tx("BATAL")}</button>
         </div>
       </div>
     </div>

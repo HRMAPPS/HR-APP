@@ -7,19 +7,20 @@ import {
 import { supabase } from '../lib/supabaseClient'
 import Avatar from '../components/Avatar'
 
+import { tx, locale } from '../lib/i18n'
 const CATEGORIES = [
-  { key: 'reimbursement_requests', label: 'Reimbursement', icon: Receipt },
-  { key: 'leave_requests', label: 'Cuti', icon: CalendarDays },
-  { key: 'absence_requests', label: 'Presensi', icon: MapPin },
-  { key: 'overtime_requests', label: 'Lembur', icon: AlarmClock },
-  { key: 'shift_change_requests', label: 'Perubahan shift', icon: RefreshCw },
-  { key: 'data_change_requests', label: 'Perubahan data', icon: UserCircle, noBacking: true },
-  { key: 'formulir', label: 'Formulir', icon: FileText, noBacking: true },
-  { key: 'goal', label: 'Goal', icon: Target, noBacking: true },
+  { key: 'reimbursement_requests', label: tx("Reimbursement"), icon: Receipt },
+  { key: 'leave_requests', label: tx("Cuti"), icon: CalendarDays },
+  { key: 'absence_requests', label: tx("Presensi"), icon: MapPin },
+  { key: 'overtime_requests', label: tx("Lembur"), icon: AlarmClock },
+  { key: 'shift_change_requests', label: tx("Perubahan shift"), icon: RefreshCw },
+  { key: 'data_change_requests', label: tx("Perubahan data"), icon: UserCircle, noBacking: true },
+  { key: 'formulir', label: tx("Formulir"), icon: FileText, noBacking: true },
+  { key: 'goal', label: tx("Goal"), icon: Target, noBacking: true },
   { key: 'timesheet', label: 'Timesheet', icon: ListChecks, noBacking: true },
-  { key: 'task', label: 'Task', icon: CheckSquare, noBacking: true },
-  { key: 'penambahan_karyawan', label: 'Penambahan karyawan', icon: UserPlus, noBacking: true },
-  { key: 'pemindahan_karyawan', label: 'Pemindahan karyawan', icon: FolderInput, noBacking: true },
+  { key: 'task', label: tx("Task"), icon: CheckSquare, noBacking: true },
+  { key: 'penambahan_karyawan', label: tx("Penambahan karyawan"), icon: UserPlus, noBacking: true },
+  { key: 'pemindahan_karyawan', label: tx("Pemindahan karyawan"), icon: FolderInput, noBacking: true },
 ]
 
 const CAT_ICON_BG = '#EAF1FB'
@@ -44,7 +45,7 @@ export default function ApprovalCenter({ onToast, onCountsChange, onOpenCategory
         const count = counts[c.key]
         return (
           <button key={c.key} className="menu-row" style={{ borderTop: '1px solid var(--border)' }}
-            onClick={() => c.noBacking ? onToast?.(`${c.label} segera hadir`) : onOpenCategory(c.key)}>
+            onClick={() => c.noBacking ? onToast?.(tx("{0} segera hadir", [c.label])) : onOpenCategory(c.key)}>
             <span style={{
               width: 34, height: 34, borderRadius: 9, background: CAT_ICON_BG, color: CAT_ICON_FG,
               display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
@@ -76,8 +77,8 @@ export function ApprovalCategoryPage({ categoryKey, initialId, onBack, onToast }
     // on category.label below.
     return (
       <div>
-        <div className="page-header"><button className="back-btn" onClick={onBack}><ArrowLeft size={22} /></button><h1>Tidak ditemukan</h1><span style={{ width: 22 }} /></div>
-        <div className="empty-state"><p>Kategori pengajuan tidak dikenali.</p></div>
+        <div className="page-header"><button className="back-btn" onClick={onBack}><ArrowLeft size={22} /></button><h1>{tx("Tidak ditemukan")}</h1><span style={{ width: 22 }} /></div>
+        <div className="empty-state"><p>{tx("Kategori pengajuan tidak dikenali.")}</p></div>
       </div>
     )
   }
@@ -123,7 +124,7 @@ function ApprovalList({ category, onBack, onOpen, onToast }) {
   // Kelompokkan per tanggal pengajuan (created_at), seperti referensi.
   const groups = []
   for (const r of filtered) {
-    const dayKey = new Date(r.created_at).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })
+    const dayKey = new Date(r.created_at).toLocaleDateString(locale(), { day: '2-digit', month: 'short', year: 'numeric' })
     let g = groups.find((g) => g.dayKey === dayKey)
     if (!g) { g = { dayKey, items: [] }; groups.push(g) }
     g.items.push(r)
@@ -140,13 +141,13 @@ function ApprovalList({ category, onBack, onOpen, onToast }) {
 
       <div className="search-box">
         <Search size={18} />
-        <input placeholder="Cari..." value={query} onChange={(e) => setQuery(e.target.value)} />
+        <input placeholder={tx("Cari...")} value={query} onChange={(e) => setQuery(e.target.value)} />
       </div>
 
       {rows === null ? (
-        <div className="empty-state"><p>Memuat...</p></div>
+        <div className="empty-state"><p>{tx("Memuat...")}</p></div>
       ) : filtered.length === 0 ? (
-        <div className="empty-state"><h3>Tidak ada pengajuan</h3><p>Pengajuan yang perlu Anda tinjau akan tampil di sini.</p></div>
+        <div className="empty-state"><h3>{tx("Tidak ada pengajuan")}</h3><p>{tx("Pengajuan yang perlu Anda tinjau akan tampil di sini.")}</p></div>
       ) : (
         groups.map((g) => (
           <div key={g.dayKey}>
@@ -179,11 +180,11 @@ function ApprovalList({ category, onBack, onOpen, onToast }) {
 function titleFor(category, r) {
   const d = r.details || {}
   switch (category) {
-    case 'leave_requests': return `Pengajuan cuti untuk ${d.type_name || 'Cuti'}`
-    case 'overtime_requests': return `Pengajuan lembur untuk ${fmtDay(d.work_date)}`
-    case 'reimbursement_requests': return `Pengajuan reimbursement untuk ${d.category_name || 'Reimbursement'}`
-    case 'shift_change_requests': return `Pengajuan ubah shift untuk ${fmtDay(d.work_date)}`
-    case 'absence_requests': return `Pengajuan presensi untuk ${fmtDay(d.work_date)}`
+    case 'leave_requests': return tx("Pengajuan cuti untuk {0}", [d.type_name || tx("Cuti")])
+    case 'overtime_requests': return tx("Pengajuan lembur untuk {0}", [fmtDay(d.work_date)])
+    case 'reimbursement_requests': return tx("Pengajuan reimbursement untuk {0}", [tx(d.category_name) || tx("Reimbursement")])
+    case 'shift_change_requests': return tx("Pengajuan ubah shift untuk {0}", [fmtDay(d.work_date)])
+    case 'absence_requests': return tx("Pengajuan presensi untuk {0}", [fmtDay(d.work_date)])
     default: return ''
   }
 }
@@ -194,38 +195,38 @@ function bulletsFor(category, r) {
   switch (category) {
     case 'leave_requests':
       lines.push(d.start_date === d.end_date
-        ? `${fmtDay(d.start_date)} (${d.total_days} hari)`
-        : `${fmtDay(d.start_date)} - ${fmtDay(d.end_date)} (${d.total_days} hari)`)
+        ? tx("{0} ({1} hari)", [fmtDay(d.start_date), d.total_days])
+        : tx("{0} - {1} ({2} hari)", [fmtDay(d.start_date), fmtDay(d.end_date), d.total_days]))
       break
     case 'overtime_requests':
       lines.push(`Jam: ${d.start_time?.slice(0, 5)} - ${d.end_time?.slice(0, 5)}`)
       break
     case 'reimbursement_requests':
-      lines.push(`Jumlah: Rp ${Number(d.amount || 0).toLocaleString('id-ID')}`)
+      lines.push(tx("Jumlah: Rp {0}", [Number(d.amount || 0).toLocaleString('id-ID')]))
       break
     case 'shift_change_requests':
-      lines.push(`${d.from_shift_name || '-'} menjadi ${d.to_is_day_off ? 'Off' : (d.to_shift_name || '-')}`)
+      lines.push(tx("{0} menjadi {1}", [d.from_shift_name || '-', d.to_is_day_off ? 'Off' : (d.to_shift_name || '-')]))
       break
     case 'absence_requests':
       if (d.requested_clock_in || d.requested_clock_out) {
-        lines.push(`Usulan: ${d.requested_clock_in?.slice(0, 5) || '-'} - ${d.requested_clock_out?.slice(0, 5) || '-'}`)
+        lines.push(tx("Usulan: {0} - {1}", [d.requested_clock_in?.slice(0, 5) || '-', d.requested_clock_out?.slice(0, 5) || '-']))
       }
       break
   }
-  if (r.reason) lines.push(`Alasan: ${r.reason}`)
+  if (r.reason) lines.push(tx("Alasan: {0}", [r.reason]))
   return lines
 }
 
 function fmtDay(d) {
-  return d ? new Date(d).toLocaleDateString('id-ID', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' }) : '-'
+  return d ? new Date(d).toLocaleDateString(locale(), { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' }) : '-'
 }
 
 function StatusPill({ status }) {
   const map = {
-    pending: { label: 'Menunggu persetujuan', bg: '#FBEEDD', fg: '#B4650C' },
-    approved: { label: 'Disetujui', bg: '#DCF3E6', fg: '#1E8E5A' },
-    rejected: { label: 'Ditolak', bg: '#FBE1DD', fg: '#C0392B' },
-    cancelled: { label: 'Dibatalkan', bg: '#eee', fg: '#888' },
+    pending: { label: tx("Menunggu persetujuan"), bg: '#FBEEDD', fg: '#B4650C' },
+    approved: { label: tx("Disetujui"), bg: '#DCF3E6', fg: '#1E8E5A' },
+    rejected: { label: tx("Ditolak"), bg: '#FBE1DD', fg: '#C0392B' },
+    cancelled: { label: tx("Dibatalkan"), bg: '#eee', fg: '#888' },
   }
   const s = map[status] || map.pending
   return (
@@ -251,7 +252,7 @@ function ApprovalDetail({ table, id, onBack, onToast, onDecided }) {
     const { error } = await supabase.rpc('decide_request', { p_table: table, p_request_id: id, p_approve: approve })
     setBusy(false)
     if (error) { onToast?.(error.message); return }
-    onToast?.(approve ? 'Pengajuan disetujui' : 'Pengajuan ditolak')
+    onToast?.(approve ? tx("Pengajuan disetujui") : tx("Pengajuan ditolak"))
     onDecided?.()
     load()
   }
@@ -260,15 +261,15 @@ function ApprovalDetail({ table, id, onBack, onToast, onDecided }) {
     return (
       <div>
         <div className="page-header"><button className="back-btn" onClick={onBack}><ArrowLeft size={22} /></button><h1>Detail</h1><span style={{ width: 22 }} /></div>
-        <div className="empty-state"><p>Memuat...</p></div>
+        <div className="empty-state"><p>{tx("Memuat...")}</p></div>
       </div>
     )
   }
 
   const r = detail.row
   const cat = CATEGORIES.find((c) => c.key === table)
-  const submittedAt = new Date(r.created_at).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) +
-    ' pukul ' + new Date(r.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
+  const submittedAt = new Date(r.created_at).toLocaleDateString(locale(), { day: '2-digit', month: 'short', year: 'numeric' }) +
+    ' pukul ' + new Date(r.created_at).toLocaleTimeString(locale(), { hour: '2-digit', minute: '2-digit' })
 
   return (
     <div>
@@ -292,13 +293,13 @@ function ApprovalDetail({ table, id, onBack, onToast, onDecided }) {
 
         {r.reason && (
           <div style={{ marginTop: 14 }}>
-            <div style={{ fontSize: 12.5, color: 'var(--text-muted)' }}>Alasan</div>
+            <div style={{ fontSize: 12.5, color: 'var(--text-muted)' }}>{tx("Alasan")}</div>
             <div style={{ fontSize: 15, marginTop: 2 }}>{r.reason}</div>
           </div>
         )}
 
         <div style={{ marginTop: 18 }}>
-          <div style={{ fontSize: 12.5, color: 'var(--text-muted)', marginBottom: 8 }}>Status pengajuan</div>
+          <div style={{ fontSize: 12.5, color: 'var(--text-muted)', marginBottom: 8 }}>{tx("Status pengajuan")}</div>
           <Timeline row={r} detail={detail} />
         </div>
       </div>
@@ -309,14 +310,12 @@ function ApprovalDetail({ table, id, onBack, onToast, onDecided }) {
             flex: 1, padding: 13, borderRadius: 12, border: '1px solid #C0392B', background: '#fff', color: '#C0392B',
             fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, cursor: 'pointer',
           }}>
-            <X size={17} /> Tolak
-          </button>
+            <X size={17} />{' '}{tx("Tolak")}</button>
           <button onClick={() => decide(true)} disabled={busy} style={{
             flex: 1, padding: 13, borderRadius: 12, border: 'none', background: '#1E8E5A', color: '#fff',
             fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, cursor: 'pointer',
           }}>
-            <Check size={17} /> Setuju
-          </button>
+            <Check size={17} />{' '}{tx("Setuju")}</button>
         </div>
       )}
     </div>
@@ -326,20 +325,20 @@ function ApprovalDetail({ table, id, onBack, onToast, onDecided }) {
 function FieldRows({ table, row }) {
   const rows = []
   if (table === 'leave_requests') {
-    rows.push(['Tanggal', `${fmt(row.start_date)} - ${fmt(row.end_date)} (${row.total_days} hari)`])
+    rows.push([tx("Tanggal"), tx("{0} - {1} ({2} hari)", [fmt(row.start_date), fmt(row.end_date), row.total_days])])
   } else if (table === 'overtime_requests') {
-    rows.push(['Tanggal', fmt(row.work_date)])
-    rows.push(['Jam', `${row.start_time?.slice(0, 5)} - ${row.end_time?.slice(0, 5)}`])
+    rows.push([tx("Tanggal"), fmt(row.work_date)])
+    rows.push([tx("Jam"), `${row.start_time?.slice(0, 5)} - ${row.end_time?.slice(0, 5)}`])
   } else if (table === 'reimbursement_requests') {
-    rows.push(['Jumlah', 'Rp ' + Number(row.amount).toLocaleString('id-ID')])
-    if (row.description) rows.push(['Deskripsi', row.description])
+    rows.push([tx("Jumlah"), 'Rp ' + Number(row.amount).toLocaleString('id-ID')])
+    if (row.description) rows.push([tx("Deskripsi"), row.description])
   } else if (table === 'shift_change_requests') {
-    rows.push(['Tanggal', fmt(row.work_date)])
-    rows.push(['Menjadi', row.to_is_day_off ? 'Off' : 'Shift baru'])
+    rows.push([tx("Tanggal"), fmt(row.work_date)])
+    rows.push([tx("Menjadi"), row.to_is_day_off ? 'Off' : tx("Shift baru")])
   } else if (table === 'absence_requests') {
-    rows.push(['Tanggal', fmt(row.work_date)])
+    rows.push([tx("Tanggal"), fmt(row.work_date)])
     if (row.requested_clock_in || row.requested_clock_out) {
-      rows.push(['Usulan jam', `${row.requested_clock_in?.slice(0, 5) || '-'} - ${row.requested_clock_out?.slice(0, 5) || '-'}`])
+      rows.push([tx("Usulan jam"), `${row.requested_clock_in?.slice(0, 5) || '-'} - ${row.requested_clock_out?.slice(0, 5) || '-'}`])
     }
   }
   return (
@@ -355,19 +354,19 @@ function FieldRows({ table, row }) {
 }
 
 function fmt(d) {
-  return d ? new Date(d).toLocaleDateString('id-ID', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' }) : '-'
+  return d ? new Date(d).toLocaleDateString(locale(), { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' }) : '-'
 }
 
 function Timeline({ row, detail }) {
   const items = [
-    { label: `Diajukan oleh ${detail.requester_name}`, time: row.created_at, color: '#4356C4', done: true },
+    { label: tx("Diajukan oleh {0}", [detail.requester_name]), time: row.created_at, color: '#4356C4', done: true },
   ]
   if (row.status === 'pending') {
-    items.push({ label: `Menunggu persetujuan dari ${detail.manager_name || 'HR'}`, time: null, color: '#c58a12', pending: true })
+    items.push({ label: tx("Menunggu persetujuan dari {0}", [detail.manager_name || 'HR']), time: null, color: '#c58a12', pending: true })
   } else if (row.status === 'approved') {
-    items.push({ label: `Disetujui oleh ${detail.approver_name || 'HR'}`, time: row.decided_at, color: '#1E8E5A', done: true })
+    items.push({ label: tx("Disetujui oleh {0}", [detail.approver_name || 'HR']), time: row.decided_at, color: '#1E8E5A', done: true })
   } else if (row.status === 'rejected') {
-    items.push({ label: `Ditolak oleh ${detail.approver_name || 'HR'}`, time: row.decided_at, color: '#C0392B', done: true })
+    items.push({ label: tx("Ditolak oleh {0}", [detail.approver_name || 'HR']), time: row.decided_at, color: '#C0392B', done: true })
   }
 
   return (
@@ -382,7 +381,7 @@ function Timeline({ row, detail }) {
             <div style={{ fontSize: 14.5, fontWeight: it.pending ? 400 : 600 }}>{it.label}</div>
             {it.time && (
               <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>
-                {new Date(it.time).toLocaleDateString('id-ID', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' })}, {new Date(it.time).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
+                {new Date(it.time).toLocaleDateString(locale(), { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' })}, {new Date(it.time).toLocaleTimeString(locale(), { hour: '2-digit', minute: '2-digit' })}
               </div>
             )}
           </div>

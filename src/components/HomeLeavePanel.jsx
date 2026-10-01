@@ -3,6 +3,7 @@ import { User } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
 import { toDateStr } from '../lib/dateUtils'
 
+import { tx } from '../lib/i18n'
 // Panel kanan Beranda desktop (gaya Talenta): "Sakit Used", "Unpaid Leave Used"
 // dan "Who's Off". Data dari RPC get_leave_summary & get_whos_off
 // (lihat supabase/migrations/20260930_home_leave_summary_whos_off.sql).
@@ -15,7 +16,7 @@ const linkBtn = {
 
 function formatDays(n) {
   const v = Number(n) || 0
-  return `${v} ${v > 1 ? 'Days' : 'Day'}`
+  return `${v} ${v > 1 ? tx("Days") : tx("Day")}`
 }
 
 function initials(name) {
@@ -70,33 +71,33 @@ export default function HomeLeavePanel({ onNavigate }) {
       <div style={cardStyle}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
           <StatBlock
-            label="Sakit Used"
+            label={tx("Sakit Used")}
             value={summary ? formatDays(summary.sakit_used) : '…'}
-            actionLabel="Request sakit"
+            actionLabel={tx("Request sakit")}
             onAction={() => onNavigate('cuti-new')}
           />
           <StatBlock
-            label="Unpaid Leave Used"
+            label={tx("Unpaid Leave Used")}
             value={summary ? formatDays(summary.unpaid_used) : '…'}
-            actionLabel="Request unpaid leave"
+            actionLabel={tx("Request unpaid leave")}
             onAction={() => onNavigate('cuti-new')}
           />
         </div>
         <div style={{ borderTop: '1px solid var(--border)', marginTop: 18, paddingTop: 14 }}>
-          <button onClick={() => onNavigate('cuti')} style={linkBtn}>View all</button>
+          <button onClick={() => onNavigate('cuti')} style={linkBtn}>{tx("View all")}</button>
         </div>
       </div>
 
       <div style={{ ...cardStyle, padding: 0, overflow: 'hidden' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 20px' }}>
-          <div style={{ fontWeight: 700, fontSize: 14.5 }}>Who's Off</div>
+          <div style={{ fontWeight: 700, fontSize: 14.5 }}>{tx("Who's Off")}</div>
           <select
             value={offDay}
             onChange={(e) => setOffDay(e.target.value)}
             style={{ border: 'none', background: 'none', color: 'var(--text-muted)', fontSize: 13, cursor: 'pointer' }}
           >
-            <option value="today">Today</option>
-            <option value="tomorrow">Tomorrow</option>
+            <option value="today">{tx("Today")}</option>
+            <option value="tomorrow">{tx("Tomorrow")}</option>
           </select>
         </div>
 
@@ -106,9 +107,9 @@ export default function HomeLeavePanel({ onNavigate }) {
 
         <div style={{ padding: '6px 20px 12px', maxHeight: 280, overflowY: 'auto' }}>
           {offLoading ? (
-            <p style={{ fontSize: 13, color: 'var(--text-muted)', margin: '10px 0' }}>Memuat…</p>
+            <p style={{ fontSize: 13, color: 'var(--text-muted)', margin: '10px 0' }}>{tx("Memuat…")}</p>
           ) : offList.length === 0 ? (
-            <p style={{ fontSize: 13, color: 'var(--text-muted)', margin: '10px 0' }}>Tidak ada yang cuti.</p>
+            <p style={{ fontSize: 13, color: 'var(--text-muted)', margin: '10px 0' }}>{tx("Tidak ada yang cuti.")}</p>
           ) : offList.map((p) => (
             <div key={p.employee_id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 0' }}>
               {p.avatar_url
@@ -120,7 +121,7 @@ export default function HomeLeavePanel({ onNavigate }) {
                 )}
               <div style={{ minWidth: 0 }}>
                 <div style={{ fontWeight: 600, fontSize: 13.5, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.full_name}</div>
-                <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{p.leave_type || 'Cuti'}</div>
+                <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{p.leave_type || tx("Cuti")}</div>
               </div>
             </div>
           ))}

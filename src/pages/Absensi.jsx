@@ -7,8 +7,9 @@ import AttendanceDetail from '../components/AttendanceDetail'
 import AttendanceLogDesktop, { DesktopAbsensiHeader } from '../components/AttendanceLogDesktop'
 import { useIsDesktop } from '../lib/useIsDesktop'
 
-const MONTHS_ID = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des']
-const MONTHS_FULL = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember']
+import { tx, locale } from '../lib/i18n'
+const MONTHS_ID = ['Jan', 'Feb', 'Mar', 'Apr', tx("Mei"), 'Jun', 'Jul', tx("Agu"), 'Sep', tx("Okt"), 'Nov', tx("Des")]
+const MONTHS_FULL = [tx("Januari"), tx("Februari"), tx("Maret"), 'April', tx("Mei"), tx("Juni"), tx("Juli"), tx("Agustus"), 'September', tx("Oktober"), 'November', tx("Desember")]
 
 function pad2(n) { return String(n).padStart(2, '0') }
 
@@ -125,11 +126,11 @@ export default function Absensi({ employee, onBack, startNew, onToast, onNavigat
   function dayIssue(a) {
     const shift = shiftByDate[a.work_date]
     if (a.work_date > todayStr() || shift?.is_day_off) return null
-    if (!a.clock_in && !a.clock_out) return { type: 'absent', label: 'Tidak Hadir' }
-    if (a.clock_in && !a.clock_out) return { type: 'no_out', label: 'Belum Clock Out' }
-    if (!a.clock_in && a.clock_out) return { type: 'no_in', label: 'Belum Clock In' }
-    if (a.status === 'late') return { type: 'late_in', label: 'Telat Clock In' }
-    if (isEarlyClockOut(a)) return { type: 'early_out', label: 'Early Clock Out' }
+    if (!a.clock_in && !a.clock_out) return { type: 'absent', label: tx("Tidak Hadir") }
+    if (a.clock_in && !a.clock_out) return { type: 'no_out', label: tx("Belum Clock Out") }
+    if (!a.clock_in && a.clock_out) return { type: 'no_in', label: tx("Belum Clock In") }
+    if (a.status === 'late') return { type: 'late_in', label: tx("Telat Clock In") }
+    if (isEarlyClockOut(a)) return { type: 'early_out', label: tx("Early Clock Out") }
     return null
   }
 
@@ -144,7 +145,7 @@ export default function Absensi({ employee, onBack, startNew, onToast, onNavigat
       <CorrectionRequestForm
         {...correctionTarget}
         onCancel={() => setCorrectionTarget(null)}
-        onDone={() => { setCorrectionTarget(null); setDayDetail(null); load(); onToast('Pengajuan presensi terkirim') }}
+        onDone={() => { setCorrectionTarget(null); setDayDetail(null); load(); onToast(tx("Pengajuan presensi terkirim")) }}
         onToast={onToast}
       />
     )
@@ -163,11 +164,11 @@ export default function Absensi({ employee, onBack, startNew, onToast, onNavigat
   const earlyRows = pastWorkDays.filter(isEarlyClockOut)
 
   const STAT_CARDS = [
-    { key: 'absent', label: 'Absent', rows: absentRows, issue: { type: 'absent', label: 'Tidak Hadir' } },
-    { key: 'late', label: 'Late clock in', rows: lateRows, issue: { type: 'late_in', label: 'Telat Clock In' } },
-    { key: 'early', label: 'Early clock out', rows: earlyRows, issue: { type: 'early_out', label: 'Early Clock Out' } },
-    { key: 'noIn', label: 'No clock in', rows: noInRows, issue: { type: 'no_in', label: 'Belum Clock In' } },
-    { key: 'noOut', label: 'No clock out', rows: noOutRows, issue: { type: 'no_out', label: 'Belum Clock Out' } },
+    { key: 'absent', label: tx("Absent"), rows: absentRows, issue: { type: 'absent', label: tx("Tidak Hadir") } },
+    { key: 'late', label: tx("Late clock in"), rows: lateRows, issue: { type: 'late_in', label: tx("Telat Clock In") } },
+    { key: 'early', label: tx("Early clock out"), rows: earlyRows, issue: { type: 'early_out', label: tx("Early Clock Out") } },
+    { key: 'noIn', label: tx("No clock in"), rows: noInRows, issue: { type: 'no_in', label: tx("Belum Clock In") } },
+    { key: 'noOut', label: tx("No clock out"), rows: noOutRows, issue: { type: 'no_out', label: tx("Belum Clock Out") } },
   ]
 
   return (
@@ -178,13 +179,13 @@ export default function Absensi({ employee, onBack, startNew, onToast, onNavigat
         <>
           <div className="page-header">
             <button className="back-btn" onClick={onBack}><ArrowLeft size={22} /></button>
-            <h1>Daftar Absensi</h1>
+            <h1>{tx("Daftar Absensi")}</h1>
             <span style={{ width: 22 }} />
           </div>
 
           <div className="tabs on-red" style={{ background: 'var(--red)', margin: 0, padding: '0 16px 10px' }}>
-            <button className={tab === 'riwayat' ? 'active' : ''} onClick={() => setTab('riwayat')}>Riwayat</button>
-            <button className={tab === 'absensi' ? 'active' : ''} onClick={() => setTab('absensi')}>Absensi</button>
+            <button className={tab === 'riwayat' ? 'active' : ''} onClick={() => setTab('riwayat')}>{tx("Riwayat")}</button>
+            <button className={tab === 'absensi' ? 'active' : ''} onClick={() => setTab('absensi')}>{tx("Absensi")}</button>
             <button className={tab === 'shift' ? 'active' : ''} onClick={() => setTab('shift')}>Shift</button>
           </div>
         </>
@@ -199,7 +200,7 @@ export default function Absensi({ employee, onBack, startNew, onToast, onNavigat
           today={today}
           dayIssue={dayIssue}
           monthLabel={`${MONTHS_FULL[monthIndex]} ${monthYear}`}
-          periodLabel={`${new Date(monthStart + 'T00:00:00').toLocaleDateString('id-ID', { day: '2-digit', month: 'short' })} - ${new Date(monthEnd + 'T00:00:00').toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })}`}
+          periodLabel={`${new Date(monthStart + 'T00:00:00').toLocaleDateString(locale(), { day: '2-digit', month: 'short' })} - ${new Date(monthEnd + 'T00:00:00').toLocaleDateString(locale(), { day: '2-digit', month: 'short', year: 'numeric' })}`}
           onOpenMonth={() => setShowMonthPicker(true)}
           statCards={STAT_CARDS}
           onOpenIssue={setIssueList}
@@ -214,8 +215,7 @@ export default function Absensi({ employee, onBack, startNew, onToast, onNavigat
               <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}><Calendar size={16} /> {MONTHS_ID[monthIndex]} {monthYear}</span>
               <ChevronRight size={16} style={{ transform: 'rotate(90deg)' }} />
             </button>
-            <div style={{ fontSize: 12, color: 'var(--text-muted)', margin: '6px 2px 0' }}>
-              Periode {new Date(monthStart).toLocaleDateString('id-ID', { day: '2-digit', month: 'short' })} - {new Date(monthEnd).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })}
+            <div style={{ fontSize: 12, color: 'var(--text-muted)', margin: '6px 2px 0' }}>{tx("Periode")}{' '}{new Date(monthStart).toLocaleDateString(locale(), { day: '2-digit', month: 'short' })} - {new Date(monthEnd).toLocaleDateString(locale(), { day: '2-digit', month: 'short', year: 'numeric' })}
             </div>
           </div>
 
@@ -229,19 +229,19 @@ export default function Absensi({ employee, onBack, startNew, onToast, onNavigat
             ))}
           </div>
 
-          {loading ? <p style={{ padding: 16, color: '#a39c94' }}>Memuat...</p> : attendance.length === 0 ? (
-            <div className="empty-state"><h3>Tidak ada data</h3><p>Belum ada catatan absensi di bulan ini.</p></div>
+          {loading ? <p style={{ padding: 16, color: '#a39c94' }}>{tx("Memuat...")}</p> : attendance.length === 0 ? (
+            <div className="empty-state"><h3>{tx("Tidak ada data")}</h3><p>{tx("Belum ada catatan absensi di bulan ini.")}</p></div>
           ) : attendance.map((a) => {
             const isDayOff = !!shiftByDate[a.work_date]?.is_day_off
             const issue = dayIssue(a)
             return (
               <button key={a.id} className="attendance-row" style={{ width: '100%', border: 'none', cursor: 'pointer', textAlign: 'left' }} onClick={() => setDayDetail(a)}>
                 <div className={`date ${isDayOff ? 'libur' : ''}`}>
-                  <b>{new Date(a.work_date).getDate()} {new Date(a.work_date).toLocaleDateString('id-ID', { month: 'short' })}</b>
-                  <span style={issue ? { color: '#C0392B', fontWeight: 600 } : undefined}>{isDayOff ? 'Libur' : (issue ? issue.label : 'Jam kerja')}</span>
+                  <b>{new Date(a.work_date).getDate()} {new Date(a.work_date).toLocaleDateString(locale(), { month: 'short' })}</b>
+                  <span style={issue ? { color: '#C0392B', fontWeight: 600 } : undefined}>{isDayOff ? tx("Libur") : (issue ? issue.label : tx("Jam kerja"))}</span>
                 </div>
-                <div className="time">{a.clock_in ? new Date(a.clock_in).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : '-'}</div>
-                <div className="time">{a.clock_out ? new Date(a.clock_out).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : '-'}</div>
+                <div className="time">{a.clock_in ? new Date(a.clock_in).toLocaleTimeString(locale(), { hour: '2-digit', minute: '2-digit' }) : '-'}</div>
+                <div className="time">{a.clock_out ? new Date(a.clock_out).toLocaleTimeString(locale(), { hour: '2-digit', minute: '2-digit' }) : '-'}</div>
                 <ChevronRight size={18} className="chev" />
               </button>
             )
@@ -264,26 +264,26 @@ export default function Absensi({ employee, onBack, startNew, onToast, onNavigat
               onFilterClick={() => setShowAbsStatusSheet(true)}
               filterActive={!!absStatusFilter}
             />
-            {loading ? <p style={{ padding: 16, color: '#a39c94' }}>Memuat...</p> :
+            {loading ? <p style={{ padding: 16, color: '#a39c94' }}>{tx("Memuat...")}</p> :
             filteredAbs.length === 0 ? (
               <div className="empty-state">
                 <ScrollText size={40} color="#c8c1b9" />
-                <h3>Belum ada pengajuan</h3>
-                <p>Pengajuan absensi Anda akan tampil di sini.</p>
+                <h3>{tx("Belum ada pengajuan")}</h3>
+                <p>{tx("Pengajuan absensi Anda akan tampil di sini.")}</p>
               </div>
             ) : filteredAbs.map((r) => (
               <div key={r.id} className="shift-hist-row">
                 <div className="top">
-                  <div className="date">{new Date(r.work_date).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })}</div>
+                  <div className="date">{new Date(r.work_date).toLocaleDateString(locale(), { day: '2-digit', month: 'short', year: 'numeric' })}</div>
                   <span className={`status-${r.status}`}>{statusLabel(r.status)}</span>
                 </div>
                 {(r.requested_clock_in || r.requested_clock_out) && (
-                  <div className="desc">Usulan: {r.requested_clock_in?.slice(0, 5) || '-'} - {r.requested_clock_out?.slice(0, 5) || '-'}</div>
+                  <div className="desc">{tx("Usulan:")}{' '}{r.requested_clock_in?.slice(0, 5) || '-'} - {r.requested_clock_out?.slice(0, 5) || '-'}</div>
                 )}
                 {r.reason && <div className="desc">{r.reason}</div>}
               </div>
             ))}
-            <button className="fab-bottom-btn" onClick={() => setShowForm(true)}>Ajukan absensi</button>
+            <button className="fab-bottom-btn" onClick={() => setShowForm(true)}>{tx("Ajukan absensi")}</button>
 
             {showAbsMonthPicker && (
               <MonthPickerSheet year={absFilterMonth.y} monthIndex={absFilterMonth.m}
@@ -313,22 +313,22 @@ export default function Absensi({ employee, onBack, startNew, onToast, onNavigat
               onFilterClick={() => setShowShiftStatusSheet(true)}
               filterActive={!!shiftStatusFilter}
             />
-            {loading ? <p style={{ padding: 16, color: '#a39c94' }}>Memuat...</p> :
+            {loading ? <p style={{ padding: 16, color: '#a39c94' }}>{tx("Memuat...")}</p> :
             filteredShift.length === 0 ? (
-              <div className="empty-state"><h3>Belum ada pengajuan</h3><p>Pengajuan ubah shift Anda akan tampil di sini.</p></div>
+              <div className="empty-state"><h3>{tx("Belum ada pengajuan")}</h3><p>{tx("Pengajuan ubah shift Anda akan tampil di sini.")}</p></div>
             ) : filteredShift.map((r) => (
               <div key={r.id} className="shift-hist-row">
                 <div className="top">
-                  <div className="date">{new Date(r.work_date).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })}</div>
+                  <div className="date">{new Date(r.work_date).toLocaleDateString(locale(), { day: '2-digit', month: 'short', year: 'numeric' })}</div>
                   <span className={`status-${r.status}`}>{statusLabel(r.status)}</span>
                 </div>
                 <div className="desc">
-                  {r.from_shift?.name || '-'} ({r.from_shift?.start_time?.slice(0,5)} - {r.from_shift?.end_time?.slice(0,5)}) menjadi{' '}
+                  {r.from_shift?.name || '-'} ({r.from_shift?.start_time?.slice(0,5)} - {r.from_shift?.end_time?.slice(0,5)}{tx(") menjadi")}{' '}
                   {r.to_is_day_off ? 'Off (00:00 - 00:00)' : `${r.to_shift?.name} (${r.to_shift?.start_time?.slice(0,5)} - ${r.to_shift?.end_time?.slice(0,5)})`}
                 </div>
               </div>
             ))}
-            <button className="fab-bottom-btn" onClick={() => onNavigate?.('shift-new')}>Ajukan ubah shift</button>
+            <button className="fab-bottom-btn" onClick={() => onNavigate?.('shift-new')}>{tx("Ajukan ubah shift")}</button>
 
             {showShiftMonthPicker && (
               <MonthPickerSheet year={shiftFilterMonth.y} monthIndex={shiftFilterMonth.m}
@@ -401,9 +401,7 @@ function MonthPickerSheet({ year, monthIndex, onClose, onApply }) {
         <button onClick={() => onApply(y, m)} style={{
           width: '100%', border: 'none', borderTop: '1px solid var(--border)', background: 'none', padding: '14px 0',
           color: 'var(--blue-dark)', fontWeight: 700, fontSize: 15, letterSpacing: 0.5, cursor: 'pointer',
-        }}>
-          LIHAT HASIL
-        </button>
+        }}>{tx("LIHAT HASIL")}</button>
       </div>
     </div>
   )
@@ -425,7 +423,7 @@ function FilterBar({ label, onLabelClick, onFilterClick, filterActive }) {
 }
 
 const STATUS_FILTER_OPTIONS = [
-  ['', 'Semua'], ['pending', 'Menunggu'], ['approved', 'Disetujui'], ['rejected', 'Ditolak'], ['cancelled', 'Dibatalkan'],
+  ['', tx("Semua")], ['pending', tx("Menunggu")], ['approved', tx("Disetujui")], ['rejected', tx("Ditolak")], ['cancelled', tx("Dibatalkan")],
 ]
 
 function StatusFilterSheet({ current, onClose, onApply }) {
@@ -433,7 +431,7 @@ function StatusFilterSheet({ current, onClose, onApply }) {
     <div className="sheet-overlay" onClick={onClose}>
       <div className="sheet" onClick={(e) => e.stopPropagation()}>
         <div className="sheet-handle" />
-        <div className="sheet-title-row"><h3 style={{ fontSize: 17 }}>Filter Status</h3></div>
+        <div className="sheet-title-row"><h3 style={{ fontSize: 17 }}>{tx("Filter Status")}</h3></div>
         {STATUS_FILTER_OPTIONS.map(([val, label]) => (
           <button key={val} onClick={() => onApply(val)} style={{
             width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '13px 4px',
@@ -462,7 +460,7 @@ function IssueListSheet({ issueList, onClose, onPick }) {
             width: '100%', display: 'flex', alignItems: 'center', padding: '13px 4px', background: 'none', border: 'none',
             borderBottom: '1px solid #f1ece6', cursor: 'pointer', textAlign: 'left', fontSize: 15,
           }}>
-            <span style={{ flex: 1 }}>{new Date(row.work_date + 'T00:00:00').toLocaleDateString('id-ID', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' })}</span>
+            <span style={{ flex: 1 }}>{new Date(row.work_date + 'T00:00:00').toLocaleDateString(locale(), { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' })}</span>
             <ChevronRight size={18} color="#bbb" />
           </button>
         ))}
@@ -472,8 +470,8 @@ function IssueListSheet({ issueList, onClose, onPick }) {
 }
 
 function DayDetailSheet({ attendance, shift, issue, onClose, onOpenEvent, onAjukan }) {
-  const dateLabel = new Date(attendance.work_date + 'T00:00:00').toLocaleDateString('id-ID', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' })
-  const fmtTime = (iso) => iso ? new Date(iso).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : null
+  const dateLabel = new Date(attendance.work_date + 'T00:00:00').toLocaleDateString(locale(), { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' })
+  const fmtTime = (iso) => iso ? new Date(iso).toLocaleTimeString(locale(), { hour: '2-digit', minute: '2-digit' }) : null
 
   return (
     <div className="sheet-overlay" onClick={onClose}>
@@ -484,7 +482,7 @@ function DayDetailSheet({ attendance, shift, issue, onClose, onOpenEvent, onAjuk
           <button className="sheet-close" onClick={onClose}><X size={20} /></button>
         </div>
         <div style={{ fontSize: 13.5, color: 'var(--text-muted)', marginBottom: 12 }}>
-          {shift ? `${shift.shift_name} (${shift.start_time?.slice(0, 5)}-${shift.end_time?.slice(0, 5)})` : 'Belum ada jadwal'}
+          {shift ? `${shift.shift_name} (${shift.start_time?.slice(0, 5)}-${shift.end_time?.slice(0, 5)})` : tx("Belum ada jadwal")}
         </div>
 
         {issue && (
@@ -496,9 +494,7 @@ function DayDetailSheet({ attendance, shift, issue, onClose, onOpenEvent, onAjuk
             <button onClick={() => onAjukan(issue)} style={{
               background: '#fff', border: 'none', borderRadius: 10, padding: '8px 16px', fontWeight: 700,
               fontSize: 13.5, color: 'var(--text)', cursor: 'pointer', boxShadow: 'var(--shadow-xs)',
-            }}>
-              Ajukan
-            </button>
+            }}>{tx("Ajukan")}</button>
           </div>
         )}
 
@@ -526,7 +522,7 @@ function DayDetailSheet({ attendance, shift, issue, onClose, onOpenEvent, onAjuk
 }
 
 function statusLabel(s) {
-  return { pending: 'Menunggu', approved: 'Disetujui', rejected: 'Ditolak', cancelled: 'Dibatalkan' }[s] || s
+  return { pending: tx("Menunggu"), approved: tx("Disetujui"), rejected: tx("Ditolak"), cancelled: tx("Dibatalkan") }[s] || s
 }
 
 function CorrectionRequestForm({ attendance, shift, issue, onCancel, onDone, onToast }) {
@@ -539,22 +535,22 @@ function CorrectionRequestForm({ attendance, shift, issue, onCancel, onDone, onT
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
-  const dateLabel = new Date(attendance.work_date + 'T00:00:00').toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })
-  const actualLabel = `${attendance.clock_in ? new Date(attendance.clock_in).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : '-'} - ${attendance.clock_out ? new Date(attendance.clock_out).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : '-'}`
+  const dateLabel = new Date(attendance.work_date + 'T00:00:00').toLocaleDateString(locale(), { day: '2-digit', month: 'short', year: 'numeric' })
+  const actualLabel = `${attendance.clock_in ? new Date(attendance.clock_in).toLocaleTimeString(locale(), { hour: '2-digit', minute: '2-digit' }) : '-'} - ${attendance.clock_out ? new Date(attendance.clock_out).toLocaleTimeString(locale(), { hour: '2-digit', minute: '2-digit' }) : '-'}`
 
   async function submit(e) {
     e.preventDefault()
     setError('')
-    if (wantIn && !clockIn) { setError('Isi jam clock in yang diusulkan'); return }
-    if (wantOut && !clockOut) { setError('Isi jam clock out yang diusulkan'); return }
-    if (!wantIn && !wantOut) { setError('Centang minimal Clock in atau Clock out'); return }
+    if (wantIn && !clockIn) { setError(tx("Isi jam clock in yang diusulkan")); return }
+    if (wantOut && !clockOut) { setError(tx("Isi jam clock out yang diusulkan")); return }
+    if (!wantIn && !wantOut) { setError(tx("Centang minimal Clock in atau Clock out")); return }
     setLoading(true)
 
     let attachmentUrl = null
     if (file) {
       const path = `${attendance.employee_id}/${attendance.work_date}-${Date.now()}-${file.name}`
       const { error: upErr } = await supabase.storage.from('attendance-photos').upload(path, file)
-      if (upErr) { setLoading(false); setError('Gagal unggah lampiran: ' + upErr.message); return }
+      if (upErr) { setLoading(false); setError(tx("Gagal unggah lampiran: ") + upErr.message); return }
       const { data: pub } = supabase.storage.from('attendance-photos').getPublicUrl(path)
       attachmentUrl = pub.publicUrl
     }
@@ -573,12 +569,12 @@ function CorrectionRequestForm({ attendance, shift, issue, onCancel, onDone, onT
     <div>
       <div className="page-header">
         <button className="back-btn" onClick={onCancel}><ArrowLeft size={22} /></button>
-        <h1>Pengajuan presensi</h1>
+        <h1>{tx("Pengajuan presensi")}</h1>
         <span style={{ width: 22 }} />
       </div>
       <form className="form-page" onSubmit={submit}>
         <div className="field">
-          <label>Tanggal pengajuan</label>
+          <label>{tx("Tanggal pengajuan")}</label>
           <div style={{ position: 'relative' }}>
             <input value={dateLabel} disabled style={{ paddingRight: 40 }} />
             <Calendar size={18} color="#8a847c" style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)' }} />
@@ -590,7 +586,7 @@ function CorrectionRequestForm({ attendance, shift, issue, onCancel, onDone, onT
             <input value={shift ? `${shift.shift_name} (${shift.start_time?.slice(0, 5)}-${shift.end_time?.slice(0, 5)})` : '-'} disabled style={{ paddingRight: 40, background: '#f7f4f0' }} />
             <ChevronDown size={18} color="#8a847c" style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)' }} />
           </div>
-          <p style={{ fontSize: 12.5, color: 'var(--text-muted)', marginTop: 6 }}>Clock in-out saat ini: {actualLabel}</p>
+          <p style={{ fontSize: 12.5, color: 'var(--text-muted)', marginTop: 6 }}>{tx("Clock in-out saat ini:")}{' '}{actualLabel}</p>
         </div>
 
         <label style={{ display: 'flex', alignItems: 'center', gap: 10, fontWeight: 700, fontSize: 15, marginBottom: 8 }}>
@@ -614,18 +610,18 @@ function CorrectionRequestForm({ attendance, shift, issue, onCancel, onDone, onT
         </div>
 
         <div className="field">
-          <label>Alasan ({reason.length}/200)</label>
-          <textarea value={reason} onChange={(e) => setReason(e.target.value.slice(0, 200))} placeholder="Jelaskan alasan pengajuan..." />
+          <label>{tx("Alasan (")}{reason.length}/200)</label>
+          <textarea value={reason} onChange={(e) => setReason(e.target.value.slice(0, 200))} placeholder={tx("Jelaskan alasan pengajuan...")} />
         </div>
 
         <div className="field">
-          <label>Lampiran (opsional)</label>
+          <label>{tx("Lampiran (opsional)")}</label>
           <input type="file" accept="image/*" onChange={(e) => setFile(e.target.files?.[0] || null)} />
         </div>
 
         {error && <p className="error-text">{error}</p>}
-        <button className="primary-btn" disabled={loading} style={{ marginBottom: 10 }}>{loading ? 'Mengirim...' : 'Kirim'}</button>
-        <button type="button" className="primary-btn" style={{ background: '#eee', color: '#333' }} onClick={onCancel}>Batal</button>
+        <button className="primary-btn" disabled={loading} style={{ marginBottom: 10 }}>{loading ? tx("Mengirim...") : tx("Kirim")}</button>
+        <button type="button" className="primary-btn" style={{ background: '#eee', color: '#333' }} onClick={onCancel}>{tx("Batal")}</button>
       </form>
     </div>
   )
@@ -640,14 +636,14 @@ function AbsensiForm({ onDone, onCancel, onToast }) {
   async function submit(e) {
     e.preventDefault()
     setError('')
-    if (!date) { setError('Pilih tanggal'); return }
+    if (!date) { setError(tx("Pilih tanggal")); return }
     setLoading(true)
     const { error } = await supabase.rpc('submit_absence_request', {
       p_work_date: date, p_reason: reason, p_attachment_url: null,
     })
     setLoading(false)
     if (error) { setError(error.message); return }
-    onToast('Pengajuan absensi terkirim')
+    onToast(tx("Pengajuan absensi terkirim"))
     onDone()
   }
 
@@ -655,20 +651,20 @@ function AbsensiForm({ onDone, onCancel, onToast }) {
     <div>
       <div className="page-header">
         <button className="back-btn" onClick={onCancel}><ArrowLeft size={22} /></button>
-        <h1>Ajukan Absensi</h1>
+        <h1>{tx("Ajukan Absensi")}</h1>
         <span style={{ width: 22 }} />
       </div>
       <form className="form-page" onSubmit={submit}>
         <div className="field">
-          <label>Tanggal</label>
+          <label>{tx("Tanggal")}</label>
           <input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
         </div>
         <div className="field">
-          <label>Alasan</label>
-          <textarea value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Tambahkan alasan..." />
+          <label>{tx("Alasan")}</label>
+          <textarea value={reason} onChange={(e) => setReason(e.target.value)} placeholder={tx("Tambahkan alasan...")} />
         </div>
         {error && <p className="error-text">{error}</p>}
-        <button className="primary-btn" disabled={loading}>{loading ? 'Mengirim...' : 'Kirim pengajuan'}</button>
+        <button className="primary-btn" disabled={loading}>{loading ? tx("Mengirim...") : tx("Kirim pengajuan")}</button>
       </form>
     </div>
   )

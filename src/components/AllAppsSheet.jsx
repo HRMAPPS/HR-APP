@@ -3,6 +3,7 @@ import Sheet from './Sheet'
 import { ALL_APPS } from '../lib/menuConfig'
 import { useIsDesktop } from '../lib/useIsDesktop'
 
+import { tx } from '../lib/i18n'
 export default function AllAppsSheet({ onClose, onNavigate, onToast, employee }) {
   const isHr = employee?.role === 'hr' || employee?.role === 'admin'
   const isDesktop = useIsDesktop()
@@ -10,7 +11,7 @@ export default function AllAppsSheet({ onClose, onNavigate, onToast, employee })
 
   function go(app) {
     if (app.page) { onNavigate(app.page); onClose() }
-    else { onToast(`${app.label} segera hadir`); onClose() }
+    else { onToast(tx("{0} segera hadir", [app.label])); onClose() }
   }
 
   if (isDesktop) {
@@ -31,7 +32,7 @@ export default function AllAppsSheet({ onClose, onNavigate, onToast, employee })
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 22 }}>
-            <h3 style={{ margin: 0, fontSize: 20 }}>Semua Aplikasi</h3>
+            <h3 style={{ margin: 0, fontSize: 20 }}>{tx("Semua Aplikasi")}</h3>
             <button
               onClick={onClose}
               style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#666', borderRadius: '50%', padding: 4, display: 'flex' }}
@@ -59,7 +60,7 @@ export default function AllAppsSheet({ onClose, onNavigate, onToast, employee })
   }
 
   return (
-    <Sheet title="Semua Aplikasi" onClose={onClose}>
+    <Sheet title={tx("Semua Aplikasi")} onClose={onClose}>
       <div className="app-grid">
         {apps.map((app) => {
           const Icon = app.icon

@@ -7,6 +7,7 @@ import { useIsDesktop } from '../lib/useIsDesktop'
 import Avatar from '../components/Avatar'
 import { useAvatarsByName } from '../lib/useAvatarsByName'
 
+import { tx, locale } from '../lib/i18n'
 const APPROVAL_TABLES = ['leave_requests', 'overtime_requests', 'reimbursement_requests', 'shift_change_requests', 'absence_requests']
 
 function initials(name) {
@@ -62,16 +63,15 @@ export default function Inbox({ employee, onToast, onNavigate, onRead }) {
       <div className="topbar"><div style={{ fontSize: 24, fontWeight: 700 }}>Inbox</div></div>
 
       <div className="tabs">
-        <button className={tab === 'notifikasi' ? 'active' : ''} onClick={() => setTab('notifikasi')}>Notifikasi</button>
-        <button className={tab === 'approval' ? 'active' : ''} onClick={() => setTab('approval')}>
-          Butuh persetujuan{approvalCount > 0 ? ` (${approvalCount})` : ''}
+        <button className={tab === 'notifikasi' ? 'active' : ''} onClick={() => setTab('notifikasi')}>{tx("Notifikasi")}</button>
+        <button className={tab === 'approval' ? 'active' : ''} onClick={() => setTab('approval')}>{tx("Butuh persetujuan")}{approvalCount > 0 ? ` (${approvalCount})` : ''}
         </button>
       </div>
 
       {tab === 'notifikasi' && (
-        loading ? <div className="empty-state"><p>Memuat...</p></div> :
+        loading ? <div className="empty-state"><p>{tx("Memuat...")}</p></div> :
         items.length === 0 ? (
-          <div className="empty-state"><h3>Belum ada notifikasi</h3><p>Notifikasi Anda akan tampil di sini.</p></div>
+          <div className="empty-state"><h3>{tx("Belum ada notifikasi")}</h3><p>{tx("Notifikasi Anda akan tampil di sini.")}</p></div>
         ) : items.map((n) => (
           <button key={n.id} className="list-item" style={{ width: '100%', border: 'none', textAlign: 'left', cursor: 'pointer' }}
             onClick={() => openNotification(n)}>
@@ -86,7 +86,7 @@ export default function Inbox({ employee, onToast, onNavigate, onRead }) {
               <div className="name" style={{ fontWeight: n.is_read ? 500 : 700 }}>{n.title}</div>
               {n.body && <div className="sub">{n.body}</div>}
               <div className="sub" style={{ color: '#b0a99f', marginTop: 1 }}>
-                {new Date(n.created_at).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })}
+                {new Date(n.created_at).toLocaleDateString(locale(), { day: '2-digit', month: 'short', year: 'numeric' })}
               </div>
             </div>
             <ChevronRight size={18} color="#ccc" />

@@ -4,31 +4,32 @@ import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../lib/useAuth'
 import { useIsDesktop } from '../lib/useIsDesktop'
 
+import { tx, locale } from '../lib/i18n'
 function rupiah(n) {
   return Number(n || 0).toLocaleString('id-ID')
 }
 
 const PENDAPATAN_FIELDS = [
-  ['Tunjangan Jabatan', 'tunjangan_jabatan'],
-  ['Tunjangan Kinerja', 'tunjangan_kinerja'],
-  ['Tunjangan Fullshift', 'tunjangan_fullshift'],
+  [tx("Tunjangan Jabatan"), 'tunjangan_jabatan'],
+  [tx("Tunjangan Kinerja"), 'tunjangan_kinerja'],
+  [tx("Tunjangan Fullshift"), 'tunjangan_fullshift'],
   ['Business Trip Allowance', 'business_trip_allowance'],
-  ['Lembur', 'lembur'],
-  ['Insentif Penjualan', 'insentif_penjualan'],
-  ['Insentif Event', 'insentif_event'],
-  ['Lain-Lain', 'lain_lain'],
+  [tx("Lembur"), 'lembur'],
+  [tx("Insentif Penjualan"), 'insentif_penjualan'],
+  [tx("Insentif Event"), 'insentif_event'],
+  [tx("Lain-Lain"), 'lain_lain'],
   ['Medical Claim', 'medical_claim'],
-  ['Subsidi BPJS Kesehatan', 'subsidi_bpjs_kesehatan'],
+  [tx("Subsidi BPJS Kesehatan"), 'subsidi_bpjs_kesehatan'],
 ]
 const POTONGAN_FIELDS = [
-  ['Unpaid Leave', 'unpaid_leave'],
-  ['Hutang Karyawan', 'hutang_karyawan'],
-  ['Cicilan Seragam', 'cicilan_seragam'],
-  ['Potongan Stock Opname', 'potongan_stock_opname'],
-  ['Potongan Lain-Lain', 'potongan_lain_lain'],
-  ['BPJS Kesehatan Karyawan', 'bpjs_kesehatan_karyawan'],
-  ['JHT Karyawan', 'jht_karyawan'],
-  ['JP Karyawan', 'jp_karyawan'],
+  [tx("Unpaid Leave"), 'unpaid_leave'],
+  [tx("Hutang Karyawan"), 'hutang_karyawan'],
+  [tx("Cicilan Seragam"), 'cicilan_seragam'],
+  [tx("Potongan Stock Opname"), 'potongan_stock_opname'],
+  [tx("Potongan Lain-Lain"), 'potongan_lain_lain'],
+  [tx("BPJS Kesehatan Karyawan"), 'bpjs_kesehatan_karyawan'],
+  [tx("JHT Karyawan"), 'jht_karyawan'],
+  [tx("JP Karyawan"), 'jp_karyawan'],
   ['PPH 21', 'pph21'],
 ]
 
@@ -38,7 +39,7 @@ function cutoffRange(period) {
   const d = new Date(period)
   const end = new Date(d.getFullYear(), d.getMonth(), 24)
   const start = new Date(d.getFullYear(), d.getMonth() - 1, 25)
-  const fmt = (x) => x.toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' })
+  const fmt = (x) => x.toLocaleDateString(locale(), { day: '2-digit', month: 'long', year: 'numeric' })
   return `${fmt(start)} - ${fmt(end)}`
 }
 
@@ -50,7 +51,7 @@ async function downloadPayslipPdf(payslip, employee) {
   let y = 56
 
   const comp = payslip.components || {}
-  const periodLabel = new Date(payslip.period).toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })
+  const periodLabel = new Date(payslip.period).toLocaleDateString(locale(), { month: 'long', year: 'numeric' })
 
   // Header
   doc.setFont('times', 'italic')
@@ -65,7 +66,7 @@ async function downloadPayslipPdf(payslip, employee) {
   y += 30
   doc.setFont('helvetica', 'bold')
   doc.setFontSize(13)
-  doc.text(`Payslip ${periodLabel}`, marginX, y)
+  doc.text(tx("Payslip {0}", [periodLabel]), marginX, y)
 
   y += 22
   doc.setFont('helvetica', 'normal')
@@ -73,9 +74,9 @@ async function downloadPayslipPdf(payslip, employee) {
   const colL = marginX
   const colR = pageW / 2 + 10
   const rowsInfo = [
-    ['Payroll cut off', cutoffRange(payslip.period), 'Divisi', employee.department || '-'],
-    ['Nama Karyawan', employee.full_name, 'PTKP', payslip.ptkp_status || '-'],
-    ['Posisi', employee.position || '-', 'Badan Usaha', payslip.business_entity || '-'],
+    [tx("Payroll cut off"), cutoffRange(payslip.period), tx("Divisi"), employee.department || '-'],
+    [tx("Nama Karyawan"), employee.full_name, 'PTKP', payslip.ptkp_status || '-'],
+    [tx("Posisi"), employee.position || '-', tx("Badan Usaha"), payslip.business_entity || '-'],
   ]
   rowsInfo.forEach(([l1, v1, l2, v2]) => {
     doc.text(l1, colL, y)
@@ -98,7 +99,7 @@ async function downloadPayslipPdf(payslip, employee) {
   doc.text('Pendapatan', marginX + 6, tableTop + 14)
   doc.text('Potongan', rightColX + 14, tableTop + 14)
 
-  const pendapatanRows = [['Gaji Pokok', payslip.basic_salary], ...PENDAPATAN_FIELDS.map(([label, key]) => [label, comp[key] || 0])]
+  const pendapatanRows = [[tx("Gaji Pokok"), payslip.basic_salary], ...PENDAPATAN_FIELDS.map(([label, key]) => [label, comp[key] || 0])]
   const potonganRows = POTONGAN_FIELDS.map(([label, key]) => [label, comp[key] || 0])
 
   doc.setFont('helvetica', 'normal')
@@ -170,7 +171,7 @@ export default function SlipGaji({ onBack, onToast }) {
     try {
       await downloadPayslipPdf(p, employee)
     } catch (err) {
-      onToast?.('Gagal membuat PDF: ' + err.message)
+      onToast?.(tx("Gagal membuat PDF: ") + err.message)
     } finally {
       setDownloading(null)
     }
@@ -179,28 +180,28 @@ export default function SlipGaji({ onBack, onToast }) {
   if (isDesktop) {
     return (
       <div className="dsk-page">
-        <h1 className="dsk-title">Slip Gaji</h1>
-        <p className="dsk-sub">Riwayat slip gaji Anda, tersedia untuk diunduh sebagai PDF</p>
+        <h1 className="dsk-title">{tx("Slip Gaji")}</h1>
+        <p className="dsk-sub">{tx("Riwayat slip gaji Anda, tersedia untuk diunduh sebagai PDF")}</p>
 
         <div className="dsk-table-wrap">
           <table className="dsk-table">
-            <thead><tr><th>Periode</th><th>Take home pay</th><th>Aksi</th></tr></thead>
+            <thead><tr><th>{tx("Periode")}</th><th>Take home pay</th><th>{tx("Aksi")}</th></tr></thead>
             <tbody>
-              {payslips === null ? <tr><td colSpan={3} className="empty">Memuat...</td></tr>
-                : payslips.length === 0 ? <tr><td colSpan={3} className="empty">Belum ada slip gaji.</td></tr>
+              {payslips === null ? <tr><td colSpan={3} className="empty">{tx("Memuat...")}</td></tr>
+                : payslips.length === 0 ? <tr><td colSpan={3} className="empty">{tx("Belum ada slip gaji.")}</td></tr>
                 : payslips.map((p) => (
                   <tr key={p.id}>
                     <td style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                       <span style={{ width: 32, height: 32, borderRadius: 9, background: '#DCEEF0', color: '#2C8C9C', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                         <Wallet size={16} />
                       </span>
-                      {new Date(p.period).toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })}
+                      {new Date(p.period).toLocaleDateString(locale(), { month: 'long', year: 'numeric' })}
                     </td>
                     <td>Rp {rupiah(p.net_salary)}</td>
                     <td>
                       <button className="btn" onClick={() => handleDownload(p)} disabled={downloading === p.id}>
                         <Download size={13} style={{ verticalAlign: '-2px', marginRight: 4 }} />
-                        {downloading === p.id ? 'Membuat PDF...' : 'Unduh PDF'}
+                        {downloading === p.id ? tx("Membuat PDF...") : tx("Unduh PDF")}
                       </button>
                     </td>
                   </tr>
@@ -216,13 +217,13 @@ export default function SlipGaji({ onBack, onToast }) {
     <div>
       <div className="page-header">
         <button className="back-btn" onClick={onBack}><ArrowLeft size={22} /></button>
-        <h1>Slip Gaji</h1>
+        <h1>{tx("Slip Gaji")}</h1>
         <span style={{ width: 22 }} />
       </div>
       {payslips === null ? (
-        <div className="empty-state"><p>Memuat...</p></div>
+        <div className="empty-state"><p>{tx("Memuat...")}</p></div>
       ) : payslips.length === 0 ? (
-        <div className="empty-state"><p>Belum ada slip gaji.</p></div>
+        <div className="empty-state"><p>{tx("Belum ada slip gaji.")}</p></div>
       ) : (
         payslips.map((p) => (
           <button key={p.id} className="list-item" style={{ width: '100%', border: 'none', textAlign: 'left', cursor: 'pointer' }}
@@ -231,10 +232,10 @@ export default function SlipGaji({ onBack, onToast }) {
               <Wallet size={18} />
             </span>
             <div className="info">
-              <div className="name">{new Date(p.period).toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })}</div>
+              <div className="name">{new Date(p.period).toLocaleDateString(locale(), { month: 'long', year: 'numeric' })}</div>
               <div className="sub">Rp {rupiah(p.net_salary)}</div>
             </div>
-            {downloading === p.id ? <span style={{ fontSize: 12.5, color: 'var(--text-muted)' }}>Membuat PDF...</span> : <Download size={18} color="#ccc" />}
+            {downloading === p.id ? <span style={{ fontSize: 12.5, color: 'var(--text-muted)' }}>{tx("Membuat PDF...")}</span> : <Download size={18} color="#ccc" />}
           </button>
         ))
       )}

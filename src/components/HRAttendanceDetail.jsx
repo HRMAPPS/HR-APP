@@ -3,8 +3,9 @@ import { MapPin } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
 import { useSignedPhoto } from '../lib/signedUrl'
 
-const fmtClock = (iso) => (iso ? new Date(iso).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' }).replace(/\./g, ':') : '-')
-const fmtLong = (d) => new Date(d.length === 10 ? d + 'T00:00:00' : d).toLocaleDateString('id-ID', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' })
+import { tx, locale } from '../lib/i18n'
+const fmtClock = (iso) => (iso ? new Date(iso).toLocaleTimeString(locale(), { hour: '2-digit', minute: '2-digit', second: '2-digit' }).replace(/\./g, ':') : '-')
+const fmtLong = (d) => new Date(d.length === 10 ? d + 'T00:00:00' : d).toLocaleDateString(locale(), { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' })
 
 // Modal detail absensi (dipakai HR): foto selfie, peta, koordinat, alamat, jarak ke lokasi kantor, catatan
 export default function HRAttendanceDetail({ attendanceId, onClose }) {
@@ -16,7 +17,7 @@ export default function HRAttendanceDetail({ attendanceId, onClose }) {
 
   useEffect(() => {
     supabase.rpc('get_hr_attendance_detail', { p_id: attendanceId }).then(({ data, error }) => {
-      if (error) setError(error.message); else if (!data) setError('Data absensi tidak ditemukan'); else setD(data)
+      if (error) setError(error.message); else if (!data) setError(tx("Data absensi tidak ditemukan")); else setD(data)
     })
   }, [attendanceId])
 
@@ -48,10 +49,10 @@ export default function HRAttendanceDetail({ attendanceId, onClose }) {
       <div className="sheet" style={{ maxWidth: 640 }} onClick={(e) => e.stopPropagation()}>
         <div className="sheet-handle" />
         {error && <p className="error-text">{error}</p>}
-        {!d && !error && <p style={{ textAlign: 'center', color: '#888', padding: 24 }}>Memuat...</p>}
+        {!d && !error && <p style={{ textAlign: 'center', color: '#888', padding: 24 }}>{tx("Memuat...")}</p>}
         {d && (
           <>
-            <div className="sheet-title-row"><h3>Detail Absensi</h3></div>
+            <div className="sheet-title-row"><h3>{tx("Detail Absensi")}</h3></div>
             <div style={{ marginBottom: 10 }}>
               <div style={{ fontWeight: 700, fontSize: 16 }}>{d.full_name} <span style={{ fontWeight: 400, color: 'var(--text-muted)', fontSize: 13 }}>· {d.employee_code}</span></div>
               <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>{[d.position, d.department].filter(Boolean).join(' · ')}</div>
@@ -60,63 +61,63 @@ export default function HRAttendanceDetail({ attendanceId, onClose }) {
                 <span style={{
                   marginLeft: 8, fontSize: 11.5, fontWeight: 700, padding: '3px 9px', borderRadius: 8,
                   background: d.status === 'late' ? '#FBE1DD' : '#E1F3EA', color: d.status === 'late' ? '#C0392B' : '#1E8E5A',
-                }}>{d.status === 'late' ? 'Telat' : 'Tepat waktu'}</span>
+                }}>{d.status === 'late' ? tx("Telat") : tx("Tepat waktu")}</span>
               </div>
             </div>
 
             <div className="tabs" style={{ marginBottom: 12 }}>
-              <button className={isIn ? 'active' : ''} onClick={() => setTab('in')}>Clock In</button>
-              <button className={!isIn ? 'active' : ''} onClick={() => setTab('out')}>Clock Out</button>
+              <button className={isIn ? 'active' : ''} onClick={() => setTab('in')}>{tx("Clock In")}</button>
+              <button className={!isIn ? 'active' : ''} onClick={() => setTab('out')}>{tx("Clock Out")}</button>
             </div>
 
             {!time ? (
-              <p style={{ color: '#888', textAlign: 'center', padding: '24px 0' }}>Belum ada data {isIn ? 'clock in' : 'clock out'}.</p>
+              <p style={{ color: '#888', textAlign: 'center', padding: '24px 0' }}>{tx("Belum ada data")}{' '}{isIn ? 'clock in' : 'clock out'}.</p>
             ) : (
               <>
                 <div style={{ display: 'flex', gap: 8, height: 220, marginBottom: 12 }}>
                   <div style={{ flex: 1, borderRadius: 10, overflow: 'hidden', background: '#eee' }}>
                     {hasLoc ? (
-                      <iframe title="peta" style={{ width: '100%', height: '100%', border: 0 }}
+                      <iframe title={tx("peta")} style={{ width: '100%', height: '100%', border: 0 }}
                         src={`https://www.google.com/maps?q=${lat},${lng}&z=17&output=embed`} />
-                    ) : <Empty text="Lokasi tidak tersedia" />}
+                    ) : <Empty text={tx("Lokasi tidak tersedia")} />}
                   </div>
                   <div style={{ flex: 1, borderRadius: 10, overflow: 'hidden', background: '#ddd' }}>
                     {photo ? (
                       <img src={photo} alt="Selfie" onClick={() => setZoomPhoto(photo)}
                         style={{ width: '100%', height: '100%', objectFit: 'cover', cursor: 'zoom-in' }} />
-                    ) : <Empty text={rawPhoto ? 'Memuat foto...' : 'Tidak ada foto'} />}
+                    ) : <Empty text={rawPhoto ? tx("Memuat foto...") : tx("Tidak ada foto")} />}
                   </div>
                 </div>
 
-                <Row label={`Waktu clock ${isIn ? 'in' : 'out'}`} value={fmtClock(time)} />
+                <Row label={tx("Waktu clock {0}", [isIn ? 'in' : 'out'])} value={fmtClock(time)} />
                 <Row label="Shift" value={d.shift_name ? `${d.shift_name} (${d.shift_start?.slice(0, 5)} - ${d.shift_end?.slice(0, 5)})` : '-'} />
-                <Row label="Lokasi absen terdekat" value={
+                <Row label={tx("Lokasi absen terdekat")} value={
                   locName ? (
                     <span>
-                      {locName} — {dist} m dari titik{' '}
+                      {locName} — {dist}{' '}{tx("m dari titik")}{' '}
                       <span style={{ fontWeight: 700, color: inRange ? '#1E8E5A' : '#C0392B' }}>
-                        ({inRange ? `dalam radius ${radius} m` : `di luar radius ${radius} m`})
+                        ({inRange ? tx("dalam radius {0} m", [radius]) : tx("di luar radius {0} m", [radius])})
                       </span>
                     </span>
                   ) : '-'
                 } />
-                <Row label="Koordinat" value={hasLoc ? (
+                <Row label={tx("Koordinat")} value={hasLoc ? (
                   <a href={`https://www.google.com/maps?q=${lat},${lng}`} target="_blank" rel="noreferrer"
                     style={{ color: '#4356C4', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
                     <MapPin size={14} /> {Number(lat).toFixed(5)}, {Number(lng).toFixed(5)}
                   </a>
                 ) : '-'} />
-                <Row label="Alamat" value={
+                <Row label={tx("Alamat")} value={
                   !hasLoc ? '-' : address[tab] && address[tab] !== 'loading' ? address[tab] :
                     <button onClick={loadAddress} disabled={address[tab] === 'loading'}
                       style={{ background: 'none', border: 'none', color: '#4356C4', padding: 0, fontSize: 14, cursor: 'pointer' }}>
-                      {address[tab] === 'loading' ? 'Memuat alamat...' : 'Lihat alamat'}
+                      {address[tab] === 'loading' ? tx("Memuat alamat...") : tx("Lihat alamat")}
                     </button>
                 } />
-                <Row label="Catatan" value={notes || '-'} />
+                <Row label={tx("Catatan")} value={notes || '-'} />
               </>
             )}
-            <button className="primary-btn" style={{ marginTop: 14 }} onClick={onClose}>Tutup</button>
+            <button className="primary-btn" style={{ marginTop: 14 }} onClick={onClose}>{tx("Tutup")}</button>
           </>
         )}
       </div>

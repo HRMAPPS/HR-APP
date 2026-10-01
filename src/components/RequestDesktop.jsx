@@ -2,8 +2,9 @@ import { useEffect } from 'react'
 import { ArrowLeft, ChevronRight, Plus, Search, X } from 'lucide-react'
 import './RequestDesktop.css'
 
-export const STATUS_LABEL = { pending: 'Menunggu', approved: 'Disetujui', rejected: 'Ditolak', cancelled: 'Dibatalkan' }
-const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des']
+import { tx, locale } from '../lib/i18n'
+export const STATUS_LABEL = { pending: tx("Menunggu"), approved: tx("Disetujui"), rejected: tx("Ditolak"), cancelled: tx("Dibatalkan") }
+const MON = ['Jan', 'Feb', 'Mar', 'Apr', tx("Mei"), 'Jun', 'Jul', tx("Agu"), 'Sep', tx("Okt"), 'Nov', tx("Des")]
 
 export function fmtDate(s) {
   if (!s) return '-'
@@ -11,8 +12,8 @@ export function fmtDate(s) {
   return `${d} ${MON[m - 1]} ${y}`
 }
 export const fmtStamp = (ts) => (ts ? fmtDate(new Date(ts).toLocaleDateString('en-CA', { timeZone: 'Asia/Jakarta' })) : '-')
-export const fmtDateTime = (ts) => (ts ? new Date(ts).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Asia/Jakarta' }) : '-')
-export const weekday = (s) => { const [y, m, d] = s.slice(0, 10).split('-').map(Number); return new Date(y, m - 1, d).toLocaleDateString('id-ID', { weekday: 'long' }) }
+export const fmtDateTime = (ts) => (ts ? new Date(ts).toLocaleString(locale(), { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Asia/Jakarta' }) : '-')
+export const weekday = (s) => { const [y, m, d] = s.slice(0, 10).split('-').map(Number); return new Date(y, m - 1, d).toLocaleDateString(locale(), { weekday: 'long' }) }
 export const overtimeMinutes = (s, e) => {
   const t = (x) => { const [h, m] = x.slice(0, 5).split(':'); return +h * 60 + +m }
   const d = t(e) - t(s)
@@ -29,7 +30,7 @@ export function RequestShell({ title, subtitle, onBack, form, aside }) {
   return (
     <div className="rq">
       <header className="rq-top">
-        <button className="rq-back" onClick={onBack} aria-label="Kembali"><ArrowLeft size={20} /></button>
+        <button className="rq-back" onClick={onBack} aria-label={tx("Kembali")}><ArrowLeft size={20} /></button>
         <div>
           <h1>{title}</h1>
           <p>{subtitle}</p>
@@ -57,7 +58,7 @@ export function RecentList({ title, rows, empty, render }) {
   return (
     <div className="rq-card rq-recent">
       <h3>{title}</h3>
-      {rows === null ? <p className="rq-dim">Memuat...</p>
+      {rows === null ? <p className="rq-dim">{tx("Memuat...")}</p>
         : rows.length === 0 ? <p className="rq-dim">{empty}</p>
         : <ul>{rows.map((r) => <li key={r.id}>{render(r)}</li>)}</ul>}
     </div>
@@ -77,7 +78,7 @@ export function SelectFilter({ label, value, onChange, options }) {
 
 export function SearchFilter({ value, onChange, placeholder }) {
   return (
-    <label className="rq-sel rq-search"><span>Cari</span>
+    <label className="rq-sel rq-search"><span>{tx("Cari")}</span>
       <div><Search size={15} /><input value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} /></div>
     </label>
   )
@@ -111,13 +112,13 @@ export function RequestListPage({ title, subtitle, actionLabel, onAction, kpis, 
           <table className="rq-t">
             <thead><tr>{columns.map((c, i) => <th key={i}>{c}</th>)}<th /></tr></thead>
             <tbody>
-              {loading && <tr><td colSpan={columns.length + 1} className="rq-empty">Memuat...</td></tr>}
+              {loading && <tr><td colSpan={columns.length + 1} className="rq-empty">{tx("Memuat...")}</td></tr>}
               {!loading && !rows.length && <tr><td colSpan={columns.length + 1} className="rq-empty">{empty}</td></tr>}
               {!loading && rows.map(renderRow)}
             </tbody>
           </table>
         </div>
-        <div className="rq-foot">Menampilkan <b>{rows.length}</b> dari <b>{total}</b> pengajuan</div>
+        <div className="rq-foot">{tx("Menampilkan")}{' '}<b>{rows.length}</b>{' '}{tx("dari")}{' '}<b>{total}</b>{' '}{tx("pengajuan")}</div>
       </section>
       {drawer}
     </div>
@@ -137,13 +138,13 @@ export function DetailDrawer({ title, status, items, reason, onClose }) {
       <aside className="rq-drawer" role="dialog" aria-modal="true" aria-label={title} onClick={(e) => e.stopPropagation()}>
         <header>
           <div><small>{title}</small><StatusPill status={status} /></div>
-          <button onClick={onClose} aria-label="Tutup"><X size={18} /></button>
+          <button onClick={onClose} aria-label={tx("Tutup")}><X size={18} /></button>
         </header>
         <dl>
           {items.map(([l, v]) => <div key={l}><dt>{l}</dt><dd>{v || '-'}</dd></div>)}
         </dl>
-        <div className="rq-reason"><dt>Alasan</dt><p>{reason || 'Tidak ada alasan yang dituliskan.'}</p></div>
-        <footer><button className="rq-ghost" onClick={onClose}>Tutup</button></footer>
+        <div className="rq-reason"><dt>{tx("Alasan")}</dt><p>{reason || tx("Tidak ada alasan yang dituliskan.")}</p></div>
+        <footer><button className="rq-ghost" onClick={onClose}>{tx("Tutup")}</button></footer>
       </aside>
     </div>
   )

@@ -1,11 +1,12 @@
 import { Home, Users, Plus, Bell, User } from 'lucide-react'
 
+import { tx } from '../lib/i18n'
 export const TABS = [
-  { key: 'home', label: 'Beranda', icon: Home },
-  { key: 'employees', label: 'Karyawan', icon: Users },
-  { key: 'request', label: 'Pengajuan', icon: Plus },
+  { key: 'home', label: tx("Beranda"), icon: Home },
+  { key: 'employees', label: tx("Karyawan"), icon: Users },
+  { key: 'request', label: tx("Pengajuan"), icon: Plus },
   { key: 'inbox', label: 'Inbox', icon: Bell },
-  { key: 'account', label: 'Akun', icon: User },
+  { key: 'account', label: tx("Akun"), icon: User },
 ]
 
 export default function BottomNav({ active, onChange, unread = 0 }) {

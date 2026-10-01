@@ -2,17 +2,18 @@ import { useState } from 'react'
 import { ArrowLeft, Calendar, ChevronDown, ChevronRight } from 'lucide-react'
 import './AttendanceLogDesktop.css'
 
-const DAYS = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab']
-const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des']
+import { tx } from '../lib/i18n'
+const DAYS = [tx("Min"), tx("Sen"), tx("Sel"), tx("Rab"), tx("Kam"), tx("Jum"), tx("Sab")]
+const MON = ['Jan', 'Feb', 'Mar', 'Apr', tx("Mei"), 'Jun', 'Jul', tx("Agu"), 'Sep', tx("Okt"), 'Nov', tx("Des")]
 const hhmm = (ts) => (ts ? new Date(ts).toTimeString().slice(0, 5) : null)
 
 // Header + tab switcher used on desktop for all three tabs of Daftar Absensi.
 export function DesktopAbsensiHeader({ tab, onTab, onBack }) {
-  const tabs = [['riwayat', 'Riwayat'], ['absensi', 'Pengajuan absensi'], ['shift', 'Pengajuan shift']]
+  const tabs = [['riwayat', tx("Riwayat")], ['absensi', tx("Pengajuan absensi")], ['shift', tx("Pengajuan shift")]]
   return (
     <div className="adx-top">
-      <button className="adx-back" onClick={onBack} aria-label="Kembali"><ArrowLeft size={20} /></button>
-      <h1>Daftar Absensi</h1>
+      <button className="adx-back" onClick={onBack} aria-label={tx("Kembali")}><ArrowLeft size={20} /></button>
+      <h1>{tx("Daftar Absensi")}</h1>
       <div className="adx-tabs" role="tablist">
         {tabs.map(([k, t]) => (
           <button key={k} role="tab" aria-selected={tab === k} onClick={() => onTab(k)}>{t}</button>
@@ -41,10 +42,10 @@ export default function AttendanceLogDesktop({
       if (mm > 0) dur = `${Math.floor(mm / 60)}j ${String(mm % 60).padStart(2, '0')}m`
     }
     let kind = 'none', label = '–'
-    if (off) { kind = 'off'; label = 'Libur' }
-    else if (future) { if (shift) { kind = 'plan'; label = 'Terjadwal' } }
+    if (off) { kind = 'off'; label = tx("Libur") }
+    else if (future) { if (shift) { kind = 'plan'; label = tx("Terjadwal") } }
     else if (issue) { kind = ['late_in', 'early_out'].includes(issue.type) ? 'warn' : 'bad'; label = issue.label }
-    else if (a.clock_in && a.clock_out) { kind = 'ok'; label = 'Tepat waktu' }
+    else if (a.clock_in && a.clock_out) { kind = 'ok'; label = tx("Tepat waktu") }
     return { a, shift, off, future, issue, dur, kind, label, day: d, mon: m - 1, dow, inT: hhmm(a.clock_in), outT: hhmm(a.clock_out) }
   })
 
@@ -65,7 +66,7 @@ export default function AttendanceLogDesktop({
       <div className="adx-bar">
         <div>
           <div className="adx-name">{employee?.full_name}{employee?.position ? ` · ${employee.position}` : ''}</div>
-          <div className="adx-dim">Periode {periodLabel}</div>
+          <div className="adx-dim">{tx("Periode")}{' '}{periodLabel}</div>
         </div>
         <button className="adx-month" onClick={onOpenMonth}>
           <Calendar size={16} /> {monthLabel} <ChevronDown size={16} />
@@ -83,19 +84,19 @@ export default function AttendanceLogDesktop({
             <b>{pct}%</b>
           </div>
           <div>
-            <h2>{onTime} dari {past.length} hari kerja tepat waktu</h2>
-            <p>Klik kartu angka di kanan untuk melihat tanggalnya dan mengajukan koreksi presensi.</p>
+            <h2>{onTime}{' '}{tx("dari")}{' '}{past.length}{' '}{tx("hari kerja tepat waktu")}</h2>
+            <p>{tx("Klik kartu angka di kanan untuk melihat tanggalnya dan mengajukan koreksi presensi.")}</p>
           </div>
         </div>
         <div className="adx-card adx-stats">
-          <div className="adx-stat g"><b>{onTime}</b><span>Tepat waktu</span></div>
+          <div className="adx-stat g"><b>{onTime}</b><span>{tx("Tepat waktu")}</span></div>
           {statCards.map((c) => (
             <button key={c.key} className={`adx-stat ${c.rows.length ? tone[c.key] : ''}`} disabled={!c.rows.length}
               onClick={() => onOpenIssue(c)}>
               <b>{c.rows.length}</b><span>{c.label}</span>
             </button>
           ))}
-          <div className="adx-stat"><b>{offCount}</b><span>Libur</span></div>
+          <div className="adx-stat"><b>{offCount}</b><span>{tx("Libur")}</span></div>
         </div>
       </section>
 
@@ -112,18 +113,18 @@ export default function AttendanceLogDesktop({
 
       <section className="adx-card adx-table">
         <div className="adx-filters" role="group" aria-label="Filter">
-          {[['all', 'Semua hari'], ['work', 'Hari kerja'], ['issue', 'Perlu perhatian'], ['off', 'Libur']].map(([k, t]) => (
+          {[['all', tx("Semua hari")], ['work', tx("Hari kerja")], ['issue', tx("Perlu perhatian")], ['off', tx("Libur")]].map(([k, t]) => (
             <button key={k} type="button" aria-pressed={filter === k} onClick={() => setFilter(k)}>{t}</button>
           ))}
         </div>
         <div className="adx-scroll">
           <table>
             <thead>
-              <tr><th>Tanggal</th><th>Shift</th><th>Jadwal</th><th>Clock in</th><th>Clock out</th><th>Durasi</th><th>Status</th><th /></tr>
+              <tr><th>{tx("Tanggal")}</th><th>Shift</th><th>{tx("Jadwal")}</th><th>Clock in</th><th>Clock out</th><th>{tx("Durasi")}</th><th>Status</th><th /></tr>
             </thead>
             <tbody>
-              {loading && <tr><td colSpan="8" className="adx-empty">Memuat...</td></tr>}
-              {!loading && !visible.length && <tr><td colSpan="8" className="adx-empty">Tidak ada data untuk filter ini.</td></tr>}
+              {loading && <tr><td colSpan="8" className="adx-empty">{tx("Memuat...")}</td></tr>}
+              {!loading && !visible.length && <tr><td colSpan="8" className="adx-empty">{tx("Tidak ada data untuk filter ini.")}</td></tr>}
               {!loading && visible.map((r) => (
                 <tr key={r.a.work_date} tabIndex={0} onClick={() => onOpenDay(r.a)}
                   onKeyDown={(e) => { if (e.key === 'Enter') onOpenDay(r.a) }}>
@@ -133,7 +134,7 @@ export default function AttendanceLogDesktop({
                       <b>{DAYS[r.dow]}</b>
                     </div>
                   </td>
-                  <td>{r.off ? <span className="adx-dim">Libur</span> : r.shift ? <b>{r.shift.shift_name}</b> : <span className="adx-dim">–</span>}</td>
+                  <td>{r.off ? <span className="adx-dim">{tx("Libur")}</span> : r.shift ? <b>{r.shift.shift_name}</b> : <span className="adx-dim">–</span>}</td>
                   <td className="adx-t adx-dim">{r.shift && !r.off ? `${r.shift.start_time?.slice(0, 5)} – ${r.shift.end_time?.slice(0, 5)}` : '–'}</td>
                   <td className={`adx-t${r.issue?.type === 'late_in' ? ' late' : ''}`}>{r.inT || '–'}</td>
                   <td className={`adx-t${r.issue?.type === 'early_out' ? ' late' : ''}`}>{r.outT || '–'}</td>

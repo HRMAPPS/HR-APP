@@ -3,9 +3,10 @@ import { supabase } from '../lib/supabaseClient'
 import { todayStr } from '../lib/dateUtils'
 import { RequestShell, StatTiles, RecentList, StatusPill, fmtDate } from '../components/RequestDesktop'
 
+import { tx } from '../lib/i18n'
 const MAX_FILE = 5 * 1024 * 1024
 const daysBetween = (a, b) => Math.round((new Date(b) - new Date(a)) / 86400000) + 1
-const fmtDays = (n) => `${Number(n) % 1 === 0 ? Number(n) : Number(n).toFixed(1)} hari`
+const fmtDays = (n) => tx("{0} hari", [Number(n) % 1 === 0 ? Number(n) : Number(n).toFixed(1)])
 
 export default function CutiRequestDesktop({ employee, onCancel, onDone, onToast }) {
   const [types, setTypes] = useState([])
@@ -42,23 +43,23 @@ export default function CutiRequestDesktop({ employee, onCancel, onDone, onToast
   function pickFile(e) {
     const f = e.target.files?.[0]
     if (!f) return
-    if (f.size > MAX_FILE) { setError('Ukuran lampiran maksimal 5 MB'); e.target.value = ''; return }
+    if (f.size > MAX_FILE) { setError(tx("Ukuran lampiran maksimal 5 MB")); e.target.value = ''; return }
     setError(''); setFile(f)
   }
 
   async function submit(e) {
     e.preventDefault()
     setError('')
-    if (!typeId) { setError('Pilih jenis cuti'); return }
-    if (!start || !effEnd) { setError('Lengkapi tanggal mulai dan selesai'); return }
-    if (effEnd < start) { setError('Tanggal selesai tidak boleh sebelum tanggal mulai'); return }
+    if (!typeId) { setError(tx("Pilih jenis cuti")); return }
+    if (!start || !effEnd) { setError(tx("Lengkapi tanggal mulai dan selesai")); return }
+    if (effEnd < start) { setError(tx("Tanggal selesai tidak boleh sebelum tanggal mulai")); return }
     setBusy(true)
     let path = null
     if (file) {
       const { data: u } = await supabase.auth.getUser()
       path = `${u?.user?.id}/${Date.now()}-${file.name.replace(/[^\w.\-]+/g, '_')}`
       const { error: upErr } = await supabase.storage.from('leave-attachments').upload(path, file)
-      if (upErr) { setBusy(false); setError('Gagal unggah lampiran: ' + upErr.message); return }
+      if (upErr) { setBusy(false); setError(tx("Gagal unggah lampiran: ") + upErr.message); return }
     }
     const { error: err } = await supabase.rpc('submit_leave_request', {
       p_leave_type_id: typeId, p_start_date: start, p_end_date: effEnd, p_reason: reason,
@@ -73,46 +74,46 @@ export default function CutiRequestDesktop({ employee, onCancel, onDone, onToast
 
   const form = (
     <form onSubmit={submit}>
-      <h2>Detail pengajuan</h2>
-      <p className="rq-lead">Isi jenis dan tanggal cuti. Atasan Anda akan menerima notifikasi untuk persetujuan.</p>
+      <h2>{tx("Detail pengajuan")}</h2>
+      <p className="rq-lead">{tx("Isi jenis dan tanggal cuti. Atasan Anda akan menerima notifikasi untuk persetujuan.")}</p>
       <div className="rq-grid">
-        <label className="rq-fld full"><span>Jenis cuti</span>
+        <label className="rq-fld full"><span>{tx("Jenis cuti")}</span>
           <select value={typeId} onChange={(e) => setTypeId(e.target.value)}>
-            <option value="">Pilih jenis cuti</option>
-            {types.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+            <option value="">{tx("Pilih jenis cuti")}</option>
+            {types.map((t) => <option key={t.id} value={t.id}>{tx(t.name)}</option>)}
           </select>
         </label>
-        <div className="rq-fld full"><span>Durasi</span>
-          <div className="rq-seg" role="group" aria-label="Durasi">
-            <button type="button" aria-pressed={!half} onClick={() => setReqType('full_day')}>Hari penuh</button>
-            <button type="button" aria-pressed={half} onClick={() => setReqType('half_day')}>Setengah hari</button>
+        <div className="rq-fld full"><span>{tx("Durasi")}</span>
+          <div className="rq-seg" role="group" aria-label={tx("Durasi")}>
+            <button type="button" aria-pressed={!half} onClick={() => setReqType('full_day')}>{tx("Hari penuh")}</button>
+            <button type="button" aria-pressed={half} onClick={() => setReqType('half_day')}>{tx("Setengah hari")}</button>
           </div>
         </div>
-        <label className="rq-fld"><span>{half ? 'Tanggal' : 'Tanggal mulai'}</span>
+        <label className="rq-fld"><span>{half ? tx("Tanggal") : tx("Tanggal mulai")}</span>
           <input type="date" value={start} onChange={(e) => { setStart(e.target.value); if (end < e.target.value) setEnd(e.target.value) }} />
         </label>
-        <label className="rq-fld"><span>Tanggal selesai</span>
+        <label className="rq-fld"><span>{tx("Tanggal selesai")}</span>
           <input type="date" value={half ? start : end} min={start} disabled={half} onChange={(e) => setEnd(e.target.value)} />
         </label>
         {days != null && (
-          <div className="rq-sum"><span>Perkiraan durasi</span><b>{fmtDays(days)}</b></div>
+          <div className="rq-sum"><span>{tx("Perkiraan durasi")}</span><b>{fmtDays(days)}</b></div>
         )}
-        <label className="rq-fld full"><span>Alasan</span>
-          <textarea value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Tambahkan alasan pengajuan..." />
+        <label className="rq-fld full"><span>{tx("Alasan")}</span>
+          <textarea value={reason} onChange={(e) => setReason(e.target.value)} placeholder={tx("Tambahkan alasan pengajuan...")} />
         </label>
-        <div className="rq-fld full"><span>Lampiran <small>(opsional, maks. 5 MB)</small></span>
+        <div className="rq-fld full"><span>{tx("Lampiran")}{' '}<small>{tx("(opsional, maks. 5 MB)")}</small></span>
           <div className="rq-file">
-            <span className="name">{file ? file.name : 'Belum ada file dipilih'}</span>
-            {file && <button type="button" onClick={() => { setFile(null); if (fileRef.current) fileRef.current.value = '' }}>Hapus</button>}
-            <button type="button" onClick={() => fileRef.current?.click()}>Pilih file</button>
+            <span className="name">{file ? file.name : tx("Belum ada file dipilih")}</span>
+            {file && <button type="button" onClick={() => { setFile(null); if (fileRef.current) fileRef.current.value = '' }}>{tx("Hapus")}</button>}
+            <button type="button" onClick={() => fileRef.current?.click()}>{tx("Pilih file")}</button>
             <input ref={fileRef} type="file" hidden onChange={pickFile} />
           </div>
         </div>
         {error && <p className="rq-err" role="alert">{error}</p>}
       </div>
       <div className="rq-actions">
-        <button className="primary-btn" disabled={busy}>{busy ? 'Mengirim...' : 'Kirim pengajuan'}</button>
-        <button type="button" className="rq-ghost" onClick={onCancel}>Batal</button>
+        <button className="primary-btn" disabled={busy}>{busy ? tx("Mengirim...") : tx("Kirim pengajuan")}</button>
+        <button type="button" className="rq-ghost" onClick={onCancel}>{tx("Batal")}</button>
       </div>
     </form>
   )
@@ -122,14 +123,14 @@ export default function CutiRequestDesktop({ employee, onCancel, onDone, onToast
       <StatTiles tiles={[
         ['Sakit terpakai', summary ? fmtDays(summary.sakit_used) : '…'],
         ['Unpaid terpakai', summary ? fmtDays(summary.unpaid_used) : '…'],
-        [`Cuti disetujui ${year}`, history ? fmtDays(approvedYear) : '…', 'g'],
-        ['Menunggu persetujuan', history ? pending : '…', pending ? 'w' : ''],
+        [tx("Cuti disetujui {0}", [year]), history ? fmtDays(approvedYear) : '…', 'g'],
+        [tx("Menunggu persetujuan"), history ? pending : '…', pending ? 'w' : ''],
       ]} />
-      <RecentList title="Pengajuan terakhir" rows={history && history.slice(0, 5)} empty="Belum ada pengajuan cuti."
+      <RecentList title={tx("Pengajuan terakhir")} rows={history && history.slice(0, 5)} empty={tx("Belum ada pengajuan cuti.")}
         render={(r) => (
           <>
             <div>
-              <b>{r.leave_types?.name || 'Cuti'}</b>
+              <b>{tx(r.leave_types?.name) || tx("Cuti")}</b>
               <small>{fmtDate(r.start_date)}{r.end_date !== r.start_date ? ` – ${fmtDate(r.end_date)}` : ''}</small>
             </div>
             <StatusPill status={r.status} />
@@ -138,5 +139,5 @@ export default function CutiRequestDesktop({ employee, onCancel, onDone, onToast
     </>
   )
 
-  return <RequestShell title="Ajukan Cuti" subtitle="Ajukan cuti dan pantau saldo serta riwayat Anda." onBack={onCancel} form={form} aside={aside} />
+  return <RequestShell title={tx("Ajukan Cuti")} subtitle={tx("Ajukan cuti dan pantau saldo serta riwayat Anda.")} onBack={onCancel} form={form} aside={aside} />
 }

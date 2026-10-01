@@ -3,16 +3,17 @@ import { ArrowLeft, Plus, Pencil, Trash2, FileText, Download, AlertTriangle } fr
 import { useProfileDetail } from '../lib/useProfileDetail'
 import { supabase } from '../lib/supabaseClient'
 
+import { tx, locale } from '../lib/i18n'
 const SECTION_TITLES = {
-  personal: 'Info Personal',
-  job: 'Info Pekerjaan',
-  emergency: 'Info Kontak Darurat',
-  family: 'Info Keluarga',
-  education: 'Pendidikan dan Pengalaman',
-  payroll: 'Info Payroll',
-  additional: 'Info Tambahan',
-  files: 'File Saya',
-  warnings: 'Peringatan',
+  personal: tx("Info Personal"),
+  job: tx("Info Pekerjaan"),
+  emergency: tx("Info Kontak Darurat"),
+  family: tx("Info Keluarga"),
+  education: tx("Pendidikan dan Pengalaman"),
+  payroll: tx("Info Payroll"),
+  additional: tx("Info Tambahan"),
+  files: tx("File Saya"),
+  warnings: tx("Peringatan"),
 }
 
 export default function ProfileDetail({ section, onBack, onToast }) {
@@ -22,12 +23,12 @@ export default function ProfileDetail({ section, onBack, onToast }) {
     <div>
       <div className="page-header">
         <button className="back-btn" onClick={onBack}><ArrowLeft size={22} /></button>
-        <h1>{SECTION_TITLES[section] || 'Info saya'}</h1>
+        <h1>{SECTION_TITLES[section] || tx("Info saya")}</h1>
         <span style={{ width: 22 }} />
       </div>
 
       {profile.loading || !profile.data ? (
-        <div className="empty-state"><p>Memuat...</p></div>
+        <div className="empty-state"><p>{tx("Memuat...")}</p></div>
       ) : (
         <div className="form-page">
           {section === 'personal' && <PersonalForm profile={profile} onToast={onToast} />}
@@ -70,39 +71,39 @@ export function PersonalForm({ profile, onToast }) {
       p_personal_email: form.personal_email || null, p_phone: form.phone || null,
     })
     if (!r.ok) { setError(r.message); return }
-    onToast('Info personal disimpan')
+    onToast(tx("Info personal disimpan"))
   }
 
   return (
     <form onSubmit={submit}>
-      <div className="field"><label>NIK (KTP)</label><input value={form.nik} onChange={(ev) => set('nik', ev.target.value)} /></div>
-      <div className="field"><label>Tempat lahir</label><input value={form.birth_place} onChange={(ev) => set('birth_place', ev.target.value)} /></div>
-      <div className="field"><label>Tanggal lahir</label><input type="date" value={form.birth_date || ''} onChange={(ev) => set('birth_date', ev.target.value)} /></div>
+      <div className="field"><label>{tx("NIK (KTP)")}</label><input value={form.nik} onChange={(ev) => set('nik', ev.target.value)} /></div>
+      <div className="field"><label>{tx("Tempat lahir")}</label><input value={form.birth_place} onChange={(ev) => set('birth_place', ev.target.value)} /></div>
+      <div className="field"><label>{tx("Tanggal lahir")}</label><input type="date" value={form.birth_date || ''} onChange={(ev) => set('birth_date', ev.target.value)} /></div>
       <div className="field">
-        <label>Jenis kelamin</label>
+        <label>{tx("Jenis kelamin")}</label>
         <select value={form.gender} onChange={(ev) => set('gender', ev.target.value)}>
-          <option value="">- Pilih -</option>
-          <option value="Laki-laki">Laki-laki</option>
-          <option value="Perempuan">Perempuan</option>
+          <option value="">{tx("- Pilih -")}</option>
+          <option value="Laki-laki">{tx("Laki-laki")}</option>
+          <option value="Perempuan">{tx("Perempuan")}</option>
         </select>
       </div>
-      <div className="field"><label>Golongan darah</label><input value={form.blood_type} onChange={(ev) => set('blood_type', ev.target.value)} /></div>
+      <div className="field"><label>{tx("Golongan darah")}</label><input value={form.blood_type} onChange={(ev) => set('blood_type', ev.target.value)} /></div>
       <div className="field">
-        <label>Status pernikahan</label>
+        <label>{tx("Status pernikahan")}</label>
         <select value={form.marital_status} onChange={(ev) => set('marital_status', ev.target.value)}>
-          <option value="">- Pilih -</option>
-          <option value="Belum menikah">Belum menikah</option>
-          <option value="Menikah">Menikah</option>
-          <option value="Cerai">Cerai</option>
+          <option value="">{tx("- Pilih -")}</option>
+          <option value="Belum menikah">{tx("Belum menikah")}</option>
+          <option value="Menikah">{tx("Menikah")}</option>
+          <option value="Cerai">{tx("Cerai")}</option>
         </select>
       </div>
-      <div className="field"><label>Agama</label><input value={form.religion} onChange={(ev) => set('religion', ev.target.value)} /></div>
-      <div className="field"><label>Alamat KTP</label><textarea value={form.ktp_address} onChange={(ev) => set('ktp_address', ev.target.value)} /></div>
-      <div className="field"><label>Alamat domisili</label><textarea value={form.domicile_address} onChange={(ev) => set('domicile_address', ev.target.value)} /></div>
-      <div className="field"><label>No. HP</label><input value={form.phone} onChange={(ev) => set('phone', ev.target.value)} /></div>
-      <div className="field"><label>Email pribadi</label><input value={form.personal_email} onChange={(ev) => set('personal_email', ev.target.value)} /></div>
+      <div className="field"><label>{tx("Agama")}</label><input value={form.religion} onChange={(ev) => set('religion', ev.target.value)} /></div>
+      <div className="field"><label>{tx("Alamat KTP")}</label><textarea value={form.ktp_address} onChange={(ev) => set('ktp_address', ev.target.value)} /></div>
+      <div className="field"><label>{tx("Alamat domisili")}</label><textarea value={form.domicile_address} onChange={(ev) => set('domicile_address', ev.target.value)} /></div>
+      <div className="field"><label>{tx("No. HP")}</label><input value={form.phone} onChange={(ev) => set('phone', ev.target.value)} /></div>
+      <div className="field"><label>{tx("Email pribadi")}</label><input value={form.personal_email} onChange={(ev) => set('personal_email', ev.target.value)} /></div>
       {error && <p className="error-text">{error}</p>}
-      <button className="primary-btn" disabled={profile.saving}>{profile.saving ? 'Menyimpan...' : 'Simpan'}</button>
+      <button className="primary-btn" disabled={profile.saving}>{profile.saving ? tx("Menyimpan...") : tx("Simpan")}</button>
     </form>
   )
 }
@@ -112,20 +113,18 @@ export function PersonalForm({ profile, onToast }) {
 // ---------------------------------------------------------------------
 export function JobView({ employee: e }) {
   const rows = [
-    ['Kode karyawan', e.employee_code],
-    ['Jabatan', e.position],
-    ['Departemen', e.department],
-    ['Status karyawan', e.employment_status],
-    ['Tanggal bergabung', e.join_date],
-    ['Lokasi kerja', e.work_location],
-    ['Tipe kontrak', e.contract_type],
-    ['Atasan langsung', e.manager_name],
+    [tx("Kode karyawan"), e.employee_code],
+    [tx("Jabatan"), e.position],
+    [tx("Departemen"), e.department],
+    [tx("Status karyawan"), e.employment_status],
+    [tx("Tanggal bergabung"), e.join_date],
+    [tx("Lokasi kerja"), e.work_location],
+    [tx("Tipe kontrak"), e.contract_type],
+    [tx("Atasan langsung"), e.manager_name],
   ]
   return (
     <div>
-      <div style={{ background: '#eef1fb', color: '#4356C4', borderRadius: 10, padding: '10px 12px', fontSize: 13, marginBottom: 14 }}>
-        Data pekerjaan dikelola oleh HR. Ajukan lewat "Perubahan Data" jika ada yang perlu diperbarui.
-      </div>
+      <div style={{ background: '#eef1fb', color: '#4356C4', borderRadius: 10, padding: '10px 12px', fontSize: 13, marginBottom: 14 }}>{tx("Data pekerjaan dikelola oleh HR. Ajukan lewat \"Perubahan Data\" jika ada yang perlu diperbarui.")}</div>
       {rows.map(([label, value]) => (
         <div key={label} className="field">
           <label>{label}</label>
@@ -151,16 +150,16 @@ export function EmergencyForm({ profile, onToast }) {
     setError('')
     const r = await profile.updateEmergency({ p_name: form.name || null, p_relation: form.relation || null, p_phone: form.phone || null })
     if (!r.ok) { setError(r.message); return }
-    onToast('Kontak darurat disimpan')
+    onToast(tx("Kontak darurat disimpan"))
   }
 
   return (
     <form onSubmit={submit}>
-      <div className="field"><label>Nama</label><input value={form.name} onChange={(ev) => setForm((f) => ({ ...f, name: ev.target.value }))} /></div>
-      <div className="field"><label>Hubungan</label><input value={form.relation} onChange={(ev) => setForm((f) => ({ ...f, relation: ev.target.value }))} placeholder="mis. Suami, Orang tua" /></div>
-      <div className="field"><label>No. HP</label><input value={form.phone} onChange={(ev) => setForm((f) => ({ ...f, phone: ev.target.value }))} /></div>
+      <div className="field"><label>{tx("Nama")}</label><input value={form.name} onChange={(ev) => setForm((f) => ({ ...f, name: ev.target.value }))} /></div>
+      <div className="field"><label>{tx("Hubungan")}</label><input value={form.relation} onChange={(ev) => setForm((f) => ({ ...f, relation: ev.target.value }))} placeholder={tx("mis. Suami, Orang tua")} /></div>
+      <div className="field"><label>{tx("No. HP")}</label><input value={form.phone} onChange={(ev) => setForm((f) => ({ ...f, phone: ev.target.value }))} /></div>
       {error && <p className="error-text">{error}</p>}
-      <button className="primary-btn" disabled={profile.saving}>{profile.saving ? 'Menyimpan...' : 'Simpan'}</button>
+      <button className="primary-btn" disabled={profile.saving}>{profile.saving ? tx("Menyimpan...") : tx("Simpan")}</button>
     </form>
   )
 }
@@ -176,7 +175,7 @@ export function FamilyList({ profile, onToast }) {
       <FamilyForm
         row={editing}
         onCancel={() => setEditing(null)}
-        onSaved={() => { setEditing(null); onToast('Data keluarga disimpan') }}
+        onSaved={() => { setEditing(null); onToast(tx("Data keluarga disimpan")) }}
         profile={profile}
       />
     )
@@ -185,7 +184,7 @@ export function FamilyList({ profile, onToast }) {
   return (
     <div>
       {profile.data.family.length === 0 ? (
-        <div className="empty-state"><p>Belum ada data keluarga.</p></div>
+        <div className="empty-state"><p>{tx("Belum ada data keluarga.")}</p></div>
       ) : (
         profile.data.family.map((f) => (
           <div key={f.id} className="list-item">
@@ -195,14 +194,13 @@ export function FamilyList({ profile, onToast }) {
             </div>
             <div className="actions">
               <button onClick={() => setEditing(f)}><Pencil size={17} /></button>
-              <button onClick={async () => { await profile.deleteFamily(f.id); onToast('Data keluarga dihapus') }}><Trash2 size={17} /></button>
+              <button onClick={async () => { await profile.deleteFamily(f.id); onToast(tx("Data keluarga dihapus")) }}><Trash2 size={17} /></button>
             </div>
           </div>
         ))
       )}
       <button className="primary-btn" style={{ marginTop: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }} onClick={() => setEditing({})}>
-        <Plus size={18} /> Tambah anggota keluarga
-      </button>
+        <Plus size={18} />{' '}{tx("Tambah anggota keluarga")}</button>
     </div>
   )
 }
@@ -216,7 +214,7 @@ function FamilyForm({ row, onCancel, onSaved, profile }) {
   async function submit(ev) {
     ev.preventDefault()
     setError('')
-    if (!form.full_name.trim()) { setError('Nama wajib diisi'); return }
+    if (!form.full_name.trim()) { setError(tx("Nama wajib diisi")); return }
     const r = await profile.upsertFamily({
       p_id: row.id || null, p_full_name: form.full_name, p_relationship: form.relationship || null,
       p_birth_date: form.birth_date || null, p_occupation: form.occupation || null,
@@ -227,14 +225,14 @@ function FamilyForm({ row, onCancel, onSaved, profile }) {
 
   return (
     <form onSubmit={submit}>
-      <div className="field"><label>Nama</label><input value={form.full_name} onChange={(ev) => setForm((f) => ({ ...f, full_name: ev.target.value }))} /></div>
-      <div className="field"><label>Hubungan</label><input value={form.relationship} onChange={(ev) => setForm((f) => ({ ...f, relationship: ev.target.value }))} placeholder="mis. Anak, Istri, Ayah" /></div>
-      <div className="field"><label>Tanggal lahir</label><input type="date" value={form.birth_date || ''} onChange={(ev) => setForm((f) => ({ ...f, birth_date: ev.target.value }))} /></div>
-      <div className="field"><label>Pekerjaan</label><input value={form.occupation} onChange={(ev) => setForm((f) => ({ ...f, occupation: ev.target.value }))} /></div>
+      <div className="field"><label>{tx("Nama")}</label><input value={form.full_name} onChange={(ev) => setForm((f) => ({ ...f, full_name: ev.target.value }))} /></div>
+      <div className="field"><label>{tx("Hubungan")}</label><input value={form.relationship} onChange={(ev) => setForm((f) => ({ ...f, relationship: ev.target.value }))} placeholder={tx("mis. Anak, Istri, Ayah")} /></div>
+      <div className="field"><label>{tx("Tanggal lahir")}</label><input type="date" value={form.birth_date || ''} onChange={(ev) => setForm((f) => ({ ...f, birth_date: ev.target.value }))} /></div>
+      <div className="field"><label>{tx("Pekerjaan")}</label><input value={form.occupation} onChange={(ev) => setForm((f) => ({ ...f, occupation: ev.target.value }))} /></div>
       {error && <p className="error-text">{error}</p>}
       <div style={{ display: 'flex', gap: 10 }}>
-        <button type="button" className="primary-btn" style={{ background: '#eee', color: '#333' }} onClick={onCancel}>Batal</button>
-        <button className="primary-btn" disabled={profile.saving}>{profile.saving ? 'Menyimpan...' : 'Simpan'}</button>
+        <button type="button" className="primary-btn" style={{ background: '#eee', color: '#333' }} onClick={onCancel}>{tx("Batal")}</button>
+        <button className="primary-btn" disabled={profile.saving}>{profile.saving ? tx("Menyimpan...") : tx("Simpan")}</button>
       </div>
     </form>
   )
@@ -251,7 +249,7 @@ export function EducationList({ profile, onToast }) {
       <EducationForm
         row={editing}
         onCancel={() => setEditing(null)}
-        onSaved={() => { setEditing(null); onToast('Data disimpan') }}
+        onSaved={() => { setEditing(null); onToast(tx("Data disimpan")) }}
         profile={profile}
       />
     )
@@ -262,23 +260,21 @@ export function EducationList({ profile, onToast }) {
 
   return (
     <div>
-      <strong style={{ fontSize: 15 }}>Pendidikan</strong>
+      <strong style={{ fontSize: 15 }}>{tx("Pendidikan")}</strong>
       {education.length === 0 ? (
-        <div className="empty-state" style={{ padding: '14px 0' }}><p>Belum ada data pendidikan.</p></div>
+        <div className="empty-state" style={{ padding: '14px 0' }}><p>{tx("Belum ada data pendidikan.")}</p></div>
       ) : education.map((r) => <EduRow key={r.id} r={r} profile={profile} onEdit={() => setEditing(r)} onToast={onToast} />)}
 
-      <strong style={{ fontSize: 15, display: 'block', marginTop: 20 }}>Pengalaman kerja</strong>
+      <strong style={{ fontSize: 15, display: 'block', marginTop: 20 }}>{tx("Pengalaman kerja")}</strong>
       {experience.length === 0 ? (
-        <div className="empty-state" style={{ padding: '14px 0' }}><p>Belum ada data pengalaman kerja.</p></div>
+        <div className="empty-state" style={{ padding: '14px 0' }}><p>{tx("Belum ada data pengalaman kerja.")}</p></div>
       ) : experience.map((r) => <EduRow key={r.id} r={r} profile={profile} onEdit={() => setEditing(r)} onToast={onToast} />)}
 
       <div style={{ display: 'flex', gap: 10, marginTop: 14 }}>
         <button className="primary-btn" style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }} onClick={() => setEditing({ kind: 'education' })}>
-          <Plus size={18} /> Pendidikan
-        </button>
+          <Plus size={18} />{' '}{tx("Pendidikan")}</button>
         <button className="primary-btn" style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }} onClick={() => setEditing({ kind: 'experience' })}>
-          <Plus size={18} /> Pengalaman
-        </button>
+          <Plus size={18} />{' '}{tx("Pengalaman")}</button>
       </div>
     </div>
   )
@@ -293,7 +289,7 @@ function EduRow({ r, profile, onEdit, onToast }) {
       </div>
       <div className="actions">
         <button onClick={onEdit}><Pencil size={17} /></button>
-        <button onClick={async () => { await profile.deleteEducation(r.id); onToast('Data dihapus') }}><Trash2 size={17} /></button>
+        <button onClick={async () => { await profile.deleteEducation(r.id); onToast(tx("Data dihapus")) }}><Trash2 size={17} /></button>
       </div>
     </div>
   )
@@ -310,7 +306,7 @@ function EducationForm({ row, onCancel, onSaved, profile }) {
   async function submit(ev) {
     ev.preventDefault()
     setError('')
-    if (!form.institution.trim()) { setError(isExperience ? 'Nama perusahaan wajib diisi' : 'Nama institusi wajib diisi'); return }
+    if (!form.institution.trim()) { setError(isExperience ? tx("Nama perusahaan wajib diisi") : tx("Nama institusi wajib diisi")); return }
     const r = await profile.upsertEducation({
       p_id: row.id || null, p_kind: row.kind || 'education', p_institution: form.institution,
       p_title: form.title || null, p_start_year: form.start_year ? Number(form.start_year) : null,
@@ -323,22 +319,22 @@ function EducationForm({ row, onCancel, onSaved, profile }) {
   return (
     <form onSubmit={submit}>
       <div className="field">
-        <label>{isExperience ? 'Nama perusahaan' : 'Nama sekolah/kampus'}</label>
+        <label>{isExperience ? tx("Nama perusahaan") : tx("Nama sekolah/kampus")}</label>
         <input value={form.institution} onChange={(ev) => setForm((f) => ({ ...f, institution: ev.target.value }))} />
       </div>
       <div className="field">
-        <label>{isExperience ? 'Jabatan' : 'Jenjang & jurusan'}</label>
+        <label>{isExperience ? tx("Jabatan") : tx("Jenjang & jurusan")}</label>
         <input value={form.title} onChange={(ev) => setForm((f) => ({ ...f, title: ev.target.value }))} />
       </div>
       <div style={{ display: 'flex', gap: 12 }}>
-        <div className="field" style={{ flex: 1 }}><label>Tahun mulai</label><input value={form.start_year} onChange={(ev) => setForm((f) => ({ ...f, start_year: ev.target.value }))} /></div>
-        <div className="field" style={{ flex: 1 }}><label>Tahun selesai</label><input value={form.end_year} onChange={(ev) => setForm((f) => ({ ...f, end_year: ev.target.value }))} /></div>
+        <div className="field" style={{ flex: 1 }}><label>{tx("Tahun mulai")}</label><input value={form.start_year} onChange={(ev) => setForm((f) => ({ ...f, start_year: ev.target.value }))} /></div>
+        <div className="field" style={{ flex: 1 }}><label>{tx("Tahun selesai")}</label><input value={form.end_year} onChange={(ev) => setForm((f) => ({ ...f, end_year: ev.target.value }))} /></div>
       </div>
-      <div className="field"><label>Keterangan</label><textarea value={form.description} onChange={(ev) => setForm((f) => ({ ...f, description: ev.target.value }))} /></div>
+      <div className="field"><label>{tx("Keterangan")}</label><textarea value={form.description} onChange={(ev) => setForm((f) => ({ ...f, description: ev.target.value }))} /></div>
       {error && <p className="error-text">{error}</p>}
       <div style={{ display: 'flex', gap: 10 }}>
-        <button type="button" className="primary-btn" style={{ background: '#eee', color: '#333' }} onClick={onCancel}>Batal</button>
-        <button className="primary-btn" disabled={profile.saving}>{profile.saving ? 'Menyimpan...' : 'Simpan'}</button>
+        <button type="button" className="primary-btn" style={{ background: '#eee', color: '#333' }} onClick={onCancel}>{tx("Batal")}</button>
+        <button className="primary-btn" disabled={profile.saving}>{profile.saving ? tx("Menyimpan...") : tx("Simpan")}</button>
       </div>
     </form>
   )
@@ -364,19 +360,19 @@ export function PayrollForm({ profile, onToast }) {
       p_bpjs_kesehatan: form.bpjs_kesehatan || null, p_bpjs_ketenagakerjaan: form.bpjs_ketenagakerjaan || null,
     })
     if (!r.ok) { setError(r.message); return }
-    onToast('Info payroll disimpan')
+    onToast(tx("Info payroll disimpan"))
   }
 
   return (
     <form onSubmit={submit}>
-      <div className="field"><label>Nama bank</label><input value={form.bank_name} onChange={(ev) => setForm((f) => ({ ...f, bank_name: ev.target.value }))} /></div>
-      <div className="field"><label>Nomor rekening</label><input value={form.bank_account_number} onChange={(ev) => setForm((f) => ({ ...f, bank_account_number: ev.target.value }))} /></div>
-      <div className="field"><label>Atas nama</label><input value={form.bank_account_holder} onChange={(ev) => setForm((f) => ({ ...f, bank_account_holder: ev.target.value }))} /></div>
-      <div className="field"><label>NPWP</label><input value={form.npwp} onChange={(ev) => setForm((f) => ({ ...f, npwp: ev.target.value }))} /></div>
-      <div className="field"><label>No. BPJS Kesehatan</label><input value={form.bpjs_kesehatan} onChange={(ev) => setForm((f) => ({ ...f, bpjs_kesehatan: ev.target.value }))} /></div>
-      <div className="field"><label>No. BPJS Ketenagakerjaan</label><input value={form.bpjs_ketenagakerjaan} onChange={(ev) => setForm((f) => ({ ...f, bpjs_ketenagakerjaan: ev.target.value }))} /></div>
+      <div className="field"><label>{tx("Nama bank")}</label><input value={form.bank_name} onChange={(ev) => setForm((f) => ({ ...f, bank_name: ev.target.value }))} /></div>
+      <div className="field"><label>{tx("Nomor rekening")}</label><input value={form.bank_account_number} onChange={(ev) => setForm((f) => ({ ...f, bank_account_number: ev.target.value }))} /></div>
+      <div className="field"><label>{tx("Atas nama")}</label><input value={form.bank_account_holder} onChange={(ev) => setForm((f) => ({ ...f, bank_account_holder: ev.target.value }))} /></div>
+      <div className="field"><label>{tx("NPWP")}</label><input value={form.npwp} onChange={(ev) => setForm((f) => ({ ...f, npwp: ev.target.value }))} /></div>
+      <div className="field"><label>{tx("No. BPJS Kesehatan")}</label><input value={form.bpjs_kesehatan} onChange={(ev) => setForm((f) => ({ ...f, bpjs_kesehatan: ev.target.value }))} /></div>
+      <div className="field"><label>{tx("No. BPJS Ketenagakerjaan")}</label><input value={form.bpjs_ketenagakerjaan} onChange={(ev) => setForm((f) => ({ ...f, bpjs_ketenagakerjaan: ev.target.value }))} /></div>
       {error && <p className="error-text">{error}</p>}
-      <button className="primary-btn" disabled={profile.saving}>{profile.saving ? 'Menyimpan...' : 'Simpan'}</button>
+      <button className="primary-btn" disabled={profile.saving}>{profile.saving ? tx("Menyimpan...") : tx("Simpan")}</button>
     </form>
   )
 }
@@ -393,17 +389,17 @@ export function AdditionalForm({ profile, onToast }) {
     setError('')
     const r = await profile.updateAdditional({ p_notes: notes || null })
     if (!r.ok) { setError(r.message); return }
-    onToast('Info tambahan disimpan')
+    onToast(tx("Info tambahan disimpan"))
   }
 
   return (
     <form onSubmit={submit}>
       <div className="field">
-        <label>Catatan tambahan</label>
-        <textarea value={notes} onChange={(ev) => setNotes(ev.target.value)} placeholder="Tulis info tambahan di sini..." style={{ minHeight: 160 }} />
+        <label>{tx("Catatan tambahan")}</label>
+        <textarea value={notes} onChange={(ev) => setNotes(ev.target.value)} placeholder={tx("Tulis info tambahan di sini...")} style={{ minHeight: 160 }} />
       </div>
       {error && <p className="error-text">{error}</p>}
-      <button className="primary-btn" disabled={profile.saving}>{profile.saving ? 'Menyimpan...' : 'Simpan'}</button>
+      <button className="primary-btn" disabled={profile.saving}>{profile.saving ? tx("Menyimpan...") : tx("Simpan")}</button>
     </form>
   )
 }
@@ -436,10 +432,10 @@ export function FilesList({ employeeId, onToast }) {
         employee_id: employeeId, file_name: file.name, file_url: pub.publicUrl,
       })
       if (insErr) throw insErr
-      onToast('File berhasil diunggah')
+      onToast(tx("File berhasil diunggah"))
       await load()
     } catch (err) {
-      onToast(err.message || 'Gagal mengunggah file')
+      onToast(err.message || tx("Gagal mengunggah file"))
     } finally {
       setUploading(false)
     }
@@ -447,23 +443,23 @@ export function FilesList({ employeeId, onToast }) {
 
   async function handleDelete(id) {
     await supabase.from('employee_files').delete().eq('id', id)
-    onToast('File dihapus')
+    onToast(tx("File dihapus"))
     load()
   }
 
-  if (files === null) return <div className="empty-state"><p>Memuat...</p></div>
+  if (files === null) return <div className="empty-state"><p>{tx("Memuat...")}</p></div>
 
   return (
     <div>
       {files.length === 0 ? (
-        <div className="empty-state"><p>Belum ada file yang diunggah.</p></div>
+        <div className="empty-state"><p>{tx("Belum ada file yang diunggah.")}</p></div>
       ) : (
         files.map((f) => (
           <div key={f.id} className="list-item">
             <FileText size={20} color="#8a847c" />
             <div className="info">
               <div className="name">{f.file_name}</div>
-              <div className="sub">{new Date(f.created_at).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })}</div>
+              <div className="sub">{new Date(f.created_at).toLocaleDateString(locale(), { day: '2-digit', month: 'short', year: 'numeric' })}</div>
             </div>
             <div className="actions">
               <a href={f.file_url} target="_blank" rel="noreferrer"><Download size={17} /></a>
@@ -473,7 +469,7 @@ export function FilesList({ employeeId, onToast }) {
         ))
       )}
       <label className="primary-btn" style={{ marginTop: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, cursor: 'pointer' }}>
-        <Plus size={18} /> {uploading ? 'Mengunggah...' : 'Unggah file'}
+        <Plus size={18} /> {uploading ? tx("Mengunggah...") : tx("Unggah file")}
         <input type="file" onChange={handleUpload} disabled={uploading} style={{ display: 'none' }} />
       </label>
     </div>
@@ -491,10 +487,10 @@ export function WarningsList({ employeeId }) {
       .then(({ data }) => setWarnings(data || []))
   }, [employeeId])
 
-  if (warnings === null) return <div className="empty-state"><p>Memuat...</p></div>
+  if (warnings === null) return <div className="empty-state"><p>{tx("Memuat...")}</p></div>
 
   if (warnings.length === 0) {
-    return <div className="empty-state"><p>Tidak ada peringatan. Pertahankan kinerja baik Anda!</p></div>
+    return <div className="empty-state"><p>{tx("Tidak ada peringatan. Pertahankan kinerja baik Anda!")}</p></div>
   }
 
   return (
@@ -508,7 +504,7 @@ export function WarningsList({ employeeId }) {
           </div>
           {w.description && <p style={{ fontSize: 13.5, color: 'var(--text-muted)', margin: '4px 0' }}>{w.description}</p>}
           <div style={{ fontSize: 12.5, color: '#a39c94' }}>
-            {new Date(w.issued_date).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })}
+            {new Date(w.issued_date).toLocaleDateString(locale(), { day: '2-digit', month: 'short', year: 'numeric' })}
             {w.issued_by && ` · ${w.issued_by}`}
           </div>
         </div>

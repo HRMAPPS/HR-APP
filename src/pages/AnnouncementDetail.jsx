@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabaseClient'
 import { linkifyText } from '../lib/linkify'
 import { useIsDesktop } from '../lib/useIsDesktop'
 
+import { tx, locale } from '../lib/i18n'
 // Full-page announcement view, opened from the "Pengumuman" lists on
 // Home. Shows the full body text and, when present, a downloadable
 // attachment card.
@@ -28,31 +29,28 @@ export default function AnnouncementDetail({ id, onBack }) {
         </div>
       )}
       {isDesktop && (
-        <button className="dsk-outline-btn" style={{ margin: '32px 0 0 48px' }} onClick={onBack}>&larr; KEMBALI</button>
+        <button className="dsk-outline-btn" style={{ margin: '32px 0 0 48px' }} onClick={onBack}>{tx("← KEMBALI")}</button>
       )}
 
       {loading ? (
-        <div className="empty-state"><p>Memuat...</p></div>
+        <div className="empty-state"><p>{tx("Memuat...")}</p></div>
       ) : !a ? (
-        <div className="empty-state"><p>Pengumuman tidak ditemukan.</p></div>
+        <div className="empty-state"><p>{tx("Pengumuman tidak ditemukan.")}</p></div>
       ) : (
         <>
           <div style={isDesktop ? { padding: '28px 48px 22px', maxWidth: 760 } : { padding: '4px 18px 22px' }}>
             <h1 style={isDesktop ? { fontSize: 32, fontWeight: 300, margin: '2px 0 18px', lineHeight: 1.25, letterSpacing: '-.01em' } : { fontSize: 22, fontWeight: 800, margin: '2px 0 14px', lineHeight: 1.3 }}>{a.title}</h1>
 
             {a.author && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6, fontSize: 14, color: 'var(--text-muted)' }}>
-                Oleh
-                {a.author_avatar_url
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6, fontSize: 14, color: 'var(--text-muted)' }}>{tx("Oleh")}{a.author_avatar_url
                   ? <img src={a.author_avatar_url} alt="" style={{ width: 24, height: 24, borderRadius: '50%', objectFit: 'cover' }} />
                   : <span className="avatar" style={{ width: 24, height: 24 }}><User size={13} /></span>}
                 <span>{a.author}</span>
               </div>
             )}
 
-            <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 14 }}>
-              Diposting pada {new Date(a.published_at).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })}
-              {' '}pukul {new Date(a.published_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
+            <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 14 }}>{tx("Diposting pada")}{' '}{new Date(a.published_at).toLocaleDateString(locale(), { day: '2-digit', month: 'short', year: 'numeric' })}
+              {' '}{tx("pukul")}{' '}{new Date(a.published_at).toLocaleTimeString(locale(), { hour: '2-digit', minute: '2-digit' })}
             </div>
 
             {a.category && (
@@ -60,7 +58,7 @@ export default function AnnouncementDetail({ id, onBack }) {
                 display: 'inline-block', fontSize: 12.5, fontWeight: 600, color: '#fff', background: 'var(--blue)',
                 borderRadius: 20, padding: '5px 14px',
               }}>
-                {a.category}
+                {tx(a.category)}
               </span>
             )}
           </div>
@@ -72,7 +70,7 @@ export default function AnnouncementDetail({ id, onBack }) {
 
             {a.attachment_url && (
               <div style={{ marginTop: 26 }}>
-                <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 10 }}>Lampiran</div>
+                <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 10 }}>{tx("Lampiran")}</div>
                 <a
                   href={a.attachment_url}
                   target="_blank"
@@ -91,7 +89,7 @@ export default function AnnouncementDetail({ id, onBack }) {
                     fontSize: 12, color: 'var(--text)', maxWidth: 120, textAlign: 'center',
                     overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                   }}>
-                    {a.attachment_name || 'Lampiran'}
+                    {a.attachment_name || tx("Lampiran")}
                   </span>
                 </a>
               </div>

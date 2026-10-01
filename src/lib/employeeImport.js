@@ -1,6 +1,7 @@
 // Import karyawan massal dari Excel (template: public/template-import-karyawan.xlsx)
 import { supabase } from './supabaseClient'
 
+import { tx } from './i18n'
 export const TEMPLATE_URL = `${import.meta.env.BASE_URL}template-import-karyawan.xlsx`
 
 const DAY_MAP = { min: 0, sen: 1, sel: 2, rab: 3, kam: 4, jum: 5, sab: 6 }
@@ -28,7 +29,7 @@ function toIsoDate(v) {
   if (m) return { value: `${m[1]}-${m[2].padStart(2, '0')}-${m[3].padStart(2, '0')}` }
   m = s.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})$/) // DD/MM/YYYY
   if (m) return { value: `${m[3]}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}` }
-  return { error: `Tanggal "${s}" tidak valid (pakai YYYY-MM-DD)` }
+  return { error: tx("Tanggal \"{0}\" tidak valid (pakai YYYY-MM-DD)", [s]) }
 }
 
 export async function readEmployeeFile(file) {
@@ -69,22 +70,22 @@ export function buildPlan(rows, existingEmployees, shifts, departments = []) {
       if (!it.name) fail('Nama Lengkap kosong')
       if (it.code) {
         const key = it.code.toLowerCase()
-        if (existingByCode.has(key)) { it.status = 'skip'; it.message = 'Kode sudah ada di sistem (dilewati)' }
+        if (existingByCode.has(key)) { it.status = 'skip'; it.message = tx("Kode sudah ada di sistem (dilewati)") }
         else if (seen.has(key)) fail('Kode dobel di file ini')
         seen.add(key)
       }
-      if (!ROLES.includes(it.role)) fail(`Role "${it.role}" tidak valid (employee/hr/admin)`)
+      if (!ROLES.includes(it.role)) fail(tx("Role \"{0}\" tidak valid (employee/hr/admin)", [it.role]))
 
       if (it.shiftName) {
         const s = shiftByName.get(it.shiftName.toLowerCase())
-        if (!s) fail(`Shift "${it.shiftName}" tidak ditemukan`)
+        if (!s) fail(tx("Shift \"{0}\" tidak ditemukan", [it.shiftName]))
         else it.shift_id = s.id
       }
       const daysRaw = str(r.days)
       if (daysRaw) {
         const parts = daysRaw.split(/[,;\s]+/).filter(Boolean).map((d) => d.toLowerCase().slice(0, 3))
         const bad = parts.find((d) => !(d in DAY_MAP))
-        if (bad) fail(`Hari "${bad}" tidak valid (Sen,Sel,Rab,Kam,Jum,Sab,Min)`)
+        if (bad) fail(tx("Hari \"{0}\" tidak valid (Sen,Sel,Rab,Kam,Jum,Sab,Min)", [bad]))
         else if (parts.length < 7) it.work_days = [...new Set(parts.map((d) => DAY_MAP[d]))]
       }
       const jd = toIsoDate(r.join_date)
@@ -97,7 +98,7 @@ export function buildPlan(rows, existingEmployees, shifts, departments = []) {
   items.forEach((it) => {
     if (it.status !== 'ok' || !it.manager_code) return
     const k = it.manager_code.toLowerCase()
-    if (!existingByCode.has(k) && !willExist.has(k)) { it.status = 'error'; it.message = `Kode Atasan "${it.manager_code}" tidak ditemukan` }
+    if (!existingByCode.has(k) && !willExist.has(k)) { it.status = 'error'; it.message = tx("Kode Atasan \"{0}\" tidak ditemukan", [it.manager_code]) }
   })
   return items
 }
@@ -119,7 +120,7 @@ export async function runImport(items, existingEmployees, onProgress, existingDe
   while (pending.length) {
     const ready = pending.filter((i) => !i.manager_code || idByCode.has(i.manager_code.toLowerCase()))
     if (ready.length === 0) { // sisa = atasan saling merujuk (siklus)
-      pending.forEach((i) => failed.push({ row: i.row, code: i.code, error: 'Rantai atasan tidak bisa diselesaikan (siklus)' }))
+      pending.forEach((i) => failed.push({ row: i.row, code: i.code, error: tx("Rantai atasan tidak bisa diselesaikan (siklus)") }))
       break
     }
     for (const it of ready) {

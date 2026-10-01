@@ -5,6 +5,7 @@ import { useBackHandler } from '../lib/backStack'
 import { useIsDesktop } from '../lib/useIsDesktop'
 import ViewablePhoto from '../components/PhotoViewer'
 
+import { tx } from '../lib/i18n'
 function initials(name) {
   return (name || '').split(' ').slice(0, 2).map((n) => n[0]).join('').toUpperCase()
 }
@@ -34,10 +35,10 @@ function waLink(phone) {
 }
 
 const COLUMNS = [
-  { key: 'full_name', label: 'Employee name' },
-  { key: 'employee_code', label: 'Employee ID' },
-  { key: 'department', label: 'Organization' },
-  { key: 'position', label: 'Job position' },
+  { key: 'full_name', label: tx("Employee name") },
+  { key: 'employee_code', label: tx("Employee ID") },
+  { key: 'department', label: tx("Organization") },
+  { key: 'position', label: tx("Job position") },
   { key: 'email', label: 'Email' },
 ]
 
@@ -82,7 +83,7 @@ export default function Employees({ viewer, onNavigate }) {
     return (
       <div>
         <div style={{ padding: '18px 4px 14px' }}>
-          <h1 style={{ fontSize: 26, margin: 0 }}>Employees</h1>
+          <h1 style={{ fontSize: 26, margin: 0 }}>{tx("Employees")}</h1>
         </div>
 
         <div style={{ background: '#fff', borderRadius: '14px 14px 0 0', padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 20, boxShadow: 'var(--shadow-xs)' }}>
@@ -90,21 +91,19 @@ export default function Employees({ viewer, onNavigate }) {
             display: 'flex', alignItems: 'center', gap: 6, background: '#eef1fb', color: 'var(--blue)', border: 'none',
             borderRadius: 8, padding: '7px 12px', fontWeight: 600, fontSize: 13.5, cursor: 'pointer',
           }}>
-            <List size={15} /> Directory
-          </button>
+            <List size={15} />{' '}{tx("Directory")}</button>
           <button onClick={() => onNavigate?.('org-chart')} style={{
             display: 'flex', alignItems: 'center', gap: 6, background: 'none', color: 'var(--text-muted)', border: 'none',
             fontWeight: 500, fontSize: 13.5, cursor: 'pointer',
           }}>
-            <Network size={15} /> Org chart
-          </button>
+            <Network size={15} />{' '}{tx("Org chart")}</button>
           <div style={{ flex: 1 }} />
-          <button style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', display: 'flex' }} title="Columns">
+          <button style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', display: 'flex' }} title={tx("Columns")}>
             <Columns3 size={17} />
           </button>
           <div className="search-box" style={{ margin: 0, width: 220 }}>
             <Search size={16} />
-            <input placeholder="Search..." value={query} onChange={(e) => setQuery(e.target.value)} />
+            <input placeholder={tx("Search...")} value={query} onChange={(e) => setQuery(e.target.value)} />
           </div>
         </div>
 
@@ -122,9 +121,9 @@ export default function Employees({ viewer, onNavigate }) {
           </div>
 
           {loading ? (
-            <div className="empty-state"><p>Memuat...</p></div>
+            <div className="empty-state"><p>{tx("Memuat...")}</p></div>
           ) : list.length === 0 ? (
-            <div className="empty-state"><h3>Tidak ada karyawan</h3><p>Coba kata kunci pencarian lain.</p></div>
+            <div className="empty-state"><h3>{tx("Tidak ada karyawan")}</h3><p>{tx("Coba kata kunci pencarian lain.")}</p></div>
           ) : (
             list.map((emp) => (
               <button key={emp.id} onClick={() => setSelected(emp)} className="emp-row" style={{
@@ -150,22 +149,21 @@ export default function Employees({ viewer, onNavigate }) {
   return (
     <div>
       <div className="topbar" style={{ paddingBottom: 4 }}>
-        <div style={{ fontSize: 22, fontWeight: 700 }}>
-          Employees <span style={{ color: '#a39c94', fontWeight: 500 }}>{count}</span>
+        <div style={{ fontSize: 22, fontWeight: 700 }}>{tx("Employees")}{' '}<span style={{ color: '#a39c94', fontWeight: 500 }}>{count}</span>
         </div>
       </div>
 
       <div className="search-box">
         <Search size={18} />
-        <input placeholder="Cari Karyawan" value={query} onChange={(e) => setQuery(e.target.value)} />
+        <input placeholder={tx("Cari Karyawan")} value={query} onChange={(e) => setQuery(e.target.value)} />
       </div>
 
       <div>
-        {loading && <div className="empty-state"><p>Memuat...</p></div>}
+        {loading && <div className="empty-state"><p>{tx("Memuat...")}</p></div>}
         {!loading && list.length === 0 && (
           <div className="empty-state">
-            <h3>Tidak ada karyawan</h3>
-            <p>Coba kata kunci pencarian lain.</p>
+            <h3>{tx("Tidak ada karyawan")}</h3>
+            <p>{tx("Coba kata kunci pencarian lain.")}</p>
           </div>
         )}
         {!loading && list.map((emp) => (
@@ -181,7 +179,7 @@ export default function Employees({ viewer, onNavigate }) {
             </button>
             <div className="actions">
               {isHr && (
-                <a href={emp.phone ? `tel:${emp.phone}` : undefined} title="Telepon"
+                <a href={emp.phone ? `tel:${emp.phone}` : undefined} title={tx("Telepon")}
                   style={{ opacity: emp.phone ? 1 : 0.35, pointerEvents: emp.phone ? 'auto' : 'none' }}>
                   <Phone size={18} />
                 </a>
@@ -207,9 +205,9 @@ export default function Employees({ viewer, onNavigate }) {
 function EmployeeDetail({ emp, isHr, onBack }) {
   const rows = [
     ['Email', emp.email || '-'],
-    ['ID Karyawan', emp.employee_code || '-'],
-    ['Posisi pekerjaan', emp.position || '-'],
-    ['Nama Organisasi', emp.department || '-'],
+    [tx("ID Karyawan"), emp.employee_code || '-'],
+    [tx("Posisi pekerjaan"), emp.position || '-'],
+    [tx("Nama Organisasi"), emp.department || '-'],
   ]
 
   return (
@@ -230,7 +228,7 @@ function EmployeeDetail({ emp, isHr, onBack }) {
 
         <div style={{ display: 'flex', justifyContent: 'center', gap: 16, marginTop: 20 }}>
           {isHr && (
-            <a href={emp.phone ? `tel:${emp.phone}` : undefined} title="Telepon" style={{
+            <a href={emp.phone ? `tel:${emp.phone}` : undefined} title={tx("Telepon")} style={{
               width: 48, height: 48, borderRadius: '50%', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center',
               boxShadow: 'var(--shadow-sm)', color: 'var(--blue)', opacity: emp.phone ? 1 : 0.35, pointerEvents: emp.phone ? 'auto' : 'none',
             }}>
@@ -264,9 +262,7 @@ function EmployeeDetail({ emp, isHr, onBack }) {
       </div>
 
       {!isHr && (
-        <p style={{ textAlign: 'center', fontSize: 12.5, color: 'var(--text-muted)', padding: '0 30px 20px' }}>
-          Telepon &amp; WhatsApp hanya bisa diakses oleh HR.
-        </p>
+        <p style={{ textAlign: 'center', fontSize: 12.5, color: 'var(--text-muted)', padding: '0 30px 20px' }}>{tx("Telepon & WhatsApp hanya bisa diakses oleh HR.")}</p>
       )}
     </div>
   )

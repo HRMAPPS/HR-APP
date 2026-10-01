@@ -2,8 +2,9 @@ import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import './AttendanceLog.css'
 
+import { tx } from '../lib/i18n'
 const TZ = 'Asia/Jakarta'
-const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+const MONTHS = ['Jan','Feb','Mar','Apr',tx("May"),'Jun','Jul',tx("Aug"),'Sep',tx("Oct"),'Nov',tx("Dec")]
 const iso = (d) => d.toISOString().slice(0, 10)
 const utc = (y, m, d) => new Date(Date.UTC(y, m, d))
 const mins = (t) => { const [h, m] = t.split(':'); return +h * 60 + +m }
@@ -57,8 +58,8 @@ function buildRows({ start, end }, att, sched, shifts, holidays, emp, today) {
   return rows
 }
 
-const LABEL = { holiday: 'Holiday', off: 'Day off', absent: 'Absent', upcoming: 'Upcoming' }
-const FLAG = { late: 'Late clock in', early: 'Early clock out', noin: 'No clock in', noout: 'No clock out' }
+const LABEL = { holiday: tx("Holiday"), off: tx("Day off"), absent: tx("Absent"), upcoming: 'Upcoming' }
+const FLAG = { late: tx("Late clock in"), early: tx("Early clock out"), noin: tx("No clock in"), noout: tx("No clock out") }
 
 export default function AttendanceLog() {
   const now = new Date()
@@ -93,7 +94,7 @@ export default function AttendanceLog() {
         const rows = buildRows(period, by(att, 'work_date'), by(sch, 'work_date'), by(shf, 'id'), cal.data || [], emp, today)
         if (alive) setState({ loading: false, error: null, emp, rows })
       } catch (e) {
-        if (alive) setState({ loading: false, error: e.message || 'Failed to load attendance', emp: null, rows: [] })
+        if (alive) setState({ loading: false, error: e.message || tx("Failed to load attendance"), emp: null, rows: [] })
       }
     })()
     return () => { alive = false }
@@ -130,11 +131,11 @@ export default function AttendanceLog() {
       <div className="al-wrap">
         <header className="al-head">
           <div>
-            <h1>My attendance log</h1>
+            <h1>{tx("My attendance log")}</h1>
             <div className="al-sub">{emp ? `${emp.full_name}${emp.position ? ' · ' + emp.position : ''}` : ' '}</div>
           </div>
           <label className="al-period">
-            <select value={ym} onChange={(e) => setYm(e.target.value)} aria-label="Period">
+            <select value={ym} onChange={(e) => setYm(e.target.value)} aria-label={tx("Period")}>
               {months.map((m) => <option key={m.v} value={m.v}>{m.t}</option>)}
             </select>
             <span className="al-dim">{fmt(period.start)} – {fmt(period.end)}</span>
@@ -154,13 +155,13 @@ export default function AttendanceLog() {
               <b>{pct}%</b>
             </div>
             <div>
-              <h2>{stats.onTime} of {worked} workdays on time</h2>
-              <p>{stats.late} late clock-ins, {stats.noIn} missing clock-in and {stats.absent} absences this period.</p>
+              <h2>{stats.onTime}{' '}{tx("of")}{' '}{worked}{' '}{tx("workdays on time")}</h2>
+              <p>{stats.late}{' '}{tx("late clock-ins,")}{' '}{stats.noIn}{' '}{tx("missing clock-in and")}{' '}{stats.absent}{' '}{tx("absences this period.")}</p>
             </div>
           </div>
           <div className="al-card al-stats">
-            {[['On time', stats.onTime, 'g'], ['Late clock in', stats.late, 'w'], ['Early clock out', stats.early, ''], ['No clock out', stats.noOut, ''],
-              ['No clock in', stats.noIn, 'r'], ['Absent', stats.absent, 'r'], ['Day off', stats.off, ''], ['Time off', 0, '']].map(([l, v, c]) => (
+            {[[tx("On time"), stats.onTime, 'g'], [tx("Late clock in"), stats.late, 'w'], [tx("Early clock out"), stats.early, ''], [tx("No clock out"), stats.noOut, ''],
+              [tx("No clock in"), stats.noIn, 'r'], [tx("Absent"), stats.absent, 'r'], [tx("Day off"), stats.off, ''], [tx("Time off"), 0, '']].map(([l, v, c]) => (
               <div key={l} className={'al-stat ' + c}><b>{v}</b><span>{l}</span></div>
             ))}
           </div>
@@ -168,16 +169,16 @@ export default function AttendanceLog() {
 
         <section className="al-card al-table">
           <div className="al-filters" role="group" aria-label="Filter">
-            {[['all', 'All days'], ['work', 'Workdays'], ['late', 'Late'], ['issues', 'Needs attention'], ['off', 'Off & holidays']].map(([k, t]) => (
+            {[['all', tx("All days")], ['work', tx("Workdays")], ['late', tx("Late")], ['issues', tx("Needs attention")], ['off', tx("Off & holidays")]].map(([k, t]) => (
               <button key={k} type="button" className="al-chip" aria-pressed={filter === k} onClick={() => setFilter(k)}>{t}</button>
             ))}
           </div>
           <div className="al-scroll">
             <table>
-              <thead><tr><th>Date</th><th>Shift</th><th>Schedule</th><th>Clock in</th><th>Clock out</th><th>Worked</th><th>Status</th></tr></thead>
+              <thead><tr><th>{tx("Date")}</th><th>Shift</th><th>{tx("Schedule")}</th><th>Clock in</th><th>Clock out</th><th>{tx("Worked")}</th><th>Status</th></tr></thead>
               <tbody>
-                {loading && <tr><td colSpan="7" className="al-empty">Loading attendance…</td></tr>}
-                {!loading && !visible.length && <tr><td colSpan="7" className="al-empty">No days match this filter.</td></tr>}
+                {loading && <tr><td colSpan="7" className="al-empty">{tx("Loading attendance…")}</td></tr>}
+                {!loading && !visible.length && <tr><td colSpan="7" className="al-empty">{tx("No days match this filter.")}</td></tr>}
                 {!loading && visible.map((r) => {
                   const dow = r.date.toLocaleDateString('en-US', { weekday: 'short', timeZone: 'UTC' })
                   const weekend = dow === 'Sat' || dow === 'Sun' || r.kind === 'holiday'
@@ -200,7 +201,7 @@ export default function AttendanceLog() {
                       <td className={'al-t' + (r.clockOut ? '' : ' al-dim')}>{r.clockOut || '–'}</td>
                       <td className="al-t">{r.worked || '–'}</td>
                       <td>
-                        {work && !r.flags.length && <span className="al-pill ok">On time</span>}
+                        {work && !r.flags.length && <span className="al-pill ok">{tx("On time")}</span>}
                         {work && r.flags.map((f) => <span key={f} className={'al-pill ' + (f === 'late' || f === 'early' ? 'late' : 'hol')}>{FLAG[f]}</span>)}
                         {!work && <span className={'al-pill ' + (r.kind === 'absent' ? 'hol' : r.kind === 'holiday' ? 'hol' : 'off')}>{LABEL[r.kind]}</span>}
                       </td>

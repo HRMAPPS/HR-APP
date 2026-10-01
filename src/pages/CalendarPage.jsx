@@ -8,16 +8,17 @@ import { todayStr } from '../lib/dateUtils'
 import { useBackHandler } from '../lib/backStack'
 import { useIsDesktop } from '../lib/useIsDesktop'
 
-const DOW = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab']
-const MONTHS_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des']
-const MONTHS_LONG = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember']
+import { tx } from '../lib/i18n'
+const DOW = [tx("Min"), tx("Sen"), tx("Sel"), tx("Rab"), tx("Kam"), tx("Jum"), tx("Sab")]
+const MONTHS_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', tx("Mei"), 'Jun', 'Jul', tx("Agu"), 'Sep', tx("Okt"), 'Nov', tx("Des")]
+const MONTHS_LONG = [tx("Januari"), tx("Februari"), tx("Maret"), 'April', tx("Mei"), tx("Juni"), tx("Juli"), tx("Agustus"), 'September', tx("Oktober"), 'November', tx("Desember")]
 
 // Urutan sama dengan tampilan: Aktivitas, Cuti, Hari libur, Ulang tahun.
 const KINDS = [
-  { key: 'activity', label: 'Aktivitas', icon: Building2, color: '#4356C4' },
-  { key: 'leave', label: 'Cuti', icon: Clock, color: '#E08A1E' },
-  { key: 'holiday', label: 'Hari libur', icon: CalendarDays, color: '#C0392B' },
-  { key: 'birthday', label: 'Ulang tahun', icon: Gift, color: '#D6479B' },
+  { key: 'activity', label: tx("Aktivitas"), icon: Building2, color: '#4356C4' },
+  { key: 'leave', label: tx("Cuti"), icon: Clock, color: '#E08A1E' },
+  { key: 'holiday', label: tx("Hari libur"), icon: CalendarDays, color: '#C0392B' },
+  { key: 'birthday', label: tx("Ulang tahun"), icon: Gift, color: '#D6479B' },
 ]
 const KIND_BY_KEY = Object.fromEntries(KINDS.map((k) => [k.key, k]))
 const PREVIEW_LIMIT = 5
@@ -35,10 +36,10 @@ const fmtTime = (t) => (t ? t.slice(0, 5) : '')
 function subtitleOf(ev) {
   if (ev.kind === 'activity') {
     const time = ev.start_time ? `${fmtTime(ev.start_time)}${ev.end_time ? ' - ' + fmtTime(ev.end_time) : ''}` : ''
-    return [time, ev.location].filter(Boolean).join(' · ') || 'Sepanjang hari'
+    return [time, ev.location].filter(Boolean).join(' · ') || tx("Sepanjang hari")
   }
   if (ev.kind === 'leave') return ev.subtitle
-  if (ev.kind === 'holiday') return 'Hari libur nasional'
+  if (ev.kind === 'holiday') return tx("Hari libur nasional")
   return ''
 }
 
@@ -65,7 +66,7 @@ export default function CalendarPage({ onBack, onToast, onNavigate }) {
     supabase.rpc('get_calendar_events', { p_start: start, p_end: end }).then(({ data, error }) => {
       if (cancelled) return
       setLoading(false)
-      if (error) { onToast?.('Gagal memuat kalender: ' + error.message); setEvents([]); return }
+      if (error) { onToast?.(tx("Gagal memuat kalender: ") + error.message); setEvents([]); return }
       setEvents(data || [])
     })
     return () => { cancelled = true }
@@ -131,15 +132,13 @@ export default function CalendarPage({ onBack, onToast, onNavigate }) {
       <div className="topbar">
         <button className="icon-btn" onClick={onBack}><ArrowLeft size={22} /></button>
         <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-          <button className="icon-btn" onClick={() => changeMonth(-1)} aria-label="Bulan sebelumnya"><ChevronLeft size={20} /></button>
+          <button className="icon-btn" onClick={() => changeMonth(-1)} aria-label={tx("Bulan sebelumnya")}><ChevronLeft size={20} /></button>
           <div style={{ fontWeight: 700, fontSize: 18, minWidth: 116, textAlign: 'center' }}>
             {MONTHS_SHORT[cursor.m]} {cursor.y}
           </div>
-          <button className="icon-btn" onClick={() => changeMonth(1)} aria-label="Bulan berikutnya"><ChevronRight size={20} /></button>
+          <button className="icon-btn" onClick={() => changeMonth(1)} aria-label={tx("Bulan berikutnya")}><ChevronRight size={20} /></button>
         </div>
-        <button className="icon-btn" style={{ color: '#4356C4', fontWeight: 600, fontSize: 13 }} onClick={goToday}>
-          Hari ini
-        </button>
+        <button className="icon-btn" style={{ color: '#4356C4', fontWeight: 600, fontSize: 13 }} onClick={goToday}>{tx("Hari ini")}</button>
       </div>
 
       <div className="cal-grid">
@@ -166,12 +165,11 @@ export default function CalendarPage({ onBack, onToast, onNavigate }) {
         })}
       </div>
 
-      <button className="cal-month-link" onClick={() => setSheet({ tab: 'activity' })}>
-        Lihat acara di bulan ini <ChevronRight size={18} />
+      <button className="cal-month-link" onClick={() => setSheet({ tab: 'activity' })}>{tx("Lihat acara di bulan ini")}{' '}<ChevronRight size={18} />
       </button>
 
       <div className="cal-day-panel">
-        <h3 className="cal-day-title">{selected === today ? 'Hari ini' : fmtDate(selected)}</h3>
+        <h3 className="cal-day-title">{selected === today ? tx("Hari ini") : fmtDate(selected)}</h3>
         {KINDS.map((k) => {
           const items = dayByKind(k.key)
           const isOpen = openKind === k.key && items.length > 0
@@ -193,7 +191,7 @@ export default function CalendarPage({ onBack, onToast, onNavigate }) {
                   {items.slice(0, PREVIEW_LIMIT).map((ev) => (
                     <EventRow key={ev.kind + ev.ref_id + ev.event_date} ev={ev} onClick={() => setDetail(ev)} />
                   ))}
-                  <button className="cal-see-all" onClick={() => setSheet({ tab: k.key })}>Lihat semua</button>
+                  <button className="cal-see-all" onClick={() => setSheet({ tab: k.key })}>{tx("Lihat semua")}</button>
                 </div>
               )}
             </div>
@@ -282,9 +280,9 @@ function MonthSheet({ cursor, events, selected, initialTab, onMonth, onClose, on
         <div className="sheet-handle" />
         <div className="sheet-title-row" style={{ marginBottom: 4 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <button className="icon-btn" onClick={() => onMonth(-1)} aria-label="Bulan sebelumnya"><ChevronLeft size={20} /></button>
+            <button className="icon-btn" onClick={() => onMonth(-1)} aria-label={tx("Bulan sebelumnya")}><ChevronLeft size={20} /></button>
             <h3 style={{ minWidth: 118, textAlign: 'center' }}>{MONTHS_SHORT[cursor.m]} {cursor.y}</h3>
-            <button className="icon-btn" onClick={() => onMonth(1)} aria-label="Bulan berikutnya"><ChevronRight size={20} /></button>
+            <button className="icon-btn" onClick={() => onMonth(1)} aria-label={tx("Bulan berikutnya")}><ChevronRight size={20} /></button>
           </div>
           <button className="sheet-close" onClick={onClose}><X size={24} /></button>
         </div>
@@ -306,7 +304,7 @@ function MonthSheet({ cursor, events, selected, initialTab, onMonth, onClose, on
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder={tab === 'activity' || tab === 'holiday' ? 'Cari acara' : 'Cari nama karyawan'}
+            placeholder={tab === 'activity' || tab === 'holiday' ? tx("Cari acara") : tx("Cari nama karyawan")}
           />
         </div>
 
@@ -314,8 +312,8 @@ function MonthSheet({ cursor, events, selected, initialTab, onMonth, onClose, on
           {groups.length === 0 ? (
             <div className="empty-state">
               <CalendarDays size={72} color="#5b9bf0" />
-              <h3>Tidak ada acara</h3>
-              <p>Acara pada tanggal yang dipilih akan terlihat di sini.</p>
+              <h3>{tx("Tidak ada acara")}</h3>
+              <p>{tx("Acara pada tanggal yang dipilih akan terlihat di sini.")}</p>
             </div>
           ) : groups.map(([date, list]) => (
             <div key={date} ref={date === anchorDate ? selectedRef : null}>
@@ -366,18 +364,18 @@ function DetailSheet({ ev, onClose, center }) {
 // Minggu dimulai Senin. Klik tanggal = filter panel ke tanggal itu; klik lagi = kembali sebulan.
 // ---------------------------------------------------------------------
 const DESKTOP_TABS = [
-  { key: 'all', label: 'Semua' },
-  { key: 'activity', label: 'Aktivitas' },
-  { key: 'leave', label: 'Cuti' },
-  { key: 'holiday', label: 'Libur' },
-  { key: 'birthday', label: 'Ulang tahun' },
+  { key: 'all', label: tx("Semua") },
+  { key: 'activity', label: tx("Aktivitas") },
+  { key: 'leave', label: tx("Cuti") },
+  { key: 'holiday', label: tx("Libur") },
+  { key: 'birthday', label: tx("Ulang tahun") },
 ]
-const DESKTOP_DOW = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min']
+const DESKTOP_DOW = [tx("Sen"), tx("Sel"), tx("Rab"), tx("Kam"), tx("Jum"), tx("Sab"), tx("Min")]
 const PAGE_SIZE = 5
 
 function lineOf(ev) {
   if (ev.kind === 'leave') return `${ev.title} — ${ev.subtitle}`
-  if (ev.kind === 'birthday') return `${ev.title} berulang tahun`
+  if (ev.kind === 'birthday') return tx("{0} berulang tahun", [ev.title])
   const sub = subtitleOf(ev)
   return ev.kind === 'activity' && sub !== 'Sepanjang hari' ? `${ev.title} · ${sub}` : ev.title
 }
@@ -412,13 +410,13 @@ function DesktopCalendar({ cursor, events, byDate, loading, today, onMonth, onTo
   return (
     <div className="dcal">
       <div className="dcal-banner">
-        <h1>Kalender Perusahaan</h1>
-        <p>Cuti, ulang tahun, hari libur, dan aktivitas HR</p>
+        <h1>{tx("Kalender Perusahaan")}</h1>
+        <p>{tx("Cuti, ulang tahun, hari libur, dan aktivitas HR")}</p>
       </div>
 
       <div className="dcal-wrap">
         {onRequestLeave && (
-          <div className="dcal-actions"><button className="dcal-outline-btn" onClick={onRequestLeave}>AJUKAN CUTI</button></div>
+          <div className="dcal-actions"><button className="dcal-outline-btn" onClick={onRequestLeave}>{tx("AJUKAN CUTI")}</button></div>
         )}
 
         <div className="dcal-card">
@@ -426,9 +424,9 @@ function DesktopCalendar({ cursor, events, byDate, loading, today, onMonth, onTo
             <div className="dcal-nav">
               <button className="dcal-year" onClick={() => onMonth(-12)}>{cursor.y - 1}</button>
               <div className="dcal-month">
-                <button onClick={() => onMonth(-1)} aria-label="Bulan sebelumnya"><ChevronLeft size={20} /></button>
+                <button onClick={() => onMonth(-1)} aria-label={tx("Bulan sebelumnya")}><ChevronLeft size={20} /></button>
                 <strong>{MONTHS_LONG[cursor.m]} {cursor.y}</strong>
-                <button onClick={() => onMonth(1)} aria-label="Bulan berikutnya"><ChevronRight size={20} /></button>
+                <button onClick={() => onMonth(1)} aria-label={tx("Bulan berikutnya")}><ChevronRight size={20} /></button>
               </div>
               <button className="dcal-year" onClick={() => onMonth(12)}>{cursor.y + 1}</button>
             </div>
@@ -448,7 +446,7 @@ function DesktopCalendar({ cursor, events, byDate, loading, today, onMonth, onTo
                   <button
                     key={c.date}
                     className={cls}
-                    title={evs.length ? `${evs.length} acara` : undefined}
+                    title={evs.length ? tx("{0} acara", [evs.length]) : undefined}
                     onClick={() => (c.inMonth ? setPicked(picked === c.date ? null : c.date) : onMonth((c.date < ymd(cursor.y, cursor.m, 1)) ? -1 : 1))}
                   >
                     {c.day}
@@ -459,15 +457,15 @@ function DesktopCalendar({ cursor, events, byDate, loading, today, onMonth, onTo
 
             <div className="dcal-foot">
               <div className="dcal-legend">
-                <span><i style={{ background: '#2e9e5b' }} /> Ada acara</span>
-                <span><i style={{ background: '#d21f2b' }} /> Minggu / libur</span>
+                <span><i style={{ background: '#2e9e5b' }} />{' '}{tx("Ada acara")}</span>
+                <span><i style={{ background: '#d21f2b' }} />{' '}{tx("Minggu / libur")}</span>
               </div>
-              <button className="dcal-today-btn" onClick={() => { onToday(); setPicked(null) }}>hari ini</button>
+              <button className="dcal-today-btn" onClick={() => { onToday(); setPicked(null) }}>{tx("hari ini")}</button>
             </div>
           </div>
 
           <div className="dcal-right">
-            <h2>Ada apa di {MONTHS_LONG[cursor.m]}?</h2>
+            <h2>{tx("Ada apa di")}{' '}{MONTHS_LONG[cursor.m]}?</h2>
             <div className="dcal-tabs">
               {DESKTOP_TABS.map((t) => (
                 <button key={t.key} className={tab === t.key ? 'active' : ''} onClick={() => setTab(t.key)}>{t.label}</button>
@@ -475,17 +473,16 @@ function DesktopCalendar({ cursor, events, byDate, loading, today, onMonth, onTo
             </div>
 
             {picked && (
-              <div className="dcal-picked">
-                Menampilkan {fmtDate(picked)}
-                <button onClick={() => setPicked(null)}><X size={14} /> Lihat sebulan</button>
+              <div className="dcal-picked">{tx("Menampilkan")}{' '}{fmtDate(picked)}
+                <button onClick={() => setPicked(null)}><X size={14} />{' '}{tx("Lihat sebulan")}</button>
               </div>
             )}
 
             <div className="dcal-list">
               {loading ? (
-                <p className="dcal-empty">Memuat…</p>
+                <p className="dcal-empty">{tx("Memuat…")}</p>
               ) : shown.length === 0 ? (
-                <p className="dcal-empty">Tidak ada acara{picked ? ' pada tanggal ini' : ' pada bulan ini'}.</p>
+                <p className="dcal-empty">{tx("Tidak ada acara")}{picked ? tx(" pada tanggal ini") : tx(" pada bulan ini")}.</p>
               ) : shown.map((ev) => (
                 <button key={ev.kind + ev.ref_id + ev.event_date} className="dcal-item" onClick={() => onPick(ev)}>
                   <b>{fmtDate(ev.event_date)}</b>
@@ -495,9 +492,9 @@ function DesktopCalendar({ cursor, events, byDate, loading, today, onMonth, onTo
             </div>
 
             <div className="dcal-pager">
-              <button onClick={() => setPage((p) => Math.max(0, p - 1))} disabled={page === 0} aria-label="Sebelumnya"><ChevronLeft size={20} /></button>
+              <button onClick={() => setPage((p) => Math.max(0, p - 1))} disabled={page === 0} aria-label={tx("Sebelumnya")}><ChevronLeft size={20} /></button>
               <span>{page + 1} / {pages}</span>
-              <button onClick={() => setPage((p) => Math.min(pages - 1, p + 1))} disabled={page >= pages - 1} aria-label="Berikutnya"><ChevronRight size={20} /></button>
+              <button onClick={() => setPage((p) => Math.min(pages - 1, p + 1))} disabled={page >= pages - 1} aria-label={tx("Berikutnya")}><ChevronRight size={20} /></button>
             </div>
           </div>
         </div>

@@ -5,13 +5,14 @@ import { ApprovalCategoryPage } from './ApprovalCenter'
 import Avatar from './Avatar'
 import { useAvatarsByName } from '../lib/useAvatarsByName'
 
+import { tx, locale } from '../lib/i18n'
 const FOLDERS = [
-  { key: 'notifikasi', label: 'Notifikasi', icon: Bell },
-  { key: 'leave_requests', label: 'Cuti', icon: CalendarDays },
-  { key: 'overtime_requests', label: 'Lembur', icon: AlarmClock },
-  { key: 'reimbursement_requests', label: 'Reimbursement', icon: Receipt },
-  { key: 'absence_requests', label: 'Presensi', icon: MapPin },
-  { key: 'shift_change_requests', label: 'Perubahan Shift', icon: RefreshCw },
+  { key: 'notifikasi', label: tx("Notifikasi"), icon: Bell },
+  { key: 'leave_requests', label: tx("Cuti"), icon: CalendarDays },
+  { key: 'overtime_requests', label: tx("Lembur"), icon: AlarmClock },
+  { key: 'reimbursement_requests', label: tx("Reimbursement"), icon: Receipt },
+  { key: 'absence_requests', label: tx("Presensi"), icon: MapPin },
+  { key: 'shift_change_requests', label: tx("Perubahan Shift"), icon: RefreshCw },
 ]
 
 const APPROVAL_TABLES = FOLDERS.filter((f) => f.key !== 'notifikasi').map((f) => f.key)
@@ -22,8 +23,8 @@ function initials(name) {
 
 function NotificationList({ items, loading, onOpen }) {
   const avatars = useAvatarsByName(items.map((n) => n.actor_name))
-  if (loading) return <div className="empty-state"><p>Memuat...</p></div>
-  if (items.length === 0) return <div className="empty-state"><h3>Belum ada notifikasi</h3><p>Notifikasi Anda akan tampil di sini.</p></div>
+  if (loading) return <div className="empty-state"><p>{tx("Memuat...")}</p></div>
+  if (items.length === 0) return <div className="empty-state"><h3>{tx("Belum ada notifikasi")}</h3><p>{tx("Notifikasi Anda akan tampil di sini.")}</p></div>
   return (
     <div>
       {items.map((n) => (
@@ -38,7 +39,7 @@ function NotificationList({ items, loading, onOpen }) {
               <div className="name" style={{ fontWeight: n.is_read ? 500 : 700 }}>{n.title}</div>
               {n.body && <div className="desc">{n.body}</div>}
               <div className="desc" style={{ color: '#b0a99f', marginTop: 4 }}>
-                {new Date(n.created_at).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })}
+                {new Date(n.created_at).toLocaleDateString(locale(), { day: '2-digit', month: 'short', year: 'numeric' })}
               </div>
             </div>
             <ChevronRight size={18} color="#ccc" style={{ flexShrink: 0, marginTop: 8 }} />
@@ -90,7 +91,7 @@ export default function DesktopInbox({ employee, onToast, onRead, onNavigate }) 
   return (
     <div>
       <div style={{ display: 'flex', alignItems: 'center', padding: '20px 20px 16px' }}>
-        <h1 style={{ fontSize: 22, fontWeight: 700, margin: 0, color: 'var(--red)' }}>Message</h1>
+        <h1 style={{ fontSize: 22, fontWeight: 700, margin: 0, color: 'var(--red)' }}>{tx("Message")}</h1>
       </div>
 
       <div style={{ display: 'flex', minHeight: 520, borderRadius: 14, overflow: 'hidden', boxShadow: 'var(--shadow-sm)', margin: '0 20px 20px' }}>

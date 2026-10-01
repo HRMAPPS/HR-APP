@@ -4,6 +4,7 @@ import { useIsDesktop } from '../lib/useIsDesktop'
 import { supabase } from '../lib/supabaseClient'
 import { todayStr } from '../lib/dateUtils'
 
+import { tx, locale } from '../lib/i18n'
 function pad2(n) { return String(n).padStart(2, '0') }
 
 function addDays(dateStr, delta) {
@@ -14,7 +15,7 @@ function addDays(dateStr, delta) {
 
 function fmtTime(iso) {
   if (!iso) return null
-  return new Date(iso).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
+  return new Date(iso).toLocaleTimeString(locale(), { hour: '2-digit', minute: '2-digit' })
 }
 
 function initials(name) {
@@ -100,7 +101,7 @@ export default function TeamReport({ employee, onBack }) {
     cuti: rows.filter((r) => r.onLeave).length,
   }), [rows])
 
-  const dateLabel = new Date(date + 'T00:00:00').toLocaleDateString('id-ID', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' }).replace('.', '')
+  const dateLabel = new Date(date + 'T00:00:00').toLocaleDateString(locale(), { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' }).replace('.', '')
   const isToday = date >= todayStr()
 
   function onStatsScroll(e) {
@@ -113,7 +114,7 @@ export default function TeamReport({ employee, onBack }) {
       <div className="dsk-page">
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
           <div>
-            <h1 className="dsk-title">Laporan Tim Saya</h1>
+            <h1 className="dsk-title">{tx("Laporan Tim Saya")}</h1>
             <p className="dsk-sub" style={{ marginBottom: 0 }}>{dateLabel}</p>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
@@ -124,22 +125,22 @@ export default function TeamReport({ employee, onBack }) {
         </div>
 
         <div className="dsk-stats" style={{ marginTop: 26 }}>
-          <div><b>{stats.onTime}</b><span>tepat waktu</span></div>
-          <div><b>{stats.late}</b><span>terlambat masuk</span></div>
-          <div><b>{stats.earlyOut}</b><span>pulang lebih awal</span></div>
-          <div><b>{stats.clockedIn}</b><span>sudah clock in</span></div>
-          <div><b>{stats.noClockOut}</b><span>tidak clock out</span></div>
-          <div><b>{stats.invalid}</b><span>tidak valid</span></div>
-          <div><b>{stats.absent}</b><span>tidak hadir</span></div>
-          <div><b>{stats.cuti}</b><span>cuti</span></div>
+          <div><b>{stats.onTime}</b><span>{tx("tepat waktu")}</span></div>
+          <div><b>{stats.late}</b><span>{tx("terlambat masuk")}</span></div>
+          <div><b>{stats.earlyOut}</b><span>{tx("pulang lebih awal")}</span></div>
+          <div><b>{stats.clockedIn}</b><span>{tx("sudah clock in")}</span></div>
+          <div><b>{stats.noClockOut}</b><span>{tx("tidak clock out")}</span></div>
+          <div><b>{stats.invalid}</b><span>{tx("tidak valid")}</span></div>
+          <div><b>{stats.absent}</b><span>{tx("tidak hadir")}</span></div>
+          <div><b>{stats.cuti}</b><span>{tx("cuti")}</span></div>
         </div>
 
         <div className="dsk-table-wrap">
           <table className="dsk-table">
-            <thead><tr><th>Karyawan</th><th>Departemen</th><th>Shift</th><th>Clock in</th><th>Clock out</th><th>Status</th></tr></thead>
+            <thead><tr><th>{tx("Karyawan")}</th><th>{tx("Departemen")}</th><th>Shift</th><th>Clock in</th><th>Clock out</th><th>Status</th></tr></thead>
             <tbody>
-              {loading ? <tr><td colSpan={6} className="empty">Memuat...</td></tr>
-                : rows.length === 0 ? <tr><td colSpan={6} className="empty">Karyawan yang atasannya Anda akan muncul di sini.</td></tr>
+              {loading ? <tr><td colSpan={6} className="empty">{tx("Memuat...")}</td></tr>
+                : rows.length === 0 ? <tr><td colSpan={6} className="empty">{tx("Karyawan yang atasannya Anda akan muncul di sini.")}</td></tr>
                 : rows.map((r) => (
                   <tr key={r.emp.id} style={{ cursor: 'pointer' }} onClick={() => setDetail(r)}>
                     <td style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -147,14 +148,14 @@ export default function TeamReport({ employee, onBack }) {
                       {r.emp.full_name}
                     </td>
                     <td>{r.emp.department || '-'}</td>
-                    <td>{r.shift ? (r.shift.is_day_off ? 'Libur' : `${r.shift.name || ''} ${r.shift.start_time?.slice(0, 5) || ''}-${r.shift.end_time?.slice(0, 5) || ''}`) : '-'}</td>
+                    <td>{r.shift ? (r.shift.is_day_off ? tx("Libur") : `${r.shift.name || ''} ${r.shift.start_time?.slice(0, 5) || ''}-${r.shift.end_time?.slice(0, 5) || ''}`) : '-'}</td>
                     <td style={{ color: r.att?.clock_in ? '#1e8e5a' : '#bbb', fontWeight: 600 }}>{fmtTime(r.att?.clock_in) || '-'}</td>
                     <td style={{ color: r.att?.clock_out ? '#3B6ECF' : '#bbb', fontWeight: 600 }}>{fmtTime(r.att?.clock_out) || '-'}</td>
                     <td>
-                      {r.onLeave ? 'Cuti' : r.dayOff ? 'Hari libur' : r.absent ? 'Tidak hadir'
-                        : r.invalid ? 'Tidak valid' : r.late ? 'Terlambat masuk'
-                        : r.noClockOut ? 'Belum clock out' : r.earlyOut ? 'Pulang lebih awal'
-                        : r.onTime ? 'Tepat waktu' : '-'}
+                      {r.onLeave ? tx("Cuti") : r.dayOff ? tx("Hari libur") : r.absent ? tx("Tidak hadir")
+                        : r.invalid ? tx("Tidak valid") : r.late ? tx("Terlambat masuk")
+                        : r.noClockOut ? tx("Belum clock out") : r.earlyOut ? tx("Pulang lebih awal")
+                        : r.onTime ? tx("Tepat waktu") : '-'}
                     </td>
                   </tr>
                 ))}
@@ -188,22 +189,22 @@ export default function TeamReport({ employee, onBack }) {
       >
         <div style={{ minWidth: '100%', scrollSnapAlign: 'start' }}>
           <div className="stats-strip">
-            <div className="stat"><div className="num">{stats.onTime}</div><div className="lbl">Tepat waktu</div></div>
-            <div className="stat"><div className="num">{stats.late}</div><div className="lbl">Terlambat masuk</div></div>
-            <div className="stat"><div className="num">{stats.earlyOut}</div><div className="lbl">Pulang lebih awal</div></div>
+            <div className="stat"><div className="num">{stats.onTime}</div><div className="lbl">{tx("Tepat waktu")}</div></div>
+            <div className="stat"><div className="num">{stats.late}</div><div className="lbl">{tx("Terlambat masuk")}</div></div>
+            <div className="stat"><div className="num">{stats.earlyOut}</div><div className="lbl">{tx("Pulang lebih awal")}</div></div>
           </div>
         </div>
         <div style={{ minWidth: '100%', scrollSnapAlign: 'start', display: 'flex', gap: 10 }}>
           <div className="stats-strip" style={{ flex: 1, margin: '14px 0 0 16px' }}>
-            <div className="stat"><div className="num">{stats.clockedIn}</div><div className="lbl">Sudah clock in</div></div>
-            <div className="stat"><div className="num">{stats.noClockOut}</div><div className="lbl">Tidak clock out</div></div>
-            <div className="stat"><div className="num">{stats.invalid}</div><div className="lbl">Tidak valid</div></div>
+            <div className="stat"><div className="num">{stats.clockedIn}</div><div className="lbl">{tx("Sudah clock in")}</div></div>
+            <div className="stat"><div className="num">{stats.noClockOut}</div><div className="lbl">{tx("Tidak clock out")}</div></div>
+            <div className="stat"><div className="num">{stats.invalid}</div><div className="lbl">{tx("Tidak valid")}</div></div>
           </div>
           <div className="stats-strip" style={{ flex: 'none', width: 140, margin: '14px 16px 0 0', flexDirection: 'column', gap: 8, alignItems: 'flex-start' }}>
-            <div style={{ fontWeight: 700, fontSize: 12.5 }}>Tidak hadir</div>
+            <div style={{ fontWeight: 700, fontSize: 12.5 }}>{tx("Tidak hadir")}</div>
             <div style={{ display: 'flex', gap: 14, width: '100%' }}>
-              <div className="stat"><div className="num">{stats.absent}</div><div className="lbl">Absen</div></div>
-              <div className="stat"><div className="num">{stats.cuti}</div><div className="lbl">Cuti</div></div>
+              <div className="stat"><div className="num">{stats.absent}</div><div className="lbl">{tx("Absen")}</div></div>
+              <div className="stat"><div className="num">{stats.cuti}</div><div className="lbl">{tx("Cuti")}</div></div>
             </div>
           </div>
         </div>
@@ -215,12 +216,12 @@ export default function TeamReport({ employee, onBack }) {
       </div>
 
       <div style={{ padding: '4px 0 24px' }}>
-        {loading && <div className="empty-state"><p>Memuat...</p></div>}
+        {loading && <div className="empty-state"><p>{tx("Memuat...")}</p></div>}
         {!loading && rows.length === 0 && (
           <div className="empty-state">
             <User size={36} color="#ccc" />
-            <h3>Belum ada anggota tim</h3>
-            <p>Karyawan yang atasannya Anda akan muncul di sini.</p>
+            <h3>{tx("Belum ada anggota tim")}</h3>
+            <p>{tx("Karyawan yang atasannya Anda akan muncul di sini.")}</p>
           </div>
         )}
         {!loading && rows.map((r) => (
@@ -252,7 +253,7 @@ export default function TeamReport({ employee, onBack }) {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12, fontSize: 14.5, marginBottom: 6 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                 <span style={{ color: 'var(--text-muted)' }}>Shift</span>
-                <b>{detail.shift ? (detail.shift.is_day_off ? 'Libur' : `${detail.shift.name} (${detail.shift.start_time?.slice(0, 5)}-${detail.shift.end_time?.slice(0, 5)})`) : '-'}</b>
+                <b>{detail.shift ? (detail.shift.is_day_off ? tx("Libur") : `${detail.shift.name} (${detail.shift.start_time?.slice(0, 5)}-${detail.shift.end_time?.slice(0, 5)})`) : '-'}</b>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                 <span style={{ color: 'var(--text-muted)' }}>Clock in</span>
@@ -265,10 +266,10 @@ export default function TeamReport({ employee, onBack }) {
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                 <span style={{ color: 'var(--text-muted)' }}>Status</span>
                 <b>
-                  {detail.onLeave ? 'Cuti' : detail.dayOff ? 'Hari libur' : detail.absent ? 'Tidak hadir'
-                    : detail.invalid ? 'Tidak valid' : detail.late ? 'Terlambat masuk'
-                    : detail.noClockOut ? 'Belum clock out' : detail.earlyOut ? 'Pulang lebih awal'
-                    : detail.onTime ? 'Tepat waktu' : '-'}
+                  {detail.onLeave ? tx("Cuti") : detail.dayOff ? tx("Hari libur") : detail.absent ? tx("Tidak hadir")
+                    : detail.invalid ? tx("Tidak valid") : detail.late ? tx("Terlambat masuk")
+                    : detail.noClockOut ? tx("Belum clock out") : detail.earlyOut ? tx("Pulang lebih awal")
+                    : detail.onTime ? tx("Tepat waktu") : '-'}
                 </b>
               </div>
             </div>
@@ -290,16 +291,16 @@ function TeamReportDetailModal({ detail, onClose }) {
           <div className="dcuti-detail">
             {line('Jabatan', detail.emp.position || '-')}
             {line('Departemen', detail.emp.department || '-')}
-            {line('Shift', detail.shift ? (detail.shift.is_day_off ? 'Libur' : `${detail.shift.name} (${detail.shift.start_time?.slice(0, 5)}-${detail.shift.end_time?.slice(0, 5)})`) : '-')}
+            {line('Shift', detail.shift ? (detail.shift.is_day_off ? tx("Libur") : `${detail.shift.name} (${detail.shift.start_time?.slice(0, 5)}-${detail.shift.end_time?.slice(0, 5)})`) : '-')}
             {line('Clock in', fmtTime(detail.att?.clock_in) || '-')}
             {line('Clock out', fmtTime(detail.att?.clock_out) || '-')}
-            {line('Status', detail.onLeave ? 'Cuti' : detail.dayOff ? 'Hari libur' : detail.absent ? 'Tidak hadir'
-              : detail.invalid ? 'Tidak valid' : detail.late ? 'Terlambat masuk'
-              : detail.noClockOut ? 'Belum clock out' : detail.earlyOut ? 'Pulang lebih awal'
-              : detail.onTime ? 'Tepat waktu' : '-')}
+            {line('Status', detail.onLeave ? tx("Cuti") : detail.dayOff ? tx("Hari libur") : detail.absent ? tx("Tidak hadir")
+              : detail.invalid ? tx("Tidak valid") : detail.late ? tx("Terlambat masuk")
+              : detail.noClockOut ? tx("Belum clock out") : detail.earlyOut ? tx("Pulang lebih awal")
+              : detail.onTime ? tx("Tepat waktu") : '-')}
           </div>
         </div>
-        <div className="dcuti-modal-foot"><button className="dcal-outline-btn" onClick={onClose}>TUTUP</button></div>
+        <div className="dcuti-modal-foot"><button className="dcal-outline-btn" onClick={onClose}>{tx("TUTUP")}</button></div>
       </div>
     </div>
   )

@@ -9,36 +9,37 @@ import {
 import coverLogo from '../assets/napocut-cover.png'
 import './DesktopProfile.css'
 
+import { tx, locale } from '../lib/i18n'
 const MENU = [
   { group: 'Umum', items: [
     { key: 'personal', label: 'Personal', icon: User },
-    { key: 'job', label: 'Pekerjaan', icon: Briefcase },
-    { key: 'emergency', label: 'Kontak darurat', icon: PhoneCall },
-    { key: 'family', label: 'Keluarga', icon: Users },
-    { key: 'education', label: 'Pendidikan & pengalaman', icon: GraduationCap },
-    { key: 'additional', label: 'Info tambahan', icon: Info },
+    { key: 'job', label: tx("Pekerjaan"), icon: Briefcase },
+    { key: 'emergency', label: tx("Kontak darurat"), icon: PhoneCall },
+    { key: 'family', label: tx("Keluarga"), icon: Users },
+    { key: 'education', label: tx("Pendidikan & pengalaman"), icon: GraduationCap },
+    { key: 'additional', label: tx("Info tambahan"), icon: Info },
   ] },
   { group: 'Dokumen & keuangan', items: [
     { key: 'payroll', label: 'Payroll', icon: Wallet },
-    { key: 'files', label: 'File saya', icon: Paperclip },
-    { key: 'warnings', label: 'Peringatan', icon: AlertTriangle },
+    { key: 'files', label: tx("File saya"), icon: Paperclip },
+    { key: 'warnings', label: tx("Peringatan"), icon: AlertTriangle },
   ] },
 ]
 const ALL = MENU.flatMap((g) => g.items)
 
 const SUBTITLE = {
-  personal: 'Identitas, kontak, dan alamat Anda.',
-  job: 'Dikelola oleh HR. Ajukan lewat "Perubahan Data" bila ada yang perlu diperbarui.',
-  emergency: 'Orang yang dihubungi bila terjadi keadaan darurat.',
-  family: 'Anggota keluarga yang tercatat.',
-  education: 'Riwayat pendidikan dan pengalaman kerja.',
-  additional: 'Informasi pendukung lainnya.',
-  payroll: 'Rekening, NPWP, dan BPJS.',
-  files: 'Dokumen pribadi yang Anda unggah.',
-  warnings: 'Catatan peringatan dari perusahaan.',
+  personal: tx("Identitas, kontak, dan alamat Anda."),
+  job: tx("Dikelola oleh HR. Ajukan lewat \"Perubahan Data\" bila ada yang perlu diperbarui."),
+  emergency: tx("Orang yang dihubungi bila terjadi keadaan darurat."),
+  family: tx("Anggota keluarga yang tercatat."),
+  education: tx("Riwayat pendidikan dan pengalaman kerja."),
+  additional: tx("Informasi pendukung lainnya."),
+  payroll: tx("Rekening, NPWP, dan BPJS."),
+  files: tx("Dokumen pribadi yang Anda unggah."),
+  warnings: tx("Catatan peringatan dari perusahaan."),
 }
 
-const fmtDate = (d) => (d ? new Date(d + 'T00:00:00').toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) : null)
+const fmtDate = (d) => (d ? new Date(d + 'T00:00:00').toLocaleDateString(locale(), { day: 'numeric', month: 'long', year: 'numeric' }) : null)
 const ageOf = (d) => {
   if (!d) return null
   const b = new Date(d + 'T00:00:00'), n = new Date()
@@ -51,7 +52,7 @@ function Field({ label, value, wide }) {
   return (
     <div className={`dpx-f${wide ? ' wide' : ''}`}>
       <dt>{label}</dt>
-      <dd className={value ? '' : 'empty'}>{value || 'Belum diisi'}</dd>
+      <dd className={value ? '' : 'empty'}>{value || tx("Belum diisi")}</dd>
     </div>
   )
 }
@@ -62,28 +63,28 @@ function PersonalView({ e, onEdit }) {
     <>
       <div className="dpx-sec">
         <div className="dpx-sec-h">
-          <h3>Data pribadi</h3>
-          <button className="dpx-edit" onClick={onEdit}><Pencil size={14} /> Ubah</button>
+          <h3>{tx("Data pribadi")}</h3>
+          <button className="dpx-edit" onClick={onEdit}><Pencil size={14} />{' '}{tx("Ubah")}</button>
         </div>
         <dl className="dpx-grid">
-          <Field label="Nama lengkap" value={e.full_name} />
-          <Field label="No. HP" value={e.phone} />
-          <Field label="Email kantor" value={e.email} />
-          <Field label="Email pribadi" value={e.personal_email} />
-          <Field label="Tempat lahir" value={e.birth_place} />
-          <Field label="Tanggal lahir" value={e.birth_date ? `${fmtDate(e.birth_date)}${age != null ? ` · ${age} tahun` : ''}` : null} />
-          <Field label="Jenis kelamin" value={e.gender} />
-          <Field label="Status pernikahan" value={e.marital_status} />
-          <Field label="Golongan darah" value={e.blood_type} />
-          <Field label="Agama" value={e.religion} />
+          <Field label={tx("Nama lengkap")} value={e.full_name} />
+          <Field label={tx("No. HP")} value={e.phone} />
+          <Field label={tx("Email kantor")} value={e.email} />
+          <Field label={tx("Email pribadi")} value={e.personal_email} />
+          <Field label={tx("Tempat lahir")} value={e.birth_place} />
+          <Field label={tx("Tanggal lahir")} value={e.birth_date ? `${fmtDate(e.birth_date)}${age != null ? tx("· {0} tahun", [age]) : ''}` : null} />
+          <Field label={tx("Jenis kelamin")} value={e.gender} />
+          <Field label={tx("Status pernikahan")} value={e.marital_status} />
+          <Field label={tx("Golongan darah")} value={e.blood_type} />
+          <Field label={tx("Agama")} value={e.religion} />
         </dl>
       </div>
       <div className="dpx-sec">
-        <div className="dpx-sec-h"><h3>Identitas & alamat</h3></div>
+        <div className="dpx-sec-h"><h3>{tx("Identitas & alamat")}</h3></div>
         <dl className="dpx-grid">
-          <Field label="NIK (KTP)" value={e.nik} />
-          <Field label="Alamat KTP" value={e.ktp_address} wide />
-          <Field label="Alamat domisili" value={e.domicile_address} wide />
+          <Field label={tx("NIK (KTP)")} value={e.nik} />
+          <Field label={tx("Alamat KTP")} value={e.ktp_address} wide />
+          <Field label={tx("Alamat domisili")} value={e.domicile_address} wide />
         </dl>
       </div>
     </>
@@ -94,14 +95,14 @@ function JobView({ e }) {
   return (
     <div className="dpx-sec">
       <dl className="dpx-grid">
-        <Field label="Kode karyawan" value={e.employee_code} />
-        <Field label="Jabatan" value={e.position} />
-        <Field label="Departemen" value={e.department} />
-        <Field label="Status karyawan" value={e.employment_status === 'inactive' ? 'Tidak aktif' : 'Aktif'} />
-        <Field label="Tanggal bergabung" value={fmtDate(e.join_date)} />
-        <Field label="Lokasi kerja" value={e.work_location} />
-        <Field label="Tipe kontrak" value={e.contract_type} />
-        <Field label="Atasan langsung" value={e.manager_name} />
+        <Field label={tx("Kode karyawan")} value={e.employee_code} />
+        <Field label={tx("Jabatan")} value={e.position} />
+        <Field label={tx("Departemen")} value={e.department} />
+        <Field label={tx("Status karyawan")} value={e.employment_status === 'inactive' ? tx("Tidak aktif") : tx("Aktif")} />
+        <Field label={tx("Tanggal bergabung")} value={fmtDate(e.join_date)} />
+        <Field label={tx("Lokasi kerja")} value={e.work_location} />
+        <Field label={tx("Tipe kontrak")} value={e.contract_type} />
+        <Field label={tx("Atasan langsung")} value={e.manager_name} />
       </dl>
     </div>
   )
@@ -112,17 +113,17 @@ export default function DesktopProfile({ employee, onSignOut, onToast, onAvatarC
   const [section, setSection] = useState('personal')
   const [editing, setEditing] = useState(false)
 
-  if (profile.loading && !profile.data) return <div className="empty-state"><p>Memuat...</p></div>
-  if (!profile.data) return <div className="empty-state"><p>Data profil tidak bisa dimuat.</p></div>
+  if (profile.loading && !profile.data) return <div className="empty-state"><p>{tx("Memuat...")}</p></div>
+  if (!profile.data) return <div className="empty-state"><p>{tx("Data profil tidak bisa dimuat.")}</p></div>
 
   const e = profile.data.employee
   const active = ALL.find((m) => m.key === section)
   const go = (k) => { setSection(k); setEditing(false) }
   const facts = [
-    [Hash, 'Kode', e.employee_code],
-    [Building2, 'Departemen', e.department],
-    [MapPin, 'Lokasi', e.work_location],
-    [CalendarDays, 'Bergabung', fmtDate(e.join_date)],
+    [Hash, tx("Kode"), e.employee_code],
+    [Building2, tx("Departemen"), e.department],
+    [MapPin, tx("Lokasi"), e.work_location],
+    [CalendarDays, tx("Bergabung"), fmtDate(e.join_date)],
   ]
 
   return (
@@ -139,9 +140,9 @@ export default function DesktopProfile({ employee, onSignOut, onToast, onAvatarC
           <div className="dpx-id">
             <h1>{e.full_name}</h1>
             <div className="dpx-role">
-              {e.position || 'Karyawan'}
+              {e.position || tx("Karyawan")}
               <span className={`dpx-badge${e.employment_status === 'inactive' ? ' off' : ''}`}>
-                {e.employment_status === 'inactive' ? 'Tidak aktif' : 'Karyawan aktif'}
+                {e.employment_status === 'inactive' ? tx("Tidak aktif") : tx("Karyawan aktif")}
               </span>
             </div>
           </div>
@@ -154,7 +155,7 @@ export default function DesktopProfile({ employee, onSignOut, onToast, onAvatarC
       </section>
 
       <div className="dpx-layout">
-        <nav className="dpx-nav" aria-label="Profil">
+        <nav className="dpx-nav" aria-label={tx("Profil")}>
           {MENU.map((g) => (
             <div key={g.group}>
               <div className="dpx-nav-g">{g.group}</div>
@@ -165,7 +166,7 @@ export default function DesktopProfile({ employee, onSignOut, onToast, onAvatarC
               ))}
             </div>
           ))}
-          <button className="dpx-out" onClick={onSignOut}><LogOut size={17} /> Keluar</button>
+          <button className="dpx-out" onClick={onSignOut}><LogOut size={17} />{' '}{tx("Keluar")}</button>
         </nav>
 
         <main className="dpx-body">
@@ -175,7 +176,7 @@ export default function DesktopProfile({ employee, onSignOut, onToast, onAvatarC
               <p>{SUBTITLE[section]}</p>
             </div>
             {section === 'personal' && editing && (
-              <button className="dpx-edit" onClick={() => setEditing(false)}>Batal</button>
+              <button className="dpx-edit" onClick={() => setEditing(false)}>{tx("Batal")}</button>
             )}
           </header>
 

@@ -3,11 +3,12 @@ import { X, MapPin, ChevronRight, AlignLeft } from 'lucide-react'
 import { loadFaceModels, extractFaceDescriptor } from '../lib/faceRecognition'
 import { useBackHandler } from '../lib/backStack'
 
+import { tx, locale } from '../lib/i18n'
 function formatSchedule(shift) {
   if (!shift) return null
-  if (shift.is_day_off) return 'Hari libur'
+  if (shift.is_day_off) return tx("Hari libur")
   const date = shift.work_date
-    ? new Date(shift.work_date).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })
+    ? new Date(shift.work_date).toLocaleDateString(locale(), { day: '2-digit', month: 'short', year: 'numeric' })
     : ''
   const start = shift.start_time?.slice(0, 5)
   const end = shift.end_time?.slice(0, 5)
@@ -32,7 +33,7 @@ export default function CameraCapture({ mode, employee, shift, initialNotes, onC
   const [modelsReady, setModelsReady] = useState(false)
   const [faceError, setFaceError] = useState('')
 
-  const title = mode === 'out' ? 'Clock Out' : 'Clock In'
+  const title = mode === 'out' ? tx("Clock Out") : tx("Clock In")
   const scheduleText = formatSchedule(shift)
 
   useEffect(() => {
@@ -47,12 +48,12 @@ export default function CameraCapture({ mode, employee, shift, initialNotes, onC
         if (videoRef.current) videoRef.current.srcObject = stream
         setReady(true)
       } catch (e) {
-        setError('Tidak bisa mengakses kamera. Izinkan akses kamera di browser, lalu coba lagi.')
+        setError(tx("Tidak bisa mengakses kamera. Izinkan akses kamera di browser, lalu coba lagi."))
       }
     }
     start()
     loadFaceModels().then(() => setModelsReady(true)).catch(() => {
-      setFaceError('Gagal memuat model verifikasi wajah. Periksa koneksi internet.')
+      setFaceError(tx("Gagal memuat model verifikasi wajah. Periksa koneksi internet."))
     })
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
@@ -91,7 +92,7 @@ export default function CameraCapture({ mode, employee, shift, initialNotes, onC
     // this is what gets compared server-side against the enrolled face.
     const descriptor = modelsReady ? await extractFaceDescriptor(videoRef.current) : null
     if (modelsReady && !descriptor) {
-      setFaceError('Wajah tidak terdeteksi dengan jelas. Pastikan wajah terlihat penuh di dalam bingkai dan pencahayaan cukup, lalu coba lagi.')
+      setFaceError(tx("Wajah tidak terdeteksi dengan jelas. Pastikan wajah terlihat penuh di dalam bingkai dan pencahayaan cukup, lalu coba lagi."))
       setSubmitting(false)
       return
     }
@@ -152,7 +153,7 @@ export default function CameraCapture({ mode, employee, shift, initialNotes, onC
           <input
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
-            placeholder="Catatan (opsional)"
+            placeholder={tx("Catatan (opsional)")}
             style={{ flex: 1, border: 'none', outline: 'none', fontSize: 14.5 }}
           />
         </div>
@@ -163,7 +164,7 @@ export default function CameraCapture({ mode, employee, shift, initialNotes, onC
           cursor: coords ? 'pointer' : 'default', textAlign: 'left',
         }}>
           <MapPin size={18} color="#8a847c" />
-          <span style={{ flex: 1, fontSize: 14.5 }}>Lihat lokasi</span>
+          <span style={{ flex: 1, fontSize: 14.5 }}>{tx("Lihat lokasi")}</span>
           <ChevronRight size={18} color="#ccc" />
         </button>
 
@@ -182,7 +183,7 @@ export default function CameraCapture({ mode, employee, shift, initialNotes, onC
           cursor: (!ready || !modelsReady || error || submitting) ? 'not-allowed' : 'pointer',
           opacity: (!ready || !modelsReady || error || submitting) ? 0.6 : 1,
         }}>
-          {submitting ? 'Memverifikasi wajah...' : !modelsReady ? 'Menyiapkan verifikasi wajah...' : 'Kirim'}
+          {submitting ? tx("Memverifikasi wajah...") : !modelsReady ? tx("Menyiapkan verifikasi wajah...") : tx("Kirim")}
         </button>
       </div>
     </div>

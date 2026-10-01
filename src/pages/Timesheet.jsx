@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { ArrowLeft, ListChecks, Pencil, Trash2 } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
 
+import { tx, locale } from '../lib/i18n'
 export default function Timesheet({ employee, onBack, onToast }) {
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
@@ -26,7 +27,7 @@ export default function Timesheet({ employee, onBack, onToast }) {
         row={editing}
         employee={employee}
         onCancel={() => setEditing(null)}
-        onSaved={() => { setEditing(null); load(); onToast('Jam kerja disimpan') }}
+        onSaved={() => { setEditing(null); load(); onToast(tx("Jam kerja disimpan")) }}
       />
     )
   }
@@ -39,7 +40,7 @@ export default function Timesheet({ employee, onBack, onToast }) {
   async function onDelete(id) {
     const { error } = await supabase.from('timesheet_entries').delete().eq('id', id)
     if (error) { onToast(error.message); return }
-    onToast('Entri dihapus')
+    onToast(tx("Entri dihapus"))
     load()
   }
 
@@ -52,26 +53,25 @@ export default function Timesheet({ employee, onBack, onToast }) {
       </div>
 
       <div style={{ margin: '0 16px 14px', background: '#DDE7FB', color: '#3B6ECF', borderRadius: 14, padding: '14px 16px' }}>
-        <div style={{ fontSize: 12.5 }}>Total jam bulan ini</div>
-        <div style={{ fontSize: 22, fontWeight: 700 }}>{monthTotal} jam</div>
+        <div style={{ fontSize: 12.5 }}>{tx("Total jam bulan ini")}</div>
+        <div style={{ fontSize: 22, fontWeight: 700 }}>{monthTotal}{' '}{tx("jam")}</div>
       </div>
 
       <div style={{ padding: '0 16px' }}>
         {loading ? (
-          <p style={{ color: '#a39c94' }}>Memuat...</p>
+          <p style={{ color: '#a39c94' }}>{tx("Memuat...")}</p>
         ) : items.length === 0 ? (
           <div className="empty-state">
             <ListChecks size={40} color="#c8c1b9" />
-            <h3>Belum ada catatan</h3>
-            <p>Jam kerja yang Anda catat akan tampil di sini.</p>
+            <h3>{tx("Belum ada catatan")}</h3>
+            <p>{tx("Jam kerja yang Anda catat akan tampil di sini.")}</p>
           </div>
         ) : items.map((it) => (
           <div key={it.id} className="list-item">
             <div className="info">
               <div className="name">
-                {new Date(it.work_date).toLocaleDateString('id-ID', { weekday: 'short', day: '2-digit', month: 'short' })}
-                {' · '}{it.hours} jam
-              </div>
+                {new Date(it.work_date).toLocaleDateString(locale(), { weekday: 'short', day: '2-digit', month: 'short' })}
+                {' · '}{it.hours}{' '}{tx("jam")}</div>
               <div className="sub">{it.project || '-'}{it.description ? ` — ${it.description}` : ''}</div>
             </div>
             <div className="actions">
@@ -82,7 +82,7 @@ export default function Timesheet({ employee, onBack, onToast }) {
         ))}
       </div>
 
-      <button className="fab-bottom-btn" onClick={() => setEditing({})}>Catat Jam Kerja</button>
+      <button className="fab-bottom-btn" onClick={() => setEditing({})}>{tx("Catat Jam Kerja")}</button>
     </div>
   )
 }
@@ -100,7 +100,7 @@ function TimesheetForm({ row, employee, onCancel, onSaved }) {
   async function submit(e) {
     e.preventDefault()
     setError('')
-    if (!form.work_date || !form.hours) { setError('Tanggal dan jumlah jam wajib diisi'); return }
+    if (!form.work_date || !form.hours) { setError(tx("Tanggal dan jumlah jam wajib diisi")); return }
     setLoading(true)
     const payload = {
       work_date: form.work_date, hours: Number(form.hours),
@@ -118,28 +118,28 @@ function TimesheetForm({ row, employee, onCancel, onSaved }) {
     <div>
       <div className="page-header">
         <button className="back-btn" onClick={onCancel}><ArrowLeft size={22} /></button>
-        <h1>{row.id ? 'Ubah Jam Kerja' : 'Catat Jam Kerja'}</h1>
+        <h1>{row.id ? tx("Ubah Jam Kerja") : tx("Catat Jam Kerja")}</h1>
         <span style={{ width: 22 }} />
       </div>
       <form className="form-page" onSubmit={submit}>
         <div className="field">
-          <label>Tanggal</label>
+          <label>{tx("Tanggal")}</label>
           <input type="date" value={form.work_date} onChange={(e) => set('work_date', e.target.value)} />
         </div>
         <div className="field">
-          <label>Jumlah jam</label>
-          <input type="number" step="0.5" min="0" value={form.hours} onChange={(e) => set('hours', e.target.value)} placeholder="mis. 8" />
+          <label>{tx("Jumlah jam")}</label>
+          <input type="number" step="0.5" min="0" value={form.hours} onChange={(e) => set('hours', e.target.value)} placeholder={tx("mis. 8")} />
         </div>
         <div className="field">
-          <label>Proyek / task (opsional)</label>
+          <label>{tx("Proyek / task (opsional)")}</label>
           <input value={form.project} onChange={(e) => set('project', e.target.value)} />
         </div>
         <div className="field">
-          <label>Keterangan (opsional)</label>
-          <textarea value={form.description} onChange={(e) => set('description', e.target.value)} placeholder="Apa yang dikerjakan..." />
+          <label>{tx("Keterangan (opsional)")}</label>
+          <textarea value={form.description} onChange={(e) => set('description', e.target.value)} placeholder={tx("Apa yang dikerjakan...")} />
         </div>
         {error && <p className="error-text">{error}</p>}
-        <button className="primary-btn" disabled={loading}>{loading ? 'Menyimpan...' : 'Simpan'}</button>
+        <button className="primary-btn" disabled={loading}>{loading ? tx("Menyimpan...") : tx("Simpan")}</button>
       </form>
     </div>
   )

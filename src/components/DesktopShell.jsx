@@ -2,16 +2,18 @@ import { useState } from 'react'
 import { Bell, Grid3x3, Plus, ExternalLink } from 'lucide-react'
 import { TABS } from './BottomNav'
 
+import { tx } from '../lib/i18n'
+import LanguageSwitch from './LanguageSwitch'
 function initials(name) {
   return (name || '').split(' ').slice(0, 2).map((n) => n[0]).join('').toUpperCase()
 }
 
 const REQUEST_MENU = [
-  ['Time off', 'cuti-new'],
-  ['Attendance', 'absensi-new'],
-  ['Live attendance', 'presensi'],
-  ['Overtime', 'lembur-new'],
-  ['Change shift', 'shift-new'],
+  [tx("Time off"), 'cuti-new'],
+  [tx("Attendance"), 'absensi-new'],
+  [tx("Live attendance"), 'presensi'],
+  [tx("Overtime"), 'lembur-new'],
+  [tx("Change shift"), 'shift-new'],
 ]
 
 function requestItemStyle() {
@@ -50,7 +52,7 @@ export default function DesktopShell({ employee, active, onChange, onNavigate, o
         <div className="desktop-topbar-spacer" />
 
         <div style={{ position: 'relative' }}>
-          <button className="desktop-icon-btn" onClick={() => setOpenMenu(openMenu === 'request' ? null : 'request')} title="Pengajuan">
+          <button className="desktop-icon-btn" onClick={() => setOpenMenu(openMenu === 'request' ? null : 'request')} title={tx("Pengajuan")}>
             <Plus size={19} />
           </button>
           {openMenu === 'request' && (
@@ -60,7 +62,7 @@ export default function DesktopShell({ employee, active, onChange, onNavigate, o
                 position: 'absolute', top: 'calc(100% + 8px)', right: 0, width: 220, background: '#1e2029', color: '#fff',
                 borderRadius: 14, padding: '14px 6px', boxShadow: '0 12px 32px rgba(0,0,0,.25)', zIndex: 30,
               }}>
-                <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: .6, color: '#8a8fa3', padding: '4px 14px 10px' }}>REQUEST</div>
+                <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: .6, color: '#8a8fa3', padding: '4px 14px 10px' }}>{tx("REQUEST")}</div>
                 {REQUEST_MENU.map(([label, target]) => (
                   <button
                     key={label}
@@ -77,11 +79,12 @@ export default function DesktopShell({ employee, active, onChange, onNavigate, o
           )}
         </div>
 
-        <button className="desktop-icon-btn" onClick={() => onChange('inbox')} title="Notifikasi" style={{ position: 'relative' }}>
+        <LanguageSwitch style={{ marginRight: 6 }} />
+        <button className="desktop-icon-btn" onClick={() => onChange('inbox')} title={tx("Notifikasi")} style={{ position: 'relative' }}>
           <Bell size={19} />
           {unread > 0 && <span className="desktop-badge">{unread}</span>}
         </button>
-        <button className="desktop-icon-btn" onClick={onOpenAllApps} title="Semua Aplikasi"><Grid3x3 size={19} /></button>
+        <button className="desktop-icon-btn" onClick={onOpenAllApps} title={tx("Semua Aplikasi")}><Grid3x3 size={19} /></button>
 
         <div style={{ position: 'relative' }}>
           <button className="desktop-account" onClick={() => setOpenMenu(openMenu === 'account' ? null : 'account')}>
@@ -127,15 +130,13 @@ export default function DesktopShell({ employee, active, onChange, onNavigate, o
                     style={accountItemStyle()}
                     onMouseEnter={(e) => { e.currentTarget.style.background = '#f7f4f0' }}
                     onMouseLeave={(e) => { e.currentTarget.style.background = 'none' }}
-                  >
-                    Account settings
-                  </button>
+                  >{tx("Account settings")}</button>
                 </div>
 
                 <div style={{ padding: '6px 0', borderBottom: '1px solid var(--border)' }}>
                   {[
-                    ['Support center', true],
-                    ["What's new", false],
+                    [tx("Support center"), true],
+                    [tx("What's new"), false],
                   ].map(([label, isNew]) => (
                     <button
                       key={label}
@@ -148,9 +149,7 @@ export default function DesktopShell({ employee, active, onChange, onNavigate, o
                         <span style={{
                           background: 'var(--red)', color: '#fff', fontSize: 10, fontWeight: 700,
                           borderRadius: 5, padding: '2px 6px',
-                        }}>
-                          New
-                        </span>
+                        }}>{tx("New")}</span>
                       )}
                       <ExternalLink size={13} color="var(--text-muted)" />
                     </button>
@@ -159,9 +158,7 @@ export default function DesktopShell({ employee, active, onChange, onNavigate, o
                     style={accountItemStyle()}
                     onMouseEnter={(e) => { e.currentTarget.style.background = '#f7f4f0' }}
                     onMouseLeave={(e) => { e.currentTarget.style.background = 'none' }}
-                  >
-                    Help
-                  </button>
+                  >{tx("Help")}</button>
                 </div>
 
                 <div style={{ padding: '6px 0' }}>
@@ -170,14 +167,10 @@ export default function DesktopShell({ employee, active, onChange, onNavigate, o
                     style={accountItemStyle()}
                     onMouseEnter={(e) => { e.currentTarget.style.background = '#f7f4f0' }}
                     onMouseLeave={(e) => { e.currentTarget.style.background = 'none' }}
-                  >
-                    Sign out
-                  </button>
+                  >{tx("Sign out")}</button>
                 </div>
 
-                <div style={{ padding: '10px 16px 0', fontSize: 11, color: 'var(--text-muted)', lineHeight: 1.6 }}>
-                  Privacy · Terms of Use · About Mekari Account
-                  <div>napocut © {new Date().getFullYear()}</div>
+                <div style={{ padding: '10px 16px 0', fontSize: 11, color: 'var(--text-muted)', lineHeight: 1.6 }}>{tx("Privacy · Terms of Use · About Mekari Account")}<div>napocut © {new Date().getFullYear()}</div>
                 </div>
               </div>
             </>

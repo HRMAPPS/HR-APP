@@ -31,8 +31,8 @@ import { useIsDesktop } from './lib/useIsDesktop'
 import { runBackHandler } from './lib/backStack'
 import { ApprovalCategoryPage } from './components/ApprovalCenter'
 import DesktopProfile from './pages/DesktopProfile'
-import ImportEmployees from './pages/ImportEmployees'
 
+import { tx } from './lib/i18n'
 export default function App() {
   const { isLoggedIn, loading, employee, signOut, refreshEmployee } = useAuth()
   const isDesktop = useIsDesktop()
@@ -82,7 +82,7 @@ export default function App() {
       // Already on the Home screen.
       if (isDesktop) { window.history.back(); return }
       w.open = true
-      flash('Tekan tombol back sekali lagi untuk keluar')
+      flash(tx("Tekan tombol back sekali lagi untuk keluar"))
       // No sentinel during this window: a second press has nothing left to
       // pop, so the OS/browser exits the app. Re-arm if the window lapses.
       w.timer = setTimeout(() => { w.open = false; arm() }, 2000)
@@ -101,15 +101,6 @@ export default function App() {
       window.history.pushState({ napocut: true }, '')
     }
   }, [page, tab, showAllApps, showRequestSheet])
-
-  // Tautan langsung ke halaman Import Data Karyawan: buka <alamat-app>/#import-employees
-  // (hanya HR/admin; server tetap memeriksa is_hr()).
-  useEffect(() => {
-    if (employee && window.location.hash === '#import-employees' && ['hr', 'admin'].includes(employee.role)) {
-      setPage('import-employees')
-      history.replaceState(null, '', window.location.pathname + window.location.search)
-    }
-  }, [employee?.id])
 
   function handleTabChange(key) {
     if (key === 'request') { setShowRequestSheet(true); return }
@@ -132,7 +123,7 @@ export default function App() {
   }
 
   if (loading) {
-    return <div className="app-shell"><div className="empty-state"><p>Memuat...</p></div></div>
+    return <div className="app-shell"><div className="empty-state"><p>{tx("Memuat...")}</p></div></div>
   }
 
   if (!isLoggedIn) {
@@ -174,7 +165,7 @@ export default function App() {
       <>
         <DesktopShell employee={employee} active={page ? null : tab} onChange={handleTabChange} onNavigate={navigateTo} onOpenAllApps={() => setShowAllApps(true)}
           onSignOut={signOut} onToast={flash} unread={unreadCount}
-          wide={!page && tab === 'employees' ? 'full' : !page && (tab === 'account' || tab === 'home' || tab === 'inbox') ? true : page === 'org-chart' ? 'chart' : (page === 'hr-dashboard' || page === 'absensi' || page === 'lembur' || page === 'cuti' || page === 'lembur-new' || page === 'cuti-new' || page === 'calendar' || page === 'reimbursement' || page === 'team-report' || page === 'slip-gaji' || page === 'import-employees' || page?.startsWith('approval:') || page?.startsWith('announcement:')) ? 'full' : false}>
+          wide={!page && tab === 'employees' ? 'full' : !page && (tab === 'account' || tab === 'home' || tab === 'inbox') ? true : page === 'org-chart' ? 'chart' : (page === 'hr-dashboard' || page === 'absensi' || page === 'lembur' || page === 'cuti' || page === 'lembur-new' || page === 'cuti-new' || page === 'calendar' || page === 'reimbursement' || page === 'team-report' || page === 'slip-gaji' || page?.startsWith('approval:') || page?.startsWith('announcement:')) ? 'full' : false}>
           {content}
         </DesktopShell>
         {overlays}
@@ -240,8 +231,6 @@ function PageRouter({ page, employee, onBack, onToast, onNavigate }) {
       return <TeamReport employee={employee} onBack={onBack} />
     case 'slip-gaji':
       return <SlipGaji onBack={onBack} onToast={onToast} />
-    case 'import-employees':
-      return <ImportEmployees onBack={onBack} />
     case 'face-enrollment':
       return <FaceEnrollment employee={employee} onBack={onBack} onToast={onToast} />
     case 'profile-personal':

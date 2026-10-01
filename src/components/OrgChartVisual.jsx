@@ -3,6 +3,7 @@ import { ChevronRight, ChevronDown, ChevronsDownUp, ChevronsUpDown, Maximize2, M
 import { buildTierLayout, CARD_W, TEAM_PREVIEW, teamCols } from '../lib/orgTierLayout'
 import './orgChart.css'
 
+import { tx } from '../lib/i18n'
 const PALETTE = ['#4F6BED', '#0E9F86', '#E8833A', '#B34BC4', '#2E90D1', '#D9467A', '#7A8B2C', '#8A5A44', '#5B6B7F', '#C79A1E']
 const NEUTRAL = '#7A7370'
 const LABEL_W = 132       // lebar kolom label golongan (kiri)
@@ -10,11 +11,11 @@ const ROW_GAP = 72        // jarak vertikal antar baris golongan (harus sama den
 
 // Golongan (employees.grade 1..5). Warna mengikuti Excel Struktur Organisasi.
 export const GRADES = {
-  5: { short: 'V', label: 'Golongan V', desc: 'BOD & Advisor', bg: '#4285F4', fg: '#fff' },
-  4: { short: 'IV', label: 'Golongan IV', desc: 'Head', bg: '#B4A7D6', fg: '#2a2320' },
-  3: { short: 'III', label: 'Golongan III', desc: 'Manager', bg: '#F9CB9C', fg: '#2a2320' },
-  2: { short: 'II', label: 'Golongan II', desc: 'SPV/Leader', bg: '#76A5AF', fg: '#fff' },
-  1: { short: 'I', label: 'Golongan I', desc: 'Staff', bg: '#B6D7A8', fg: '#2a2320' },
+  5: { short: 'V', label: tx("Golongan V"), desc: tx("BOD & Advisor"), bg: '#4285F4', fg: '#fff' },
+  4: { short: 'IV', label: tx("Golongan IV"), desc: 'Head', bg: '#B4A7D6', fg: '#2a2320' },
+  3: { short: 'III', label: tx("Golongan III"), desc: 'Manager', bg: '#F9CB9C', fg: '#2a2320' },
+  2: { short: 'II', label: tx("Golongan II"), desc: tx("SPV/Leader"), bg: '#76A5AF', fg: '#fff' },
+  1: { short: 'I', label: tx("Golongan I"), desc: 'Staff', bg: '#B6D7A8', fg: '#2a2320' },
 }
 const gradeStyle = (g) => ({ '--gb': g.bg, '--gf': g.fg })
 
@@ -90,7 +91,7 @@ function GradePill({ grade, full }) {
 function Hit({ p, ctx, className = '', children }) {
   if (!ctx.canEdit) return <div className={`oc-hit ${className}`}>{children}</div>
   return (
-    <button type="button" className={`oc-hit is-edit ${className}`} onClick={() => ctx.onEdit(p)} title="Klik untuk edit struktur" aria-label={`Edit ${p.full_name}`}>
+    <button type="button" className={`oc-hit is-edit ${className}`} onClick={() => ctx.onEdit(p)} title={tx("Klik untuk edit struktur")} aria-label={tx("Edit {0}", [p.full_name])}>
       {children}
       <Pencil size={12} className="oc-pen" />
     </button>
@@ -123,7 +124,7 @@ function Card({ node, ctx }) {
       </Hit>
       {has && (
         <button className={`oc-toggle ${open ? '' : 'is-closed'}`} aria-expanded={open}
-          aria-label={open ? 'Tutup bawahan' : 'Buka bawahan'} onClick={() => ctx.toggle(p.id)}>
+          aria-label={open ? tx("Tutup bawahan") : tx("Buka bawahan")} onClick={() => ctx.toggle(p.id)}>
           {open ? <ChevronDown size={14} /> : <ChevronRight size={14} />}{node.size - 1}
         </button>
       )}
@@ -131,14 +132,14 @@ function Card({ node, ctx }) {
   )
 }
 
-function TeamPanel({ parent, members, teamKey: key, title = 'Tim', byPos = false, ctx }) {
+function TeamPanel({ parent, members, teamKey: key, title = tx("Tim"), byPos = false, ctx }) {
   const anyMatch = members.some((m) => ctx.match(m.p.id))
   const all = ctx.openTeams.has(key) || ctx.openTeams.has(parent.p.id) || anyMatch || members.length <= TEAM_PREVIEW + 2
   const shown = all ? members : members.slice(0, TEAM_PREVIEW)
   const cols = teamCols(members.length)
   return (
     <div className="oc-team">
-      <div className="oc-team-h"><span title={title}>{title}</span><span>{members.length} orang</span></div>
+      <div className="oc-team-h"><span title={title}>{title}</span><span>{members.length}{' '}{tx("orang")}</span></div>
       <div className="oc-team-grid" style={{ '--cols': cols }}>
         {shown.map((m) => {
           const color = ctx.model.colorOf(m.p)
@@ -157,7 +158,7 @@ function TeamPanel({ parent, members, teamKey: key, title = 'Tim', byPos = false
           )
         })}
         {!all && (
-          <button className="oc-more" onClick={() => ctx.openTeam(key)}>Lihat {members.length - TEAM_PREVIEW} lainnya</button>
+          <button className="oc-more" onClick={() => ctx.openTeam(key)}>{tx("Lihat")}{' '}{members.length - TEAM_PREVIEW}{' '}{tx("lainnya")}</button>
         )}
       </div>
     </div>
@@ -165,11 +166,11 @@ function TeamPanel({ parent, members, teamKey: key, title = 'Tim', byPos = false
 }
 
 const rowMeta = (row) => {
-  if (row === 0) return { pill: 'Puncak', desc: 'CEO & Advisor', g: GRADES[5] }
+  if (row === 0) return { pill: 'Puncak', desc: tx("CEO & Advisor"), g: GRADES[5] }
   const g = GRADES[6 - row]
   if (g) return { pill: `Gol. ${g.short}`, desc: g.desc, g }
   // di bawah baris Gol. I: bawahan Gol. I yang lapor ke Gol. I
-  return { pill: `Gol. ${GRADES[1].short}`, desc: 'Lapor ke Gol. I', g: GRADES[1] }
+  return { pill: `Gol. ${GRADES[1].short}`, desc: tx("Lapor ke Gol. I"), g: GRADES[1] }
 }
 
 // garis siku: turun dari induk -> horizontal di celah bawah baris induk -> turun lurus ke anak
@@ -293,17 +294,17 @@ function MobileNode({ node, ctx }) {
     <li>
       <div className={cls} style={{ '--c': color }} data-oc-match={ctx.match(p.id) ? '1' : undefined}>
         {ctx.canEdit
-          ? <button type="button" className="oc-hit" onClick={() => ctx.onEdit(p)} aria-label={`Edit ${p.full_name}`}>{main}</button>
+          ? <button type="button" className="oc-hit" onClick={() => ctx.onEdit(p)} aria-label={tx("Edit {0}", [p.full_name])}>{main}</button>
           : has
             ? <button type="button" className="oc-hit" aria-expanded={open} onClick={() => ctx.toggle(p.id)}>{main}</button>
             : <div className="oc-hit">{main}</div>}
         <GradePill grade={p.grade} />
-        {has && <button type="button" className={`oc-badge ${open ? 'is-open' : ''}`} aria-expanded={open} aria-label={open ? 'Tutup bawahan' : 'Buka bawahan'} onClick={() => ctx.toggle(p.id)}>{node.size - 1}<ChevronRight size={14} /></button>}
+        {has && <button type="button" className={`oc-badge ${open ? 'is-open' : ''}`} aria-expanded={open} aria-label={open ? tx("Tutup bawahan") : tx("Buka bawahan")} onClick={() => ctx.toggle(p.id)}>{node.size - 1}<ChevronRight size={14} /></button>}
       </div>
       {open && (
         <ul>
           {kids.map((k) => <MobileNode key={k.p.id} node={k} ctx={ctx} />)}
-          {hidden > 0 && <li><button className="oc-more-row" onClick={() => ctx.openTeam(p.id)}>Lihat {hidden} anggota lainnya</button></li>}
+          {hidden > 0 && <li><button className="oc-more-row" onClick={() => ctx.openTeam(p.id)}>{tx("Lihat")}{' '}{hidden}{' '}{tx("anggota lainnya")}</button></li>}
         </ul>
       )}
     </li>
@@ -409,26 +410,26 @@ export default function OrgChartVisual({ employees, departments = [], isDesktop,
   const onUp = (e) => { drag.current = null; viewRef.current?.classList.remove('is-drag'); try { viewRef.current?.releasePointerCapture(e.pointerId) } catch { /* noop */ } }
 
   if (model.roots.length === 0) {
-    return <div className="empty-state"><p>Belum ada data karyawan untuk ditampilkan.</p></div>
+    return <div className="empty-state"><p>{tx("Belum ada data karyawan untuk ditampilkan.")}</p></div>
   }
 
   const toolbar = (
     <div className="oc-toolbar">
       <div className="oc-search">
         <Search size={16} />
-        <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Cari nama, jabatan, atau departemen" aria-label="Cari" />
-        {q && <button className="clear" onClick={() => setQ('')} aria-label="Hapus"><X size={15} /></button>}
+        <input value={q} onChange={(e) => setQ(e.target.value)} placeholder={tx("Cari nama, jabatan, atau departemen")} aria-label={tx("Cari")} />
+        {q && <button className="clear" onClick={() => setQ('')} aria-label={tx("Hapus")}><X size={15} /></button>}
       </div>
-      {searching && <span className="oc-count">{matches.size} ditemukan</span>}
+      {searching && <span className="oc-count">{matches.size}{' '}{tx("ditemukan")}</span>}
       <div className="oc-tools">
-        <button className="oc-btn" onClick={expandAll} title="Buka semua"><ChevronsUpDown size={16} />{isDesktop ? 'Buka' : ''}</button>
-        <button className="oc-btn" onClick={collapseAll} title="Tutup semua"><ChevronsDownUp size={16} />{isDesktop ? 'Tutup' : ''}</button>
+        <button className="oc-btn" onClick={expandAll} title={tx("Buka semua")}><ChevronsUpDown size={16} />{isDesktop ? tx("Buka") : ''}</button>
+        <button className="oc-btn" onClick={collapseAll} title={tx("Tutup semua")}><ChevronsDownUp size={16} />{isDesktop ? tx("Tutup") : ''}</button>
         {isDesktop && (
           <>
-            <button className="oc-btn" onClick={() => setZoom((z) => Math.max(0.3, +(z - 0.1).toFixed(2)))} aria-label="Perkecil"><Minus size={16} /></button>
+            <button className="oc-btn" onClick={() => setZoom((z) => Math.max(0.3, +(z - 0.1).toFixed(2)))} aria-label={tx("Perkecil")}><Minus size={16} /></button>
             <span className="oc-zoom">{Math.round(zoom * 100)}%</span>
-            <button className="oc-btn" onClick={() => setZoom((z) => Math.min(1.5, +(z + 0.1).toFixed(2)))} aria-label="Perbesar"><Plus size={16} /></button>
-            <button className="oc-btn" onClick={fit} title="Pas ke layar"><Maximize2 size={15} />Pas</button>
+            <button className="oc-btn" onClick={() => setZoom((z) => Math.min(1.5, +(z + 0.1).toFixed(2)))} aria-label={tx("Perbesar")}><Plus size={16} /></button>
+            <button className="oc-btn" onClick={fit} title={tx("Pas ke layar")}><Maximize2 size={15} />{tx("Pas")}</button>
           </>
         )}
       </div>
@@ -438,12 +439,12 @@ export default function OrgChartVisual({ employees, departments = [], isDesktop,
         </div>
       )}
       {model.gradeCounts.size > 0 && (
-        <div className="oc-legend oc-legend-grade" style={{ flexBasis: '100%' }} role="group" aria-label="Filter golongan">
+        <div className="oc-legend oc-legend-grade" style={{ flexBasis: '100%' }} role="group" aria-label={tx("Filter golongan")}>
           {[5, 4, 3, 2, 1].filter((k) => model.gradeCounts.has(k)).map((k) => {
             const g = GRADES[k]
             return (
               <button key={k} type="button" className={`lg lg-grade ${gradeFilter === k ? 'is-on' : ''}`} style={gradeStyle(g)} aria-pressed={gradeFilter === k}
-                onClick={() => setGradeFilter((cur) => (cur === k ? null : k))} title={`Sorot ${g.label}`}>
+                onClick={() => setGradeFilter((cur) => (cur === k ? null : k))} title={tx("Sorot {0}", [g.label])}>
                 <i />{g.label} · {g.desc}<b>{model.gradeCounts.get(k)}</b>
               </button>
             )
@@ -457,7 +458,7 @@ export default function OrgChartVisual({ employees, departments = [], isDesktop,
     return (
       <div className="oc-wrap">
         {toolbar}
-        {searching && matches.size === 0 && <div className="oc-empty">{q.trim() ? `Tidak ada yang cocok dengan “${q}”.` : 'Tidak ada karyawan pada golongan ini.'}</div>}
+        {searching && matches.size === 0 && <div className="oc-empty">{q.trim() ? tx("Tidak ada yang cocok dengan “{0}”.", [q]) : tx("Tidak ada karyawan pada golongan ini.")}</div>}
         <ul className="oc-outline">
           {model.roots.map((r) => <MobileNode key={r.p.id} node={r} ctx={ctx} />)}
         </ul>

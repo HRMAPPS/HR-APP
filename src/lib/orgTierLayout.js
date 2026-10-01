@@ -1,3 +1,4 @@
+import { tx } from './i18n'
 // Layout struktur organisasi per GOLONGAN (baris sejajar).
 //
 // Aturan baris:
@@ -48,7 +49,7 @@ function groupLeaves(list) {
   }
   groups.sort((a, b) => b.members.length - a.members.length)
   if (rest.length >= TEAM_MIN) {
-    groups.push({ key: '_rest', title: groups.length ? 'Lainnya' : 'Tim', members: rest, byPos: false })
+    groups.push({ key: '_rest', title: groups.length ? tx("Lainnya") : tx("Tim"), members: rest, byPos: false })
     rest = []
   }
   return { groups, singles: rest }

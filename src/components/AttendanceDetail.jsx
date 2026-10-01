@@ -2,13 +2,14 @@ import { useState } from 'react'
 import { ArrowLeft, MapPin } from 'lucide-react'
 import { useSignedPhoto } from '../lib/signedUrl'
 
+import { tx, locale } from '../lib/i18n'
 function formatTime(iso) {
   if (!iso) return '-'
-  return new Date(iso).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
+  return new Date(iso).toLocaleTimeString(locale(), { hour: '2-digit', minute: '2-digit' })
 }
 function formatDate(iso) {
   if (!iso) return '-'
-  return new Date(iso).toLocaleDateString('id-ID', { weekday: 'long', day: '2-digit', month: 'short', year: 'numeric' })
+  return new Date(iso).toLocaleDateString(locale(), { weekday: 'long', day: '2-digit', month: 'short', year: 'numeric' })
 }
 
 // Detail view for a single Clock In or Clock Out event: map + selfie side by
@@ -42,7 +43,7 @@ export default function AttendanceDetail({ type, attendance, shift, onBack }) {
     <div>
       <div className="page-header">
         <button className="back-btn" onClick={onBack}><ArrowLeft size={22} /></button>
-        <h1>Detail {type === 'in' ? 'Clock In' : 'Clock Out'}</h1>
+        <h1>Detail {type === 'in' ? tx("Clock In") : tx("Clock Out")}</h1>
         <span style={{ width: 22 }} />
       </div>
 
@@ -50,14 +51,12 @@ export default function AttendanceDetail({ type, attendance, shift, onBack }) {
         <div style={{ flex: 1 }}>
           {hasLocation ? (
             <iframe
-              title="map"
+              title={tx("map")}
               style={{ width: '100%', height: '100%', border: 0 }}
               src={`https://www.google.com/maps?q=${lat},${lng}&z=16&output=embed`}
             />
           ) : (
-            <div style={{ width: '100%', height: '100%', background: '#eee', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#999', fontSize: 13 }}>
-              Lokasi tidak tersedia
-            </div>
+            <div style={{ width: '100%', height: '100%', background: '#eee', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#999', fontSize: 13 }}>{tx("Lokasi tidak tersedia")}</div>
           )}
         </div>
         <div style={{ flex: 1 }}>
@@ -65,30 +64,30 @@ export default function AttendanceDetail({ type, attendance, shift, onBack }) {
             <img src={photo} alt="Selfie" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
           ) : (
             <div style={{ width: '100%', height: '100%', background: '#ddd', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#999', fontSize: 13 }}>
-              {rawPhoto ? 'Memuat foto...' : 'Tidak ada foto'}
+              {rawPhoto ? tx("Memuat foto...") : tx("Tidak ada foto")}
             </div>
           )}
         </div>
       </div>
 
       <div style={{ background: '#fff' }}>
-        <DetailRow label={`Waktu ${type === 'in' ? 'clock in' : 'clock out'}`} value={`${formatTime(time)} (${formatDate(time)})`} />
+        <DetailRow label={tx("Waktu {0}", [type === 'in' ? 'clock in' : 'clock out'])} value={`${formatTime(time)} (${formatDate(time)})`} />
         <DetailRow label="Shift" value={shift ? `${shift.shift_name} (${shift.start_time?.slice(0,5)} - ${shift.end_time?.slice(0,5)})` : '-'} />
-        <DetailRow label="Jadwal shift" value={shift?.work_date ? formatDate(shift.work_date + 'T00:00:00') : '-'} />
+        <DetailRow label={tx("Jadwal shift")} value={shift?.work_date ? formatDate(shift.work_date + 'T00:00:00') : '-'} />
         <DetailRow
-          label="Alamat"
+          label={tx("Alamat")}
           value={
             !hasLocation ? '-' :
             address ? address :
             <button onClick={loadAddress} disabled={loadingAddress}
               style={{ background: 'none', border: 'none', color: '#4356C4', padding: 0, fontSize: 15, cursor: 'pointer' }}>
-              {loadingAddress ? 'Memuat alamat...' : 'Lihat alamat'}
+              {loadingAddress ? tx("Memuat alamat...") : tx("Lihat alamat")}
             </button>
           }
         />
         {hasLocation && (
           <DetailRow
-            label="Koordinat"
+            label={tx("Koordinat")}
             value={
               <a href={`https://www.google.com/maps?q=${lat},${lng}`} target="_blank" rel="noreferrer"
                 style={{ color: '#4356C4', display: 'flex', alignItems: 'center', gap: 4 }}>

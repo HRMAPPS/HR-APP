@@ -3,16 +3,18 @@ import { ChevronRight, User, Briefcase, Flag, Users, GraduationCap, Wallet, Info
 import { supabase } from '../lib/supabaseClient'
 import AvatarUploader from '../components/AvatarUploader'
 
+import { tx } from '../lib/i18n'
+import LanguageSwitch from '../components/LanguageSwitch'
 const INFO_ROWS = [
-  { label: 'Info personal', icon: User, section: 'personal' },
-  { label: 'Info pekerjaan', icon: Briefcase, section: 'job' },
-  { label: 'Info kontak darurat', icon: Flag, section: 'emergency' },
-  { label: 'Info keluarga', icon: Users, section: 'family' },
-  { label: 'Pendidikan dan Pengalaman', icon: GraduationCap, section: 'education' },
-  { label: 'Info payroll', icon: Wallet, section: 'payroll' },
-  { label: 'Info tambahan', icon: Info, section: 'additional' },
-  { label: 'File saya', icon: Folder, section: 'files' },
-  { label: 'Peringatan', icon: AlertTriangle, section: 'warnings' },
+  { label: tx("Info personal"), icon: User, section: 'personal' },
+  { label: tx("Info pekerjaan"), icon: Briefcase, section: 'job' },
+  { label: tx("Info kontak darurat"), icon: Flag, section: 'emergency' },
+  { label: tx("Info keluarga"), icon: Users, section: 'family' },
+  { label: tx("Pendidikan dan Pengalaman"), icon: GraduationCap, section: 'education' },
+  { label: tx("Info payroll"), icon: Wallet, section: 'payroll' },
+  { label: tx("Info tambahan"), icon: Info, section: 'additional' },
+  { label: tx("File saya"), icon: Folder, section: 'files' },
+  { label: tx("Peringatan"), icon: AlertTriangle, section: 'warnings' },
 ]
 
 export default function Account({ employee, onSignOut, onToast, onNavigate, onAvatarChanged }) {
@@ -40,11 +42,11 @@ export default function Account({ employee, onSignOut, onToast, onNavigate, onAv
       </div>
 
       <div className="menu-block">
-        <h4>Info saya</h4>
+        <h4>{tx("Info saya")}</h4>
         {INFO_ROWS.map((r) => {
           const Icon = r.icon
           return (
-            <button key={r.label} className="menu-row" onClick={() => r.section ? onNavigate(`profile-${r.section}`) : onToast(`${r.label} segera hadir`)}>
+            <button key={r.label} className="menu-row" onClick={() => r.section ? onNavigate(`profile-${r.section}`) : onToast(tx("{0} segera hadir", [r.label]))}>
               <Icon size={19} /> {r.label} <ChevronRight size={18} className="chev" />
             </button>
           )
@@ -52,16 +54,18 @@ export default function Account({ employee, onSignOut, onToast, onNavigate, onAv
       </div>
 
       <div className="menu-block">
-        <h4>Pengaturan</h4>
+        <h4>{tx("Pengaturan")}</h4>
         <button className="menu-row" onClick={() => onNavigate('face-enrollment')}>
-          <ScanFace size={19} /> Daftarkan Wajah <ChevronRight size={18} className="chev" />
+          <ScanFace size={19} />{' '}{tx("Daftarkan Wajah")}{' '}<ChevronRight size={18} className="chev" />
         </button>
         <button className="menu-row" onClick={() => setShowPwd(true)}>
-          <Lock size={19} /> Ubah kata sandi <ChevronRight size={18} className="chev" />
+          <Lock size={19} />{' '}{tx("Ubah kata sandi")}{' '}<ChevronRight size={18} className="chev" />
         </button>
-        <button className="menu-row" style={{ color: '#b23b3b' }} onClick={onSignOut}>
-          Keluar
-        </button>
+        <div className="menu-row" style={{ cursor: 'default' }}>
+          <span style={{ flex: 1 }}>{tx("Bahasa")}</span>
+          <LanguageSwitch />
+        </div>
+        <button className="menu-row" style={{ color: '#b23b3b' }} onClick={onSignOut}>{tx("Keluar")}</button>
       </div>
 
       {showPwd && <ChangePasswordSheet onClose={() => setShowPwd(false)} onToast={onToast} />}
@@ -78,13 +82,13 @@ function ChangePasswordSheet({ onClose, onToast }) {
   async function submit(e) {
     e.preventDefault()
     setError('')
-    if (pwd.length < 6) { setError('Kata sandi minimal 6 karakter'); return }
-    if (pwd !== confirm) { setError('Konfirmasi kata sandi tidak sama'); return }
+    if (pwd.length < 6) { setError(tx("Kata sandi minimal 6 karakter")); return }
+    if (pwd !== confirm) { setError(tx("Konfirmasi kata sandi tidak sama")); return }
     setLoading(true)
     const { error } = await supabase.auth.updateUser({ password: pwd })
     setLoading(false)
     if (error) { setError(error.message); return }
-    onToast('Kata sandi berhasil diubah')
+    onToast(tx("Kata sandi berhasil diubah"))
     onClose()
   }
 
@@ -92,18 +96,18 @@ function ChangePasswordSheet({ onClose, onToast }) {
     <div className="sheet-overlay" onClick={onClose}>
       <div className="sheet" onClick={(e) => e.stopPropagation()}>
         <div className="sheet-handle" />
-        <div className="sheet-title-row"><h3>Kata sandi</h3></div>
+        <div className="sheet-title-row"><h3>{tx("Kata sandi")}</h3></div>
         <form onSubmit={submit}>
           <div className="field">
-            <label>Kata sandi baru</label>
-            <input type="password" value={pwd} onChange={(e) => setPwd(e.target.value)} placeholder="Masukkan kata sandi baru" />
+            <label>{tx("Kata sandi baru")}</label>
+            <input type="password" value={pwd} onChange={(e) => setPwd(e.target.value)} placeholder={tx("Masukkan kata sandi baru")} />
           </div>
           <div className="field">
-            <label>Konfirmasi kata sandi</label>
-            <input type="password" value={confirm} onChange={(e) => setConfirm(e.target.value)} placeholder="Ulangi kata sandi baru" />
+            <label>{tx("Konfirmasi kata sandi")}</label>
+            <input type="password" value={confirm} onChange={(e) => setConfirm(e.target.value)} placeholder={tx("Ulangi kata sandi baru")} />
           </div>
           {error && <p className="error-text">{error}</p>}
-          <button className="primary-btn" disabled={loading}>{loading ? 'Menyimpan...' : 'Kirim'}</button>
+          <button className="primary-btn" disabled={loading}>{loading ? tx("Menyimpan...") : tx("Kirim")}</button>
         </form>
       </div>
     </div>

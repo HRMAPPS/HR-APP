@@ -2,9 +2,10 @@ import { ChevronRight } from 'lucide-react'
 import Sheet from './Sheet'
 import { REQUEST_TYPES } from '../lib/menuConfig'
 
+import { tx } from '../lib/i18n'
 export default function RequestSheet({ onClose, onNavigate }) {
   return (
-    <Sheet title="Ajukan untuk" onClose={onClose}>
+    <Sheet title={tx("Ajukan untuk")} onClose={onClose}>
       {REQUEST_TYPES.map((r) => {
         const Icon = r.icon
         return (

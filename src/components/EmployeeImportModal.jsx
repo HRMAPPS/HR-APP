@@ -3,9 +3,10 @@ import { Download, Upload } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
 import { TEMPLATE_URL, readEmployeeFile, buildPlan, runImport } from '../lib/employeeImport'
 
+import { tx } from '../lib/i18n'
 const STATUS_STYLE = {
-  ok: { label: 'Siap', bg: '#E1F3EA', color: '#1E8E5A' },
-  skip: { label: 'Dilewati', bg: '#FFF3D6', color: '#B4650C' },
+  ok: { label: tx("Siap"), bg: '#E1F3EA', color: '#1E8E5A' },
+  skip: { label: tx("Dilewati"), bg: '#FFF3D6', color: '#B4650C' },
   error: { label: 'Error', bg: '#FBE1DD', color: '#C0392B' },
 }
 
@@ -32,10 +33,10 @@ export default function EmployeeImportModal({ employees, onClose, onDone }) {
     try {
       const rows = await readEmployeeFile(file)
       const plan = buildPlan(rows, employees, shifts, departments)
-      if (plan.length === 0) { setError('Tidak ada baris data di file ini. Pastikan data diisi mulai baris 3 di sheet "Karyawan".'); return }
+      if (plan.length === 0) { setError(tx("Tidak ada baris data di file ini. Pastikan data diisi mulai baris 3 di sheet \"Karyawan\".")); return }
       setItems(plan)
     } catch (err) {
-      setError('Gagal membaca file: ' + err.message)
+      setError(tx("Gagal membaca file: ") + err.message)
     }
   }
 
@@ -46,27 +47,23 @@ export default function EmployeeImportModal({ employees, onClose, onDone }) {
     const res = await runImport(items, employees, (d, t) => setProgress(`${d}/${t}`), departments)
     setBusy(false); setProgress(null)
     setResult(res)
-    if (res.ok.length) onDone?.(`${res.ok.length} karyawan berhasil diimpor${res.failed.length ? `, ${res.failed.length} gagal` : ''}`, res.failed.length === 0)
+    if (res.ok.length) onDone?.(tx("{0} karyawan berhasil diimpor{1}", [res.ok.length, res.failed.length ? tx(", {0} gagal", [res.failed.length]) : '']), res.failed.length === 0)
   }
 
   return (
     <div className="sheet-overlay" onClick={busy ? undefined : onClose}>
       <div className="sheet" style={{ maxWidth: 720 }} onClick={(e) => e.stopPropagation()}>
         <div className="sheet-handle" />
-        <div className="sheet-title-row"><h3>Import Karyawan dari Excel</h3></div>
+        <div className="sheet-title-row"><h3>{tx("Import Karyawan dari Excel")}</h3></div>
 
-        <p style={{ fontSize: 13, color: 'var(--text-muted)', margin: '0 0 12px' }}>
-          Unduh template, isi data karyawan (mulai baris 3), lalu unggah kembali. Kode yang sudah ada di sistem akan dilewati.
-        </p>
+        <p style={{ fontSize: 13, color: 'var(--text-muted)', margin: '0 0 12px' }}>{tx("Unduh template, isi data karyawan (mulai baris 3), lalu unggah kembali. Kode yang sudah ada di sistem akan dilewati.")}</p>
 
         <div style={{ display: 'flex', gap: 10, marginBottom: 14 }}>
           <a className="primary-btn" href={TEMPLATE_URL} download="template-import-karyawan.xlsx"
             style={{ flex: 1, background: '#eee', color: '#333', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, textDecoration: 'none' }}>
-            <Download size={17} /> Unduh Template
-          </a>
+            <Download size={17} />{' '}{tx("Unduh Template")}</a>
           <label className="primary-btn" style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, cursor: 'pointer' }}>
-            <Upload size={17} /> Pilih File Excel
-            <input type="file" accept=".xlsx,.xls" onChange={onFile} disabled={busy} style={{ display: 'none' }} />
+            <Upload size={17} />{' '}{tx("Pilih File Excel")}<input type="file" accept=".xlsx,.xls" onChange={onFile} disabled={busy} style={{ display: 'none' }} />
           </label>
         </div>
 
@@ -75,11 +72,10 @@ export default function EmployeeImportModal({ employees, onClose, onDone }) {
         {items && !result && (
           <>
             <div style={{ fontSize: 13, marginBottom: 8 }}>
-              <b>{fileName}</b> — {okCount} siap diimpor, {items.filter((i) => i.status === 'skip').length} dilewati, {items.filter((i) => i.status === 'error').length} error
-            </div>
+              <b>{fileName}</b> — {okCount}{' '}{tx("siap diimpor,")}{' '}{items.filter((i) => i.status === 'skip').length}{' '}{tx("dilewati,")}{' '}{items.filter((i) => i.status === 'error').length}{' '}{tx("error")}</div>
             <div style={{ maxHeight: 300, overflow: 'auto', border: '1px solid var(--border)', borderRadius: 10 }}>
               <table className="dsk-table" style={{ fontSize: 13 }}>
-                <thead><tr><th>Baris</th><th>Kode</th><th>Nama</th><th>Role</th><th>Status</th></tr></thead>
+                <thead><tr><th>{tx("Baris")}</th><th>{tx("Kode")}</th><th>{tx("Nama")}</th><th>{tx("Role")}</th><th>Status</th></tr></thead>
                 <tbody>
                   {items.map((it) => {
                     const st = STATUS_STYLE[it.status]
@@ -97,7 +93,7 @@ export default function EmployeeImportModal({ employees, onClose, onDone }) {
               </table>
             </div>
             <button className="primary-btn" style={{ marginTop: 14 }} disabled={busy || okCount === 0} onClick={doImport}>
-              {busy ? `Mengimpor... ${progress || ''}` : `Impor ${okCount} karyawan`}
+              {busy ? tx("Mengimpor... {0}", [progress || '']) : tx("Impor {0} karyawan", [okCount])}
             </button>
           </>
         )}
@@ -105,14 +101,12 @@ export default function EmployeeImportModal({ employees, onClose, onDone }) {
         {result && (
           <div style={{ marginTop: 6 }}>
             <div style={{ background: '#E1F3EA', color: '#1E8E5A', borderRadius: 10, padding: '10px 12px', fontSize: 13.5, marginBottom: 10 }}>
-              {result.ok.length} karyawan berhasil ditambahkan.
-            </div>
+              {result.ok.length}{' '}{tx("karyawan berhasil ditambahkan.")}</div>
             {result.failed.length > 0 && (
-              <div style={{ background: '#FBE1DD', color: '#C0392B', borderRadius: 10, padding: '10px 12px', fontSize: 13, marginBottom: 10 }}>
-                Gagal: {result.failed.map((f) => `baris ${f.row} ${f.code} (${f.error})`).join('; ')}
+              <div style={{ background: '#FBE1DD', color: '#C0392B', borderRadius: 10, padding: '10px 12px', fontSize: 13, marginBottom: 10 }}>{tx("Gagal:")}{' '}{result.failed.map((f) => tx("baris {0} {1} ({2})", [f.row, f.code, f.error])).join('; ')}
               </div>
             )}
-            <button className="primary-btn" onClick={onClose}>Selesai</button>
+            <button className="primary-btn" onClick={onClose}>{tx("Selesai")}</button>
           </div>
         )}
       </div>

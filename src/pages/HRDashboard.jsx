@@ -8,19 +8,20 @@ import CalendarEventsTab from '../components/CalendarEventsTab'
 import EmployeeImportModal from '../components/EmployeeImportModal'
 import HRAttendanceDetail from '../components/HRAttendanceDetail'
 
+import { tx, locale } from '../lib/i18n'
 const TABS = [
-  { key: 'overview', label: 'Ringkasan', icon: Users },
-  { key: 'karyawan', label: 'Karyawan', icon: Users },
+  { key: 'overview', label: tx("Ringkasan"), icon: Users },
+  { key: 'karyawan', label: tx("Karyawan"), icon: Users },
   { key: 'shift', label: 'Shift', icon: CalendarClock },
-  { key: 'lokasi', label: 'Lokasi', icon: MapPin },
-  { key: 'attendance', label: 'Absensi', icon: ClipboardList },
-  { key: 'leave', label: 'Cuti', icon: CalendarDays },
-  { key: 'overtime', label: 'Lembur', icon: AlarmClock },
-  { key: 'reimbursement', label: 'Reimburse', icon: Receipt },
-  { key: 'correction', label: 'Koreksi Absen', icon: ClipboardList },
-  { key: 'payslip', label: 'Slip Gaji', icon: Wallet },
-  { key: 'pengumuman', label: 'Pengumuman', icon: Bell },
-  { key: 'kalender', label: 'Kalender', icon: CalendarDays },
+  { key: 'lokasi', label: tx("Lokasi"), icon: MapPin },
+  { key: 'attendance', label: tx("Absensi"), icon: ClipboardList },
+  { key: 'leave', label: tx("Cuti"), icon: CalendarDays },
+  { key: 'overtime', label: tx("Lembur"), icon: AlarmClock },
+  { key: 'reimbursement', label: tx("Reimburse"), icon: Receipt },
+  { key: 'correction', label: tx("Koreksi Absen"), icon: ClipboardList },
+  { key: 'payslip', label: tx("Slip Gaji"), icon: Wallet },
+  { key: 'pengumuman', label: tx("Pengumuman"), icon: Bell },
+  { key: 'kalender', label: tx("Kalender"), icon: CalendarDays },
 ]
 
 export default function HRDashboard({ onBack, onToast }) {
@@ -38,11 +39,11 @@ export default function HRDashboard({ onBack, onToast }) {
   return (
     <div>
       {isDesktop ? (
-        <h1 style={{ fontSize: 26, margin: '4px 0 4px' }}>HR Dashboard</h1>
+        <h1 style={{ fontSize: 26, margin: '4px 0 4px' }}>{tx("HR Dashboard")}</h1>
       ) : (
         <div className="page-header">
           <button className="back-btn" onClick={onBack}><ArrowLeft size={22} /></button>
-          <h1>HR Dashboard</h1>
+          <h1>{tx("HR Dashboard")}</h1>
           <span style={{ width: 22 }} />
         </div>
       )}
@@ -77,7 +78,7 @@ export default function HRDashboard({ onBack, onToast }) {
 }
 
 function fmtDate(d) {
-  return new Date(d).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })
+  return new Date(d).toLocaleDateString(locale(), { day: '2-digit', month: 'short', year: 'numeric' })
 }
 function isoWeek(dateStr) {
   const d = new Date(dateStr)
@@ -89,7 +90,7 @@ function isoWeek(dateStr) {
 }
 function fmtTime(t) {
   if (!t) return '-'
-  return new Date(t).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
+  return new Date(t).toLocaleTimeString(locale(), { hour: '2-digit', minute: '2-digit' })
 }
 function rupiah(n) {
   return 'Rp' + Number(n || 0).toLocaleString('id-ID')
@@ -152,14 +153,14 @@ function OverviewTab({ onToast, onGo, isDesktop }) {
     })
   }, [])
 
-  if (!stats) return <div className="empty-state"><p>Memuat...</p></div>
+  if (!stats) return <div className="empty-state"><p>{tx("Memuat...")}</p></div>
 
   const cards = [
-    { label: 'Total Karyawan Aktif', value: stats.total_employees, go: 'karyawan' },
-    { label: 'Hadir Hari Ini', value: stats.present_today, go: 'attendance' },
-    { label: 'Cuti Menunggu', value: stats.pending_leave, go: 'leave' },
-    { label: 'Lembur Menunggu', value: stats.pending_overtime, go: 'overtime' },
-    { label: 'Reimburse Menunggu', value: stats.pending_reimbursement, go: 'reimbursement' },
+    { label: tx("Total Karyawan Aktif"), value: stats.total_employees, go: 'karyawan' },
+    { label: tx("Hadir Hari Ini"), value: stats.present_today, go: 'attendance' },
+    { label: tx("Cuti Menunggu"), value: stats.pending_leave, go: 'leave' },
+    { label: tx("Lembur Menunggu"), value: stats.pending_overtime, go: 'overtime' },
+    { label: tx("Reimburse Menunggu"), value: stats.pending_reimbursement, go: 'reimbursement' },
   ]
 
   if (isDesktop) {
@@ -210,34 +211,32 @@ function KaryawanTab({ employees, onReload, onToast, isDesktop }) {
         <div style={{ display: 'flex', gap: 10, marginBottom: 14, alignItems: 'center' }}>
           <div className="search-box" style={{ margin: 0, flex: 1 }}>
             <Search size={16} />
-            <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Cari nama / kode karyawan..."
+            <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={tx("Cari nama / kode karyawan...")}
               style={{ border: 'none', outline: 'none', background: 'none', flex: 1, fontSize: 14.5 }} />
           </div>
           <button className="primary-btn" style={{ width: 'auto', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: 8, padding: '11px 18px' }} onClick={() => setEditing({})}>
-            <Plus size={18} /> Tambah karyawan
-          </button>
+            <Plus size={18} />{' '}{tx("Tambah karyawan")}</button>
           <ImportButton onClick={() => setImportOpen(true)} style={{ marginBottom: 0, flexShrink: 0 }} />
           <ExportButton style={{ marginBottom: 0, flexShrink: 0 }} onClick={() => exportToExcel('data-karyawan.xlsx', 'Karyawan', filtered, [
-            ['Kode Karyawan', 'employee_code'], ['Nama', 'full_name'], ['Jabatan', 'position'], ['Departemen', 'department'],
-            ['Role', 'role'], ['Status', (r) => r.employment_status || 'active'], ['No HP', 'phone'], ['Email', 'email'],
+            [tx("Kode Karyawan"), 'employee_code'], [tx("Nama"), 'full_name'], [tx("Jabatan"), 'position'], [tx("Departemen"), 'department'],
+            [tx("Role"), 'role'], ['Status', (r) => r.employment_status || 'active'], ['No HP', 'phone'], ['Email', 'email'],
           ])} />
         </div>
       ) : (
         <>
           <div className="search-box" style={{ margin: '0 0 14px' }}>
             <Search size={16} />
-            <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Cari nama / kode karyawan..."
+            <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={tx("Cari nama / kode karyawan...")}
               style={{ border: 'none', outline: 'none', background: 'none', flex: 1, fontSize: 14.5 }} />
           </div>
 
           <button className="primary-btn" style={{ marginBottom: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }} onClick={() => setEditing({})}>
-            <Plus size={18} /> Tambah karyawan
-          </button>
+            <Plus size={18} />{' '}{tx("Tambah karyawan")}</button>
 
           <ImportButton onClick={() => setImportOpen(true)} style={{ marginRight: 8 }} />
           <ExportButton onClick={() => exportToExcel('data-karyawan.xlsx', 'Karyawan', filtered, [
-            ['Kode Karyawan', 'employee_code'], ['Nama', 'full_name'], ['Jabatan', 'position'], ['Departemen', 'department'],
-            ['Role', 'role'], ['Status', (r) => r.employment_status || 'active'], ['No HP', 'phone'], ['Email', 'email'],
+            [tx("Kode Karyawan"), 'employee_code'], [tx("Nama"), 'full_name'], [tx("Jabatan"), 'position'], [tx("Departemen"), 'department'],
+            [tx("Role"), 'role'], ['Status', (r) => r.employment_status || 'active'], ['No HP', 'phone'], ['Email', 'email'],
           ])} />
         </>
       )}
@@ -246,11 +245,11 @@ function KaryawanTab({ employees, onReload, onToast, isDesktop }) {
         <div className="dsk-table-wrap" style={{ marginTop: 4 }}>
           <table className="dsk-table">
             <thead>
-              <tr><th>Karyawan</th><th>Kode</th><th>Jabatan</th><th>Departemen</th><th>Shift</th><th>Status</th><th>Aksi</th></tr>
+              <tr><th>{tx("Karyawan")}</th><th>{tx("Kode")}</th><th>{tx("Jabatan")}</th><th>{tx("Departemen")}</th><th>Shift</th><th>Status</th><th>{tx("Aksi")}</th></tr>
             </thead>
             <tbody>
               {filtered.length === 0 ? (
-                <tr><td colSpan={7} className="empty">Tidak ada karyawan yang cocok.</td></tr>
+                <tr><td colSpan={7} className="empty">{tx("Tidak ada karyawan yang cocok.")}</td></tr>
               ) : filtered.map((e) => (
                 <tr key={e.id}>
                   <td style={{ fontWeight: 600 }}>
@@ -261,8 +260,8 @@ function KaryawanTab({ employees, onReload, onToast, isDesktop }) {
                   <td>{e.position || '-'}</td>
                   <td>{e.department || '-'}</td>
                   <td>{e.default_shift_name ? `${e.default_shift_name} (${e.default_shift_start?.slice(0, 5)}-${e.default_shift_end?.slice(0, 5)})` : '-'}</td>
-                  <td>{e.employment_status === 'inactive' ? <span style={{ color: '#C0392B' }}>Nonaktif</span> : <span style={{ color: '#1E8E5A' }}>Aktif</span>}</td>
-                  <td><button className="btn" onClick={() => setEditing(e)}><Pencil size={13} style={{ verticalAlign: '-2px', marginRight: 4 }} />Edit</button></td>
+                  <td>{e.employment_status === 'inactive' ? <span style={{ color: '#C0392B' }}>{tx("Nonaktif")}</span> : <span style={{ color: '#1E8E5A' }}>{tx("Aktif")}</span>}</td>
+                  <td><button className="btn" onClick={() => setEditing(e)}><Pencil size={13} style={{ verticalAlign: '-2px', marginRight: 4 }} />{tx("Edit")}</button></td>
                 </tr>
               ))}
             </tbody>
@@ -274,7 +273,7 @@ function KaryawanTab({ employees, onReload, onToast, isDesktop }) {
             <div className="info">
               <div className="name">{e.full_name} {e.role !== 'employee' && <span style={{ fontSize: 11, background: '#FBE8D6', color: '#B4650C', padding: '2px 7px', borderRadius: 6, marginLeft: 6 }}>{e.role?.toUpperCase()}</span>}</div>
               <div className="sub">
-                {e.employee_code} · {e.position || '-'}{e.employment_status === 'inactive' ? ' · Nonaktif' : ''}
+                {e.employee_code} · {e.position || '-'}{e.employment_status === 'inactive' ? tx(" · Nonaktif") : ''}
                 {e.default_shift_name && ` · ${e.default_shift_name} (${e.default_shift_start?.slice(0, 5)}-${e.default_shift_end?.slice(0, 5)})`}
               </div>
             </div>
@@ -332,7 +331,7 @@ function EmployeeForm({ row, employees, onClose, onSaved }) {
   async function submit(ev) {
     ev.preventDefault()
     setError('')
-    if (!form.full_name.trim() || (!row.id && !form.employee_code.trim())) { setError('Nama dan kode karyawan wajib diisi'); return }
+    if (!form.full_name.trim() || (!row.id && !form.employee_code.trim())) { setError(tx("Nama dan kode karyawan wajib diisi")); return }
     setSaving(true)
     // samakan huruf dengan daftar resmi; departemen baru otomatis didaftarkan
     const typed = form.department.trim()
@@ -365,39 +364,39 @@ function EmployeeForm({ row, employees, onClose, onSaved }) {
     // samakan department_id (dipakai Struktur Organisasi) dengan departemen yang dipilih
     const empId = row.id || res.data?.id
     if (empId) await supabase.rpc('update_employee_department', { p_employee_id: empId, p_department_id: dept ? dept.id : null })
-    onSaved(row.id ? 'Data karyawan diperbarui' : 'Karyawan ditambahkan')
+    onSaved(row.id ? tx("Data karyawan diperbarui") : tx("Karyawan ditambahkan"))
   }
 
   return (
     <div className="sheet-overlay" onClick={onClose}>
       <div className="sheet" onClick={(e) => e.stopPropagation()}>
         <div className="sheet-handle" />
-        <div className="sheet-title-row"><h3>{row.id ? 'Edit Karyawan' : 'Tambah Karyawan'}</h3></div>
+        <div className="sheet-title-row"><h3>{row.id ? tx("Edit Karyawan") : tx("Tambah Karyawan")}</h3></div>
         <form onSubmit={submit}>
           <div className="field">
-            <label>Kode karyawan</label>
+            <label>{tx("Kode karyawan")}</label>
             <input value={form.employee_code} onChange={(e) => setForm((f) => ({ ...f, employee_code: e.target.value }))} disabled={!!row.id} required={!row.id} />
-            {!row.id && <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>Kode ini akan diminta ke karyawan saat mereka membuat akun login sendiri di halaman "Buat Akun" — pastikan unik dan sampaikan ke karyawan yang bersangkutan.</p>}
+            {!row.id && <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>{tx("Kode ini akan diminta ke karyawan saat mereka membuat akun login sendiri di halaman \"Buat Akun\" — pastikan unik dan sampaikan ke karyawan yang bersangkutan.")}</p>}
           </div>
-          <div className="field"><label>Nama lengkap</label><input value={form.full_name} onChange={(e) => setForm((f) => ({ ...f, full_name: e.target.value }))} /></div>
-          <div className="field"><label>Jabatan</label><input value={form.position} onChange={(e) => setForm((f) => ({ ...f, position: e.target.value }))} /></div>
-          <div className="field"><label>Departemen</label>
-            <input list="dept-options" placeholder="Pilih atau ketik departemen baru" value={form.department} onChange={(e) => setForm((f) => ({ ...f, department: e.target.value }))} />
+          <div className="field"><label>{tx("Nama lengkap")}</label><input value={form.full_name} onChange={(e) => setForm((f) => ({ ...f, full_name: e.target.value }))} /></div>
+          <div className="field"><label>{tx("Jabatan")}</label><input value={form.position} onChange={(e) => setForm((f) => ({ ...f, position: e.target.value }))} /></div>
+          <div className="field"><label>{tx("Departemen")}</label>
+            <input list="dept-options" placeholder={tx("Pilih atau ketik departemen baru")} value={form.department} onChange={(e) => setForm((f) => ({ ...f, department: e.target.value }))} />
             <datalist id="dept-options">{departments.map((d) => <option key={d.id} value={d.name} />)}</datalist>
           </div>
           <div className="field">
-            <label>Atasan langsung</label>
+            <label>{tx("Atasan langsung")}</label>
             <select value={form.manager_id} onChange={(e) => setForm((f) => ({ ...f, manager_id: e.target.value }))}>
-              <option value="">- Tidak ada -</option>
+              <option value="">{tx("- Tidak ada -")}</option>
               {managerOptions.map((e) => <option key={e.id} value={e.id}>{e.full_name}</option>)}
             </select>
           </div>
-          <div className="field"><label>No. HP</label><input value={form.phone} onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))} /></div>
+          <div className="field"><label>{tx("No. HP")}</label><input value={form.phone} onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))} /></div>
           <div className="field"><label>Email</label><input value={form.email} onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))} /></div>
           <div className="field">
-            <label>Role akses</label>
+            <label>{tx("Role akses")}</label>
             <select value={form.role} onChange={(e) => setForm((f) => ({ ...f, role: e.target.value }))}>
-              <option value="employee">Employee</option>
+              <option value="employee">{tx("Employee")}</option>
               <option value="hr">HR</option>
               <option value="admin">Admin</option>
             </select>
@@ -406,22 +405,22 @@ function EmployeeForm({ row, employees, onClose, onSaved }) {
             <div className="field">
               <label>Status</label>
               <select value={form.employment_status} onChange={(e) => setForm((f) => ({ ...f, employment_status: e.target.value }))}>
-                <option value="active">Aktif</option>
-                <option value="inactive">Nonaktif</option>
+                <option value="active">{tx("Aktif")}</option>
+                <option value="inactive">{tx("Nonaktif")}</option>
               </select>
             </div>
           )}
 
           <div className="field">
-            <label>Shift default (berlaku terus-menerus)</label>
+            <label>{tx("Shift default (berlaku terus-menerus)")}</label>
             <select value={form.default_shift_id} onChange={(e) => setForm((f) => ({ ...f, default_shift_id: e.target.value }))}>
-              <option value="">- Tidak ada shift default -</option>
+              <option value="">{tx("- Tidak ada shift default -")}</option>
               {shifts.map((s) => <option key={s.id} value={s.id}>{s.name} ({s.start_time?.slice(0, 5)}-{s.end_time?.slice(0, 5)})</option>)}
             </select>
           </div>
           {form.default_shift_id && (
             <div className="field">
-              <label>Berlaku di hari</label>
+              <label>{tx("Berlaku di hari")}</label>
               <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                 {DOW_OPTIONS.map(([val, label]) => (
                   <button key={val} type="button" onClick={() => toggleDay(val)} style={{
@@ -430,14 +429,12 @@ function EmployeeForm({ row, employees, onClose, onSaved }) {
                   }}>{label}</button>
                 ))}
               </div>
-              <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 6 }}>
-                Hari yang tidak dicentang otomatis jadi "Libur" tiap minggu. Ini cuma default — jadwal khusus per-tanggal (kalau ada) tetap yang menang.
-              </p>
+              <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 6 }}>{tx("Hari yang tidak dicentang otomatis jadi \"Libur\" tiap minggu. Ini cuma default — jadwal khusus per-tanggal (kalau ada) tetap yang menang.")}</p>
             </div>
           )}
 
           {error && <p className="error-text">{error}</p>}
-          <button className="primary-btn" disabled={saving}>{saving ? 'Menyimpan...' : 'Simpan'}</button>
+          <button className="primary-btn" disabled={saving}>{saving ? tx("Menyimpan...") : tx("Simpan")}</button>
         </form>
       </div>
     </div>
@@ -448,7 +445,7 @@ function EmployeeForm({ row, employees, onClose, onSaved }) {
 // Shift — kelola jenis shift, dan atur jadwal karyawan (satuan / massal)
 // ---------------------------------------------------------------------
 const DOW_OPTIONS = [
-  ['1', 'Sen'], ['2', 'Sel'], ['3', 'Rab'], ['4', 'Kam'], ['5', 'Jum'], ['6', 'Sab'], ['0', 'Min'],
+  ['1', tx("Sen")], ['2', tx("Sel")], ['3', tx("Rab")], ['4', tx("Kam")], ['5', tx("Jum")], ['6', tx("Sab")], ['0', tx("Min")],
 ]
 
 function ShiftTab({ employees, onToast, isDesktop }) {
@@ -466,8 +463,8 @@ function ShiftTab({ employees, onToast, isDesktop }) {
   return (
     <div className="form-page">
       <div className="tabs" style={{ padding: 0, marginBottom: 14 }}>
-        <button className={sub === 'jadwal' ? 'active' : ''} onClick={() => setSub('jadwal')}>Jadwal Karyawan</button>
-        <button className={sub === 'jenis' ? 'active' : ''} onClick={() => setSub('jenis')}>Jenis Shift</button>
+        <button className={sub === 'jadwal' ? 'active' : ''} onClick={() => setSub('jadwal')}>{tx("Jadwal Karyawan")}</button>
+        <button className={sub === 'jenis' ? 'active' : ''} onClick={() => setSub('jenis')}>{tx("Jenis Shift")}</button>
       </div>
 
       {sub === 'jenis' && (
@@ -479,14 +476,14 @@ function ShiftTab({ employees, onToast, isDesktop }) {
               : { marginBottom: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
             onClick={() => setEditingShift({})}
           >
-            <Plus size={isDesktop ? 15 : 18} /> {isDesktop ? 'TAMBAH JENIS SHIFT' : 'Tambah jenis shift'}
+            <Plus size={isDesktop ? 15 : 18} /> {isDesktop ? tx("TAMBAH JENIS SHIFT") : tx("Tambah jenis shift")}
           </button>
           {shifts.length === 0 ? (
-            <div className="empty-state"><p>Belum ada jenis shift. Tambah dulu, misalnya "Office Staff 08:00 - 17:00".</p></div>
+            <div className="empty-state"><p>{tx("Belum ada jenis shift. Tambah dulu, misalnya \"Office Staff 08:00 - 17:00\".")}</p></div>
           ) : isDesktop ? (
             <div className="dsk-table-wrap">
               <table className="dsk-table">
-                <thead><tr><th>Nama shift</th><th>Jam</th><th>Aksi</th></tr></thead>
+                <thead><tr><th>{tx("Nama shift")}</th><th>{tx("Jam")}</th><th>{tx("Aksi")}</th></tr></thead>
                 <tbody>
                   {shifts.map((s) => (
                     <tr key={s.id}>
@@ -528,27 +525,27 @@ function ShiftForm({ row, onClose, onSaved }) {
   async function submit(ev) {
     ev.preventDefault()
     setError('')
-    if (!form.name.trim()) { setError('Nama shift wajib diisi'); return }
+    if (!form.name.trim()) { setError(tx("Nama shift wajib diisi")); return }
     setSaving(true)
     const { error } = await supabase.rpc('upsert_shift_hr', { p_id: row.id || null, p_name: form.name, p_start_time: form.start_time, p_end_time: form.end_time })
     setSaving(false)
     if (error) { setError(error.message); return }
-    onSaved(row.id ? 'Jenis shift diperbarui' : 'Jenis shift ditambahkan')
+    onSaved(row.id ? tx("Jenis shift diperbarui") : tx("Jenis shift ditambahkan"))
   }
 
   return (
     <div className="sheet-overlay" onClick={onClose}>
       <div className="sheet" onClick={(e) => e.stopPropagation()}>
         <div className="sheet-handle" />
-        <div className="sheet-title-row"><h3>{row.id ? 'Edit Jenis Shift' : 'Tambah Jenis Shift'}</h3></div>
+        <div className="sheet-title-row"><h3>{row.id ? tx("Edit Jenis Shift") : tx("Tambah Jenis Shift")}</h3></div>
         <form onSubmit={submit}>
-          <div className="field"><label>Nama shift</label><input value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} placeholder="mis. Office Staff" /></div>
+          <div className="field"><label>{tx("Nama shift")}</label><input value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} placeholder={tx("mis. Office Staff")} /></div>
           <div style={{ display: 'flex', gap: 12 }}>
-            <div className="field" style={{ flex: 1 }}><label>Jam mulai</label><input type="time" value={form.start_time} onChange={(e) => setForm((f) => ({ ...f, start_time: e.target.value }))} /></div>
-            <div className="field" style={{ flex: 1 }}><label>Jam selesai</label><input type="time" value={form.end_time} onChange={(e) => setForm((f) => ({ ...f, end_time: e.target.value }))} /></div>
+            <div className="field" style={{ flex: 1 }}><label>{tx("Jam mulai")}</label><input type="time" value={form.start_time} onChange={(e) => setForm((f) => ({ ...f, start_time: e.target.value }))} /></div>
+            <div className="field" style={{ flex: 1 }}><label>{tx("Jam selesai")}</label><input type="time" value={form.end_time} onChange={(e) => setForm((f) => ({ ...f, end_time: e.target.value }))} /></div>
           </div>
           {error && <p className="error-text">{error}</p>}
-          <button className="primary-btn" disabled={saving}>{saving ? 'Menyimpan...' : 'Simpan'}</button>
+          <button className="primary-btn" disabled={saving}>{saving ? tx("Menyimpan...") : tx("Simpan")}</button>
         </form>
       </div>
     </div>
@@ -567,10 +564,10 @@ function LocationTab({ onToast, isDesktop }) {
   useEffect(() => { load() }, [])
 
   async function remove(id) {
-    if (!confirm('Hapus lokasi ini? Karyawan tidak akan dibatasi radius lokasi ini lagi.')) return
+    if (!confirm(tx("Hapus lokasi ini? Karyawan tidak akan dibatasi radius lokasi ini lagi."))) return
     const { error } = await supabase.rpc('delete_location_hr', { p_id: id })
     if (error) { onToast(error.message); return }
-    onToast('Lokasi dihapus')
+    onToast(tx("Lokasi dihapus"))
     load()
   }
 
@@ -580,9 +577,7 @@ function LocationTab({ onToast, isDesktop }) {
         display: 'flex', alignItems: 'flex-start', gap: 8, background: '#eef1fb', color: '#4356C4',
         borderRadius: 10, padding: '10px 12px', fontSize: 13, marginBottom: 14,
       }}>
-        <MapPin size={16} style={{ flexShrink: 0, marginTop: 1 }} />
-        Karyawan hanya bisa clock in/out dalam radius dari salah satu lokasi di bawah. Kalau belum ada lokasi ditambahkan, absen tidak dibatasi lokasi sama sekali.
-      </div>
+        <MapPin size={16} style={{ flexShrink: 0, marginTop: 1 }} />{tx("Karyawan hanya bisa clock in/out dalam radius dari salah satu lokasi di bawah. Kalau belum ada lokasi ditambahkan, absen tidak dibatasi lokasi sama sekali.")}</div>
 
       <button
         className={isDesktop ? 'dsk-outline-btn' : 'primary-btn'}
@@ -591,17 +586,17 @@ function LocationTab({ onToast, isDesktop }) {
           : { marginBottom: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
         onClick={() => setEditing({})}
       >
-        <Plus size={isDesktop ? 15 : 18} /> {isDesktop ? 'TAMBAH LOKASI' : 'Tambah lokasi'}
+        <Plus size={isDesktop ? 15 : 18} /> {isDesktop ? tx("TAMBAH LOKASI") : tx("Tambah lokasi")}
       </button>
 
       {locations === null ? (
-        <div className="empty-state"><p>Memuat...</p></div>
+        <div className="empty-state"><p>{tx("Memuat...")}</p></div>
       ) : locations.length === 0 ? (
-        <div className="empty-state"><p>Belum ada lokasi absen. Tambah dulu, misalnya "Kantor Pusat".</p></div>
+        <div className="empty-state"><p>{tx("Belum ada lokasi absen. Tambah dulu, misalnya \"Kantor Pusat\".")}</p></div>
       ) : isDesktop ? (
         <div className="dsk-table-wrap">
           <table className="dsk-table">
-            <thead><tr><th>Nama lokasi</th><th>Radius</th><th>Koordinat</th><th>Aksi</th></tr></thead>
+            <thead><tr><th>{tx("Nama lokasi")}</th><th>Radius</th><th>{tx("Koordinat")}</th><th>{tx("Aksi")}</th></tr></thead>
             <tbody>
               {locations.map((l) => (
                 <tr key={l.id}>
@@ -648,11 +643,11 @@ function LocationForm({ row, onClose, onSaved }) {
   const [locating, setLocating] = useState(false)
 
   function useMyLocation() {
-    if (!navigator.geolocation) { setError('Perangkat ini tidak mendukung deteksi lokasi'); return }
+    if (!navigator.geolocation) { setError(tx("Perangkat ini tidak mendukung deteksi lokasi")); return }
     setLocating(true)
     navigator.geolocation.getCurrentPosition(
       (pos) => { setForm((f) => ({ ...f, lat: pos.coords.latitude, lng: pos.coords.longitude })); setLocating(false) },
-      () => { setError('Gagal mendapatkan lokasi. Izinkan akses lokasi di browser.'); setLocating(false) },
+      () => { setError(tx("Gagal mendapatkan lokasi. Izinkan akses lokasi di browser.")); setLocating(false) },
       { enableHighAccuracy: true, timeout: 8000 }
     )
   }
@@ -660,8 +655,8 @@ function LocationForm({ row, onClose, onSaved }) {
   async function submit(ev) {
     ev.preventDefault()
     setError('')
-    if (!form.name.trim()) { setError('Nama lokasi wajib diisi'); return }
-    if (form.lat === '' || form.lng === '') { setError('Koordinat wajib diisi'); return }
+    if (!form.name.trim()) { setError(tx("Nama lokasi wajib diisi")); return }
+    if (form.lat === '' || form.lng === '') { setError(tx("Koordinat wajib diisi")); return }
     setSaving(true)
     const { error } = await supabase.rpc('upsert_location_hr', {
       p_id: row.id || null, p_name: form.name, p_lat: Number(form.lat), p_lng: Number(form.lng),
@@ -669,16 +664,16 @@ function LocationForm({ row, onClose, onSaved }) {
     })
     setSaving(false)
     if (error) { setError(error.message); return }
-    onSaved(row.id ? 'Lokasi diperbarui' : 'Lokasi ditambahkan')
+    onSaved(row.id ? tx("Lokasi diperbarui") : tx("Lokasi ditambahkan"))
   }
 
   return (
     <div className="sheet-overlay" onClick={onClose}>
       <div className="sheet" onClick={(e) => e.stopPropagation()}>
         <div className="sheet-handle" />
-        <div className="sheet-title-row"><h3>{row.id ? 'Edit Lokasi' : 'Tambah Lokasi'}</h3></div>
+        <div className="sheet-title-row"><h3>{row.id ? tx("Edit Lokasi") : tx("Tambah Lokasi")}</h3></div>
         <form onSubmit={submit}>
-          <div className="field"><label>Nama lokasi</label><input value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} placeholder="mis. Kantor Pusat" /></div>
+          <div className="field"><label>{tx("Nama lokasi")}</label><input value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} placeholder={tx("mis. Kantor Pusat")} /></div>
           <div style={{ display: 'flex', gap: 12 }}>
             <div className="field" style={{ flex: 1 }}><label>Latitude</label><input type="number" step="any" value={form.lat} onChange={(e) => setForm((f) => ({ ...f, lat: e.target.value }))} placeholder="-6.200000" /></div>
             <div className="field" style={{ flex: 1 }}><label>Longitude</label><input type="number" step="any" value={form.lng} onChange={(e) => setForm((f) => ({ ...f, lng: e.target.value }))} placeholder="106.816666" /></div>
@@ -687,11 +682,11 @@ function LocationForm({ row, onClose, onSaved }) {
             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, width: '100%', marginBottom: 14,
             background: '#eef1fb', color: 'var(--blue)', border: 'none', borderRadius: 10, padding: '10px', fontSize: 13.5, fontWeight: 600, cursor: 'pointer',
           }}>
-            <Crosshair size={16} /> {locating ? 'Mendeteksi lokasi...' : 'Gunakan lokasi saya sekarang'}
+            <Crosshair size={16} /> {locating ? tx("Mendeteksi lokasi...") : tx("Gunakan lokasi saya sekarang")}
           </button>
-          <div className="field"><label>Radius (meter)</label><input type="number" min="10" value={form.radius_meters} onChange={(e) => setForm((f) => ({ ...f, radius_meters: e.target.value }))} /></div>
+          <div className="field"><label>{tx("Radius (meter)")}</label><input type="number" min="10" value={form.radius_meters} onChange={(e) => setForm((f) => ({ ...f, radius_meters: e.target.value }))} /></div>
           {error && <p className="error-text">{error}</p>}
-          <button className="primary-btn" disabled={saving}>{saving ? 'Menyimpan...' : 'Simpan'}</button>
+          <button className="primary-btn" disabled={saving}>{saving ? tx("Menyimpan...") : tx("Simpan")}</button>
         </form>
       </div>
     </div>
@@ -717,17 +712,17 @@ function AnnouncementTab({ onToast, isDesktop }) {
   useEffect(() => { load() }, [])
 
   async function remove(id) {
-    if (!confirm('Hapus pengumuman ini?')) return
+    if (!confirm(tx("Hapus pengumuman ini?"))) return
     const { error } = await supabase.rpc('delete_announcement_hr', { p_id: id })
     if (error) { onToast(error.message); return }
-    onToast('Pengumuman dihapus')
+    onToast(tx("Pengumuman dihapus"))
     setDetail((d) => (d?.id === id ? null : d))
     load()
   }
 
   function copyText(a) {
     navigator.clipboard.writeText(`${a.title}\n\n${a.body || ''}`.trim())
-    onToast('Pengumuman disalin')
+    onToast(tx("Pengumuman disalin"))
   }
 
   return (
@@ -739,17 +734,17 @@ function AnnouncementTab({ onToast, isDesktop }) {
           : { marginBottom: 18, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
         onClick={() => setEditing({})}
       >
-        <Plus size={isDesktop ? 15 : 18} /> {isDesktop ? 'BUAT PENGUMUMAN' : 'Buat pengumuman'}
+        <Plus size={isDesktop ? 15 : 18} /> {isDesktop ? tx("BUAT PENGUMUMAN") : tx("Buat pengumuman")}
       </button>
 
       {list === null ? (
-        <div className="empty-state"><p>Memuat...</p></div>
+        <div className="empty-state"><p>{tx("Memuat...")}</p></div>
       ) : list.length === 0 ? (
-        <div className="empty-state"><p>Belum ada pengumuman. Buat yang pertama untuk ditampilkan di Beranda semua karyawan.</p></div>
+        <div className="empty-state"><p>{tx("Belum ada pengumuman. Buat yang pertama untuk ditampilkan di Beranda semua karyawan.")}</p></div>
       ) : isDesktop ? (
         <div className="dsk-table-wrap">
           <table className="dsk-table">
-            <thead><tr><th>Judul</th><th>Kategori</th><th>Tanggal</th><th>Penulis</th><th>Aksi</th></tr></thead>
+            <thead><tr><th>{tx("Judul")}</th><th>{tx("Kategori")}</th><th>{tx("Tanggal")}</th><th>{tx("Penulis")}</th><th>{tx("Aksi")}</th></tr></thead>
             <tbody>
               {list.map((a) => (
                 <tr key={a.id} style={{ cursor: 'pointer' }} onClick={() => setDetail(a)}>
@@ -760,16 +755,16 @@ function AnnouncementTab({ onToast, isDesktop }) {
                         display: 'inline-block', fontSize: 11, fontWeight: 600, color: '#96101c', background: '#f4e8e9',
                         borderRadius: 20, padding: '2px 10px',
                       }}>
-                        {a.category}
+                        {tx(a.category)}
                       </span>
                     )}
                   </td>
                   <td>{fmtDate(a.published_at)}</td>
                   <td>{a.author || '-'}</td>
                   <td className="acts" onClick={(e) => e.stopPropagation()}>
-                    <button className="btn muted" onClick={() => copyText(a)} title="Salin"><Copy size={13} /></button>
-                    <button className="btn" onClick={() => setEditing(a)} title="Edit"><Pencil size={13} /></button>
-                    <button className="btn muted" onClick={() => remove(a.id)} title="Hapus"><Trash2 size={13} /></button>
+                    <button className="btn muted" onClick={() => copyText(a)} title={tx("Salin")}><Copy size={13} /></button>
+                    <button className="btn" onClick={() => setEditing(a)} title={tx("Edit")}><Pencil size={13} /></button>
+                    <button className="btn muted" onClick={() => remove(a.id)} title={tx("Hapus")}><Trash2 size={13} /></button>
                   </td>
                 </tr>
               ))}
@@ -786,7 +781,7 @@ function AnnouncementTab({ onToast, isDesktop }) {
                   display: 'inline-block', fontSize: 10.5, fontWeight: 600, color: 'var(--blue)', background: '#eef2ff',
                   borderRadius: 20, padding: '1px 8px', marginTop: 4,
                 }}>
-                  {a.category}
+                  {tx(a.category)}
                 </span>
               )}
               {a.body && <div className="sub" style={{ marginTop: 3, whiteSpace: 'pre-wrap' }}>{a.body}</div>}
@@ -797,7 +792,7 @@ function AnnouncementTab({ onToast, isDesktop }) {
                 <a href={a.attachment_url} target="_blank" rel="noreferrer" style={{
                   display: 'inline-flex', alignItems: 'center', gap: 5, marginTop: 6, fontSize: 13, color: 'var(--blue)',
                 }}>
-                  <Paperclip size={13} /> {a.attachment_name || 'Lihat lampiran'}
+                  <Paperclip size={13} /> {a.attachment_name || tx("Lihat lampiran")}
                 </a>
               )}
             </div>
@@ -816,9 +811,9 @@ function AnnouncementTab({ onToast, isDesktop }) {
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
                 <h2 style={{ margin: 0, flex: 1, borderBottom: 'none', paddingBottom: 0 }}>{detail.title}</h2>
                 <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
-                  <button onClick={() => copyText(detail)} title="Salin" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: 6 }}><Copy size={16} /></button>
-                  <button onClick={() => { setEditing(detail); setDetail(null) }} title="Edit" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: 6 }}><Pencil size={16} /></button>
-                  <button onClick={() => remove(detail.id)} title="Hapus" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: 6 }}><Trash2 size={16} /></button>
+                  <button onClick={() => copyText(detail)} title={tx("Salin")} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: 6 }}><Copy size={16} /></button>
+                  <button onClick={() => { setEditing(detail); setDetail(null) }} title={tx("Edit")} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: 6 }}><Pencil size={16} /></button>
+                  <button onClick={() => remove(detail.id)} title={tx("Hapus")} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: 6 }}><Trash2 size={16} /></button>
                 </div>
               </div>
               {detail.category && (
@@ -826,7 +821,7 @@ function AnnouncementTab({ onToast, isDesktop }) {
                   display: 'inline-block', fontSize: 11, fontWeight: 600, color: '#96101c', background: '#f4e8e9',
                   borderRadius: 20, padding: '2px 10px', marginTop: 10,
                 }}>
-                  {detail.category}
+                  {tx(detail.category)}
                 </span>
               )}
               <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 10, paddingBottom: 18, borderBottom: '1px solid #ddd' }}>
@@ -841,11 +836,11 @@ function AnnouncementTab({ onToast, isDesktop }) {
                 <a href={detail.attachment_url} target="_blank" rel="noreferrer" style={{
                   display: 'inline-flex', alignItems: 'center', gap: 5, marginTop: 14, fontSize: 13, color: '#96101c',
                 }}>
-                  <Paperclip size={14} /> {detail.attachment_name || 'Lihat lampiran'}
+                  <Paperclip size={14} /> {detail.attachment_name || tx("Lihat lampiran")}
                 </a>
               )}
             </div>
-            <div className="dcuti-modal-foot"><button className="dcal-outline-btn" onClick={() => setDetail(null)}>TUTUP</button></div>
+            <div className="dcuti-modal-foot"><button className="dcal-outline-btn" onClick={() => setDetail(null)}>{tx("TUTUP")}</button></div>
           </div>
         </div>
       )}
@@ -868,7 +863,7 @@ function AnnouncementForm({ row, onClose, onSaved }) {
   async function submit(ev) {
     ev.preventDefault()
     setError('')
-    if (!form.title.trim()) { setError('Judul wajib diisi'); return }
+    if (!form.title.trim()) { setError(tx("Judul wajib diisi")); return }
     setSaving(true)
 
     let finalUrl = attachmentUrl
@@ -876,7 +871,7 @@ function AnnouncementForm({ row, onClose, onSaved }) {
     if (file) {
       const path = `${Date.now()}-${file.name}`
       const { error: upErr } = await supabase.storage.from('announcement-attachments').upload(path, file)
-      if (upErr) { setSaving(false); setError('Gagal unggah lampiran: ' + upErr.message); return }
+      if (upErr) { setSaving(false); setError(tx("Gagal unggah lampiran: ") + upErr.message); return }
       const { data: pub } = supabase.storage.from('announcement-attachments').getPublicUrl(path)
       finalUrl = pub.publicUrl
       finalName = file.name
@@ -884,35 +879,35 @@ function AnnouncementForm({ row, onClose, onSaved }) {
 
     const { error } = await supabase.rpc('upsert_announcement_hr', {
       p_id: row.id || null, p_title: form.title, p_body: form.body || null,
-      p_category: form.category.trim() || 'Uncategorized',
+      p_category: form.category.trim() || tx("Uncategorized"),
       p_attachment_url: finalUrl, p_attachment_name: finalName,
     })
     setSaving(false)
     if (error) { setError(error.message); return }
-    onSaved(row.id ? 'Pengumuman diperbarui' : 'Pengumuman diterbitkan')
+    onSaved(row.id ? tx("Pengumuman diperbarui") : tx("Pengumuman diterbitkan"))
   }
 
   return (
     <div className="sheet-overlay" onClick={onClose}>
       <div className="sheet" onClick={(e) => e.stopPropagation()}>
         <div className="sheet-handle" />
-        <div className="sheet-title-row"><h3>{row.id ? 'Edit Pengumuman' : 'Buat Pengumuman'}</h3></div>
+        <div className="sheet-title-row"><h3>{row.id ? tx("Edit Pengumuman") : tx("Buat Pengumuman")}</h3></div>
         <form onSubmit={submit}>
           <div className="field">
-            <label>Judul</label>
-            <input value={form.title} onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))} placeholder="mis. Libur Hari Raya" />
+            <label>{tx("Judul")}</label>
+            <input value={form.title} onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))} placeholder={tx("mis. Libur Hari Raya")} />
           </div>
           <div className="field">
-            <label>Isi (opsional)</label>
-            <textarea value={form.body} onChange={(e) => setForm((f) => ({ ...f, body: e.target.value }))} placeholder="Detail pengumuman..." />
+            <label>{tx("Isi (opsional)")}</label>
+            <textarea value={form.body} onChange={(e) => setForm((f) => ({ ...f, body: e.target.value }))} placeholder={tx("Detail pengumuman...")} />
           </div>
           <div className="field">
-            <label>Kategori (opsional)</label>
+            <label>{tx("Kategori (opsional)")}</label>
             <input
               list="announcement-category-options"
               value={form.category}
               onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}
-              placeholder="Uncategorized"
+              placeholder={tx("Uncategorized")}
             />
             <datalist id="announcement-category-options">
               <option value="Uncategorized" />
@@ -924,7 +919,7 @@ function AnnouncementForm({ row, onClose, onSaved }) {
             </datalist>
           </div>
           <div className="field">
-            <label>Lampiran (opsional)</label>
+            <label>{tx("Lampiran (opsional)")}</label>
             {attachmentUrl && !file ? (
               <div style={{
                 display: 'flex', alignItems: 'center', gap: 8, padding: '9px 12px',
@@ -932,7 +927,7 @@ function AnnouncementForm({ row, onClose, onSaved }) {
               }}>
                 <Paperclip size={15} color="var(--text-muted)" />
                 <a href={attachmentUrl} target="_blank" rel="noreferrer" style={{ flex: 1, color: 'var(--blue)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {attachmentName || 'Lampiran saat ini'}
+                  {attachmentName || tx("Lampiran saat ini")}
                 </a>
                 <button type="button" onClick={() => { setAttachmentUrl(null); setAttachmentName(null) }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', display: 'flex' }}>
                   <X size={16} />
@@ -943,7 +938,7 @@ function AnnouncementForm({ row, onClose, onSaved }) {
             )}
           </div>
           {error && <p className="error-text">{error}</p>}
-          <button className="primary-btn" disabled={saving}>{saving ? 'Menyimpan...' : row.id ? 'Simpan' : 'Terbitkan'}</button>
+          <button className="primary-btn" disabled={saving}>{saving ? tx("Menyimpan...") : row.id ? tx("Simpan") : tx("Terbitkan")}</button>
         </form>
       </div>
     </div>
@@ -967,15 +962,15 @@ function ScheduleManager({ employees, shifts, onToast, isDesktop }) {
   async function remove(id) {
     const { error } = await supabase.rpc('delete_schedule_hr', { p_id: id })
     if (error) { onToast(error.message); return }
-    onToast('Jadwal dihapus')
+    onToast(tx("Jadwal dihapus"))
     load()
   }
 
   return (
     <div>
       <div style={{ display: 'flex', gap: 10, marginBottom: 14 }}>
-        <div className="field" style={{ flex: 1, margin: 0 }}><label>Dari</label><input type="date" value={start} onChange={(e) => setStart(e.target.value)} /></div>
-        <div className="field" style={{ flex: 1, margin: 0 }}><label>Sampai</label><input type="date" value={end} onChange={(e) => setEnd(e.target.value)} /></div>
+        <div className="field" style={{ flex: 1, margin: 0 }}><label>{tx("Dari")}</label><input type="date" value={start} onChange={(e) => setStart(e.target.value)} /></div>
+        <div className="field" style={{ flex: 1, margin: 0 }}><label>{tx("Sampai")}</label><input type="date" value={end} onChange={(e) => setEnd(e.target.value)} /></div>
       </div>
 
       <button
@@ -985,23 +980,23 @@ function ScheduleManager({ employees, shifts, onToast, isDesktop }) {
           : { marginBottom: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
         onClick={() => setShowBulk(true)}
       >
-        <Plus size={isDesktop ? 15 : 18} /> {isDesktop ? 'ATUR JADWAL (MASSAL)' : 'Atur Jadwal (massal)'}
+        <Plus size={isDesktop ? 15 : 18} /> {isDesktop ? tx("ATUR JADWAL (MASSAL)") : tx("Atur Jadwal (massal)")}
       </button>
 
       {rows === null ? (
-        <div className="empty-state"><p>Memuat...</p></div>
+        <div className="empty-state"><p>{tx("Memuat...")}</p></div>
       ) : rows.length === 0 ? (
-        <div className="empty-state"><p>Belum ada jadwal di rentang ini.</p></div>
+        <div className="empty-state"><p>{tx("Belum ada jadwal di rentang ini.")}</p></div>
       ) : isDesktop ? (
         <div className="dsk-table-wrap">
           <table className="dsk-table">
-            <thead><tr><th>Karyawan</th><th>Tanggal</th><th>Jadwal</th><th>Aksi</th></tr></thead>
+            <thead><tr><th>{tx("Karyawan")}</th><th>{tx("Tanggal")}</th><th>{tx("Jadwal")}</th><th>{tx("Aksi")}</th></tr></thead>
             <tbody>
               {rows.map((r) => (
                 <tr key={r.id}>
                   <td style={{ fontWeight: 600 }}>{r.full_name}</td>
                   <td>{fmtDate(r.work_date)}</td>
-                  <td>{r.is_day_off ? 'Libur' : (r.shift_name ? `${r.shift_name} (${r.start_time?.slice(0, 5)}-${r.end_time?.slice(0, 5)})` : 'Belum ada shift')}</td>
+                  <td>{r.is_day_off ? tx("Libur") : (r.shift_name ? `${r.shift_name} (${r.start_time?.slice(0, 5)}-${r.end_time?.slice(0, 5)})` : tx("Belum ada shift"))}</td>
                   <td className="acts">
                     <button className="btn" onClick={() => setEditingRow(r)}><Pencil size={13} /></button>
                     <button className="btn muted" onClick={() => remove(r.id)}><Trash2 size={13} /></button>
@@ -1017,7 +1012,7 @@ function ScheduleManager({ employees, shifts, onToast, isDesktop }) {
             <div className="info">
               <div className="name">{r.full_name}</div>
               <div className="sub">
-                {fmtDate(r.work_date)} · {r.is_day_off ? 'Libur' : (r.shift_name ? `${r.shift_name} (${r.start_time?.slice(0, 5)}-${r.end_time?.slice(0, 5)})` : 'Belum ada shift')}
+                {fmtDate(r.work_date)} · {r.is_day_off ? tx("Libur") : (r.shift_name ? `${r.shift_name} (${r.start_time?.slice(0, 5)}-${r.end_time?.slice(0, 5)})` : tx("Belum ada shift"))}
               </div>
             </div>
             <div className="actions">
@@ -1066,19 +1061,18 @@ function SingleScheduleForm({ row, shifts, onClose, onSaved }) {
         <div className="sheet-title-row"><h3>{row.full_name} · {fmtDate(row.work_date)}</h3></div>
         <form onSubmit={submit}>
           <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, marginBottom: 14 }}>
-            <input type="checkbox" checked={isDayOff} onChange={(e) => setIsDayOff(e.target.checked)} /> Hari libur
-          </label>
+            <input type="checkbox" checked={isDayOff} onChange={(e) => setIsDayOff(e.target.checked)} />{' '}{tx("Hari libur")}</label>
           {!isDayOff && (
             <div className="field">
-              <label>Jenis shift</label>
+              <label>{tx("Jenis shift")}</label>
               <select value={shiftId} onChange={(e) => setShiftId(e.target.value)}>
-                <option value="">- Pilih shift -</option>
+                <option value="">{tx("- Pilih shift -")}</option>
                 {shifts.map((s) => <option key={s.id} value={s.id}>{s.name} ({s.start_time?.slice(0, 5)}-{s.end_time?.slice(0, 5)})</option>)}
               </select>
             </div>
           )}
           {error && <p className="error-text">{error}</p>}
-          <button className="primary-btn" disabled={saving}>{saving ? 'Menyimpan...' : 'Simpan'}</button>
+          <button className="primary-btn" disabled={saving}>{saving ? tx("Menyimpan...") : tx("Simpan")}</button>
         </form>
       </div>
     </div>
@@ -1105,8 +1099,8 @@ function BulkScheduleForm({ employees, shifts, onClose, onSaved }) {
   async function submit(ev) {
     ev.preventDefault()
     setError('')
-    if (selectedIds.length === 0) { setError('Pilih minimal 1 karyawan'); return }
-    if (!isDayOff && !shiftId) { setError('Pilih jenis shift, atau centang Hari Libur'); return }
+    if (selectedIds.length === 0) { setError(tx("Pilih minimal 1 karyawan")); return }
+    if (!isDayOff && !shiftId) { setError(tx("Pilih jenis shift, atau centang Hari Libur")); return }
     setSaving(true)
     const { data, error } = await supabase.rpc('bulk_assign_schedule_hr', {
       p_employee_ids: selectedIds, p_start_date: start, p_end_date: end,
@@ -1115,17 +1109,17 @@ function BulkScheduleForm({ employees, shifts, onClose, onSaved }) {
     })
     setSaving(false)
     if (error) { setError(error.message); return }
-    onSaved(`${data} jadwal berhasil diatur`)
+    onSaved(tx("{0} jadwal berhasil diatur", [data]))
   }
 
   return (
     <div className="sheet-overlay" onClick={onClose}>
       <div className="sheet" onClick={(e) => e.stopPropagation()}>
         <div className="sheet-handle" />
-        <div className="sheet-title-row"><h3>Atur Jadwal Massal</h3></div>
+        <div className="sheet-title-row"><h3>{tx("Atur Jadwal Massal")}</h3></div>
         <form onSubmit={submit}>
           <div className="field">
-            <label>Karyawan ({selectedIds.length} dipilih)</label>
+            <label>{tx("Karyawan (")}{selectedIds.length}{' '}{tx("dipilih)")}</label>
             <div style={{ maxHeight: 160, overflowY: 'auto', border: '1px solid var(--border)', borderRadius: 12, padding: 8 }}>
               {employees.map((e) => (
                 <label key={e.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 4px', fontSize: 14 }}>
@@ -1137,12 +1131,12 @@ function BulkScheduleForm({ employees, shifts, onClose, onSaved }) {
           </div>
 
           <div style={{ display: 'flex', gap: 12 }}>
-            <div className="field" style={{ flex: 1 }}><label>Dari tanggal</label><input type="date" value={start} onChange={(e) => setStart(e.target.value)} /></div>
-            <div className="field" style={{ flex: 1 }}><label>Sampai tanggal</label><input type="date" value={end} onChange={(e) => setEnd(e.target.value)} /></div>
+            <div className="field" style={{ flex: 1 }}><label>{tx("Dari tanggal")}</label><input type="date" value={start} onChange={(e) => setStart(e.target.value)} /></div>
+            <div className="field" style={{ flex: 1 }}><label>{tx("Sampai tanggal")}</label><input type="date" value={end} onChange={(e) => setEnd(e.target.value)} /></div>
           </div>
 
           <div className="field">
-            <label>Hanya di hari (opsional, default semua)</label>
+            <label>{tx("Hanya di hari (opsional, default semua)")}</label>
             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
               {DOW_OPTIONS.map(([val, label]) => (
                 <button key={val} type="button" onClick={() => toggleDay(val)} style={{
@@ -1154,21 +1148,20 @@ function BulkScheduleForm({ employees, shifts, onClose, onSaved }) {
           </div>
 
           <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, margin: '4px 0 14px' }}>
-            <input type="checkbox" checked={isDayOff} onChange={(e) => setIsDayOff(e.target.checked)} /> Set sebagai Hari Libur (bukan shift kerja)
-          </label>
+            <input type="checkbox" checked={isDayOff} onChange={(e) => setIsDayOff(e.target.checked)} />{' '}{tx("Set sebagai Hari Libur (bukan shift kerja)")}</label>
 
           {!isDayOff && (
             <div className="field">
-              <label>Jenis shift</label>
+              <label>{tx("Jenis shift")}</label>
               <select value={shiftId} onChange={(e) => setShiftId(e.target.value)}>
-                <option value="">- Pilih shift -</option>
+                <option value="">{tx("- Pilih shift -")}</option>
                 {shifts.map((s) => <option key={s.id} value={s.id}>{s.name} ({s.start_time?.slice(0, 5)}-{s.end_time?.slice(0, 5)})</option>)}
               </select>
             </div>
           )}
 
           {error && <p className="error-text">{error}</p>}
-          <button className="primary-btn" disabled={saving}>{saving ? 'Menyimpan...' : 'Terapkan Jadwal'}</button>
+          <button className="primary-btn" disabled={saving}>{saving ? tx("Menyimpan...") : tx("Terapkan Jadwal")}</button>
         </form>
       </div>
     </div>
@@ -1201,25 +1194,25 @@ function AttendanceTab({ onToast, isDesktop }) {
       <div>
         <div className="dsk-toolbar">
           <div className="dsk-filters">
-            <label>Dari<input type="date" value={start} onChange={(e) => setStart(e.target.value)} /></label>
-            <label>Sampai<input type="date" value={end} onChange={(e) => setEnd(e.target.value)} /></label>
-            <label style={{ width: 240 }}>Cari nama<div className="dsk-search"><Search size={15} /><input value={query} onChange={(e) => setQuery(e.target.value)} /></div></label>
+            <label>{tx("Dari")}<input type="date" value={start} onChange={(e) => setStart(e.target.value)} /></label>
+            <label>{tx("Sampai")}<input type="date" value={end} onChange={(e) => setEnd(e.target.value)} /></label>
+            <label style={{ width: 240 }}>{tx("Cari nama")}<div className="dsk-search"><Search size={15} /><input value={query} onChange={(e) => setQuery(e.target.value)} /></div></label>
           </div>
           <ExportButton style={{ marginBottom: 0 }} onClick={() => exportToExcel(`absensi-${start}_${end}.xlsx`, 'Absensi', filtered, [
-            ['Kode Karyawan', 'employee_code'], ['Nama', 'full_name'], ['Divisi', (r) => r.department || '-'],
-            ['Tanggal', (r) => fmtDate(r.work_date)], ['Week', (r) => isoWeek(r.work_date)],
-            ['Jam Masuk', (r) => fmtTime(r.clock_in)], ['Jam Keluar', (r) => fmtTime(r.clock_out)],
-            ['Status', (r) => (r.status === 'late' ? 'Telat' : 'Tepat waktu')],
+            [tx("Kode Karyawan"), 'employee_code'], [tx("Nama"), 'full_name'], [tx("Divisi"), (r) => r.department || '-'],
+            [tx("Tanggal"), (r) => fmtDate(r.work_date)], ['Week', (r) => isoWeek(r.work_date)],
+            [tx("Jam Masuk"), (r) => fmtTime(r.clock_in)], [tx("Jam Keluar"), (r) => fmtTime(r.clock_out)],
+            ['Status', (r) => (r.status === 'late' ? tx("Telat") : tx("Tepat waktu"))],
           ])} />
         </div>
         <div className="dsk-table-wrap">
           <table className="dsk-table">
-            <thead><tr><th>Karyawan</th><th>Tanggal</th><th>Masuk</th><th>Keluar</th><th>Status</th></tr></thead>
+            <thead><tr><th>{tx("Karyawan")}</th><th>{tx("Tanggal")}</th><th>{tx("Clock in")}</th><th>{tx("Clock out")}</th><th>Status</th></tr></thead>
             <tbody>
-              {rows === null ? <tr><td colSpan={5} className="empty">Memuat...</td></tr>
-                : filtered.length === 0 ? <tr><td colSpan={5} className="empty">Tidak ada data absensi pada rentang ini.</td></tr>
+              {rows === null ? <tr><td colSpan={5} className="empty">{tx("Memuat...")}</td></tr>
+                : filtered.length === 0 ? <tr><td colSpan={5} className="empty">{tx("Tidak ada data absensi pada rentang ini.")}</td></tr>
                 : filtered.map((r) => (
-                  <tr key={r.id} onClick={() => setDetailId(r.id)} style={{ cursor: 'pointer' }} title="Klik untuk lihat detail">
+                  <tr key={r.id} onClick={() => setDetailId(r.id)} style={{ cursor: 'pointer' }} title={tx("Klik untuk lihat detail")}>
                     <td style={{ fontWeight: 600 }}>{r.full_name}</td>
                     <td>{fmtDate(r.work_date)}</td>
                     <td>{fmtTime(r.clock_in)}</td>
@@ -1230,7 +1223,7 @@ function AttendanceTab({ onToast, isDesktop }) {
                         background: r.status === 'late' ? '#FBE1DD' : '#E1F3EA',
                         color: r.status === 'late' ? '#C0392B' : '#1E8E5A',
                       }}>
-                        {r.status === 'late' ? 'Telat' : 'Tepat waktu'}
+                        {r.status === 'late' ? tx("Telat") : tx("Tepat waktu")}
                       </span>
                     </td>
                   </tr>
@@ -1247,44 +1240,44 @@ function AttendanceTab({ onToast, isDesktop }) {
     <div className="form-page">
       <div style={{ display: 'flex', gap: 10, marginBottom: 14 }}>
         <div className="field" style={{ flex: 1, margin: 0 }}>
-          <label>Dari</label>
+          <label>{tx("Dari")}</label>
           <input type="date" value={start} onChange={(e) => setStart(e.target.value)} />
         </div>
         <div className="field" style={{ flex: 1, margin: 0 }}>
-          <label>Sampai</label>
+          <label>{tx("Sampai")}</label>
           <input type="date" value={end} onChange={(e) => setEnd(e.target.value)} />
         </div>
       </div>
       <div className="search-box" style={{ margin: '0 0 14px' }}>
         <Search size={16} />
-        <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Cari nama karyawan..."
+        <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={tx("Cari nama karyawan...")}
           style={{ border: 'none', outline: 'none', background: 'none', flex: 1, fontSize: 14.5 }} />
       </div>
 
       <ExportButton onClick={() => exportToExcel(`absensi-${start}_${end}.xlsx`, 'Absensi', filtered, [
-        ['Kode Karyawan', 'employee_code'], ['Nama', 'full_name'], ['Divisi', (r) => r.department || '-'],
-        ['Tanggal', (r) => fmtDate(r.work_date)], ['Week', (r) => isoWeek(r.work_date)],
-        ['Jam Masuk', (r) => fmtTime(r.clock_in)], ['Jam Keluar', (r) => fmtTime(r.clock_out)],
-        ['Status', (r) => (r.status === 'late' ? 'Telat' : 'Tepat waktu')],
+        [tx("Kode Karyawan"), 'employee_code'], [tx("Nama"), 'full_name'], [tx("Divisi"), (r) => r.department || '-'],
+        [tx("Tanggal"), (r) => fmtDate(r.work_date)], ['Week', (r) => isoWeek(r.work_date)],
+        [tx("Jam Masuk"), (r) => fmtTime(r.clock_in)], [tx("Jam Keluar"), (r) => fmtTime(r.clock_out)],
+        ['Status', (r) => (r.status === 'late' ? tx("Telat") : tx("Tepat waktu"))],
       ])} />
 
       {rows === null ? (
-        <div className="empty-state"><p>Memuat...</p></div>
+        <div className="empty-state"><p>{tx("Memuat...")}</p></div>
       ) : filtered.length === 0 ? (
-        <div className="empty-state"><p>Tidak ada data absensi pada rentang ini.</p></div>
+        <div className="empty-state"><p>{tx("Tidak ada data absensi pada rentang ini.")}</p></div>
       ) : (
         filtered.map((r) => (
           <div key={r.id} className="list-item" onClick={() => setDetailId(r.id)} style={{ cursor: 'pointer' }}>
             <div className="info">
               <div className="name">{r.full_name}</div>
-              <div className="sub">{fmtDate(r.work_date)} · masuk {fmtTime(r.clock_in)} · keluar {fmtTime(r.clock_out)}</div>
+              <div className="sub">{fmtDate(r.work_date)}{' '}{tx("· masuk")}{' '}{fmtTime(r.clock_in)}{' '}{tx("· keluar")}{' '}{fmtTime(r.clock_out)}</div>
             </div>
             <span style={{
               fontSize: 12, fontWeight: 600, padding: '3px 9px', borderRadius: 8,
               background: r.status === 'late' ? '#FBE1DD' : '#E1F3EA',
               color: r.status === 'late' ? '#C0392B' : '#1E8E5A',
             }}>
-              {r.status === 'late' ? 'Telat' : 'Tepat waktu'}
+              {r.status === 'late' ? tx("Telat") : tx("Tepat waktu")}
             </span>
           </div>
         ))
@@ -1311,7 +1304,7 @@ function ApprovalTab({ onToast, rpcName, table, statusOptions, renderRow, export
   async function decide(id, approve) {
     const { error } = await supabase.rpc('decide_request', { p_table: table, p_request_id: id, p_approve: approve })
     if (error) { onToast(error.message); return }
-    onToast(approve ? 'Disetujui' : 'Ditolak')
+    onToast(approve ? tx("Disetujui") : tx("Ditolak"))
     load()
   }
 
@@ -1330,10 +1323,10 @@ function ApprovalTab({ onToast, rpcName, table, statusOptions, renderRow, export
         </div>
         <div className="dsk-table-wrap">
           <table className="dsk-table">
-            <thead><tr><th>Karyawan</th>{desktopColumns.map(([label]) => <th key={label}>{label}</th>)}<th>Status / Aksi</th></tr></thead>
+            <thead><tr><th>{tx("Karyawan")}</th>{desktopColumns.map(([label]) => <th key={label}>{label}</th>)}<th>{tx("Status / Aksi")}</th></tr></thead>
             <tbody>
-              {rows === null ? <tr><td colSpan={desktopColumns.length + 2} className="empty">Memuat...</td></tr>
-                : rows.length === 0 ? <tr><td colSpan={desktopColumns.length + 2} className="empty">Tidak ada pengajuan.</td></tr>
+              {rows === null ? <tr><td colSpan={desktopColumns.length + 2} className="empty">{tx("Memuat...")}</td></tr>
+                : rows.length === 0 ? <tr><td colSpan={desktopColumns.length + 2} className="empty">{tx("Tidak ada pengajuan.")}</td></tr>
                 : rows.map((r) => (
                   <tr key={r.id}>
                     <td style={{ fontWeight: 600 }}>{r.full_name}</td>
@@ -1346,7 +1339,7 @@ function ApprovalTab({ onToast, rpcName, table, statusOptions, renderRow, export
                         </div>
                       ) : (
                         <span className={r.status === 'approved' ? 'status-approved' : 'status-rejected'}>
-                          {r.status === 'approved' ? 'Disetujui' : 'Ditolak'}
+                          {r.status === 'approved' ? tx("Disetujui") : tx("Ditolak")}
                         </span>
                       )}
                     </td>
@@ -1372,9 +1365,9 @@ function ApprovalTab({ onToast, rpcName, table, statusOptions, renderRow, export
       )}
 
       {rows === null ? (
-        <div className="empty-state"><p>Memuat...</p></div>
+        <div className="empty-state"><p>{tx("Memuat...")}</p></div>
       ) : rows.length === 0 ? (
-        <div className="empty-state"><p>Tidak ada pengajuan.</p></div>
+        <div className="empty-state"><p>{tx("Tidak ada pengajuan.")}</p></div>
       ) : (
         rows.map((r) => (
           <div key={r.id} className="shift-hist-row">
@@ -1387,7 +1380,7 @@ function ApprovalTab({ onToast, rpcName, table, statusOptions, renderRow, export
                 </div>
               ) : (
                 <span className={r.status === 'approved' ? 'status-approved' : 'status-rejected'}>
-                  {r.status === 'approved' ? 'Disetujui' : 'Ditolak'}
+                  {r.status === 'approved' ? tx("Disetujui") : tx("Ditolak")}
                 </span>
               )}
             </div>
@@ -1398,7 +1391,7 @@ function ApprovalTab({ onToast, rpcName, table, statusOptions, renderRow, export
   )
 }
 
-const STATUS_OPTS = [['pending', 'Menunggu'], ['approved', 'Disetujui'], ['rejected', 'Ditolak'], ['', 'Semua']]
+const STATUS_OPTS = [['pending', tx("Menunggu")], ['approved', tx("Disetujui")], ['rejected', tx("Ditolak")], ['', tx("Semua")]]
 
 function LeaveTab({ onToast, isDesktop }) {
   return (
@@ -1410,14 +1403,14 @@ function LeaveTab({ onToast, isDesktop }) {
         ['Alasan', 'reason'], ['Status', 'status'],
       ]}
       desktopColumns={[
-        ['Jenis', (r) => r.leave_type_name || 'Cuti'],
-        ['Periode', (r) => `${fmtDate(r.start_date)} - ${fmtDate(r.end_date)} (${r.total_days} hari)`],
+        ['Jenis', (r) => tx(r.leave_type_name) || tx("Cuti")],
+        ['Periode', (r) => tx("{0} - {1} ({2} hari)", [fmtDate(r.start_date), fmtDate(r.end_date), r.total_days])],
         ['Alasan', (r) => r.reason || '-'],
       ]}
       renderRow={(r) => (
         <div>
           <div className="date">{r.full_name}</div>
-          <div className="desc">{r.leave_type_name || 'Cuti'} · {fmtDate(r.start_date)} - {fmtDate(r.end_date)} ({r.total_days} hari)</div>
+          <div className="desc">{tx(r.leave_type_name) || tx("Cuti")} · {fmtDate(r.start_date)} - {fmtDate(r.end_date)} ({r.total_days}{' '}{tx("hari)")}</div>
           {r.reason && <div className="desc">{r.reason}</div>}
         </div>
       )}
@@ -1459,14 +1452,14 @@ function ReimbursementTab({ onToast, isDesktop }) {
         ['Jumlah', 'amount'], ['Deskripsi', 'description'], ['Bulan', 'submitted_month'], ['Status', 'status'],
       ]}
       desktopColumns={[
-        ['Kategori', (r) => r.category_name || 'Reimburse'],
+        ['Kategori', (r) => tx(r.category_name) || tx("Reimburse")],
         ['Jumlah', (r) => rupiah(r.amount)],
         ['Deskripsi', (r) => r.description || '-'],
       ]}
       renderRow={(r) => (
         <div>
           <div className="date">{r.full_name}</div>
-          <div className="desc">{r.category_name || 'Reimburse'} · {rupiah(r.amount)}</div>
+          <div className="desc">{tx(r.category_name) || tx("Reimburse")} · {rupiah(r.amount)}</div>
           {r.description && <div className="desc">{r.description}</div>}
         </div>
       )}
@@ -1489,7 +1482,7 @@ function CorrectionTab({ onToast, isDesktop }) {
         ['Alasan', (r) => (
           <>
             {r.reason || '-'}
-            {r.attachment_url && <><br /><a href={r.attachment_url} target="_blank" rel="noreferrer" style={{ color: '#96101c' }}>Lihat lampiran</a></>}
+            {r.attachment_url && <><br /><a href={r.attachment_url} target="_blank" rel="noreferrer" style={{ color: '#96101c' }}>{tx("Lihat lampiran")}</a></>}
           </>
         )],
       ]}
@@ -1497,10 +1490,10 @@ function CorrectionTab({ onToast, isDesktop }) {
         <div>
           <div className="date">{r.full_name}</div>
           <div className="desc">
-            {fmtDate(r.work_date)} · usul {r.requested_clock_in?.slice(0, 5) || '-'} - {r.requested_clock_out?.slice(0, 5) || '-'}
+            {fmtDate(r.work_date)}{' '}{tx("· usul")}{' '}{r.requested_clock_in?.slice(0, 5) || '-'} - {r.requested_clock_out?.slice(0, 5) || '-'}
           </div>
           {r.reason && <div className="desc">{r.reason}</div>}
-          {r.attachment_url && <a href={r.attachment_url} target="_blank" rel="noreferrer" style={{ fontSize: 13, color: 'var(--blue)' }}>Lihat lampiran</a>}
+          {r.attachment_url && <a href={r.attachment_url} target="_blank" rel="noreferrer" style={{ fontSize: 13, color: 'var(--blue)' }}>{tx("Lihat lampiran")}</a>}
         </div>
       )}
     />
@@ -1551,7 +1544,7 @@ async function downloadTemplate(employees) {
 
   const wsData = XLSX.utils.json_to_sheet(rows, { header: TEMPLATE_COLUMNS })
   const wsRef = XLSX.utils.aoa_to_sheet([
-    ['Kode Karyawan', 'Nama'],
+    ['Kode Karyawan', tx("Nama")],
     ...employees.map((e) => [e.employee_code, e.full_name]),
   ])
   const wb = XLSX.utils.book_new()
@@ -1596,14 +1589,14 @@ function PayslipTab({ employees, onToast, isDesktop }) {
   async function remove(id) {
     const { error } = await supabase.rpc('delete_payslip_hr', { p_id: id })
     if (error) { onToast(error.message); return }
-    onToast('Slip gaji dihapus')
+    onToast(tx("Slip gaji dihapus"))
     load()
   }
 
   async function resend(row) {
     const { error } = await supabase.rpc('notify_payslip', { p_employee_id: row.employee_id, p_period: row.period })
     if (error) { onToast(error.message); return }
-    onToast(`Notifikasi dikirim ke ${row.full_name}`)
+    onToast(tx("Notifikasi dikirim ke {0}", [row.full_name]))
   }
 
   async function handleImportFile(ev) {
@@ -1620,17 +1613,17 @@ function PayslipTab({ employees, onToast, isDesktop }) {
       const rawRows = XLSX.utils.sheet_to_json(ws)
       const parsed = parseTemplateRows(rawRows)
       if (parsed.length === 0) {
-        onToast('Tidak ada baris valid di file ini (cek kolom Kode Karyawan & Periode)')
+        onToast(tx("Tidak ada baris valid di file ini (cek kolom Kode Karyawan & Periode)"))
         setImporting(false)
         return
       }
       const { data, error } = await supabase.rpc('bulk_upsert_payslips', { p_rows: parsed })
       if (error) { onToast(error.message); setImporting(false); return }
       setImportResult(data)
-      onToast(`${data.ok.length} slip gaji berhasil diimpor${data.failed.length ? `, ${data.failed.length} gagal` : ''}`)
+      onToast(tx("{0} slip gaji berhasil diimpor{1}", [data.ok.length, data.failed.length ? tx(", {0} gagal", [data.failed.length]) : '']))
       load()
     } catch (err) {
-      onToast('Gagal membaca file: ' + err.message)
+      onToast(tx("Gagal membaca file: ") + err.message)
     } finally {
       setImporting(false)
     }
@@ -1638,24 +1631,19 @@ function PayslipTab({ employees, onToast, isDesktop }) {
 
   return (
     <div className="form-page">
-      <div style={{ background: '#eef1fb', color: '#4356C4', borderRadius: 10, padding: '10px 12px', fontSize: 13, marginBottom: 14 }}>
-        Download template Excel, isi rincian gaji &amp; tunjangan per karyawan, lalu unggah lagi di sini untuk input massal.
-        Setiap kali slip gaji disimpan/diimpor, karyawan otomatis dapat notifikasi di app (ikon 🔔 untuk kirim ulang).
-      </div>
+      <div style={{ background: '#eef1fb', color: '#4356C4', borderRadius: 10, padding: '10px 12px', fontSize: 13, marginBottom: 14 }}>{tx("Download template Excel, isi rincian gaji & tunjangan per karyawan, lalu unggah lagi di sini untuk input massal. Setiap kali slip gaji disimpan/diimpor, karyawan otomatis dapat notifikasi di app (ikon 🔔 untuk kirim ulang).")}</div>
 
       <div style={{ display: 'flex', gap: 10, marginBottom: 10, ...(isDesktop ? { maxWidth: 480 } : {}) }}>
         <button className="primary-btn" style={{ flex: 1, background: '#eee', color: '#333', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }} onClick={() => downloadTemplate(employees)}>
-          <Download size={17} /> Template Excel
-        </button>
+          <Download size={17} />{' '}{tx("Template Excel")}</button>
         <label className="primary-btn" style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, cursor: 'pointer' }}>
-          <Upload size={17} /> {importing ? 'Mengimpor...' : 'Unggah Excel'}
+          <Upload size={17} /> {importing ? tx("Mengimpor...") : tx("Unggah Excel")}
           <input type="file" accept=".xlsx,.xls" onChange={handleImportFile} disabled={importing} style={{ display: 'none' }} />
         </label>
       </div>
 
       {importResult?.failed?.length > 0 && (
-        <div style={{ background: '#FBE1DD', color: '#C0392B', borderRadius: 10, padding: '10px 12px', fontSize: 13, marginBottom: 14 }}>
-          Gagal: {importResult.failed.map((f) => `${f.employee_code} (${f.error})`).join(', ')}
+        <div style={{ background: '#FBE1DD', color: '#C0392B', borderRadius: 10, padding: '10px 12px', fontSize: 13, marginBottom: 14 }}>{tx("Gagal:")}{' '}{importResult.failed.map((f) => `${f.employee_code} (${f.error})`).join(', ')}
         </div>
       )}
 
@@ -1667,34 +1655,34 @@ function PayslipTab({ employees, onToast, isDesktop }) {
             : { marginBottom: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
           onClick={() => setEditing({})}
         >
-          <Plus size={isDesktop ? 15 : 18} /> {isDesktop ? 'INPUT MANUAL' : 'Input manual'}
+          <Plus size={isDesktop ? 15 : 18} /> {isDesktop ? tx("INPUT MANUAL") : tx("Input manual")}
         </button>
         {rows && rows.length > 0 && (
           <ExportButton style={isDesktop ? { marginBottom: 0 } : undefined} onClick={() => exportToExcel('data-slip-gaji.xlsx', 'Slip Gaji', rows, [
-            ['Kode Karyawan', 'employee_code'], ['Nama', 'full_name'], ['Jabatan', 'position'], ['Departemen', 'department'],
-            ['Periode', (r) => new Date(r.period).toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })],
-            ['Gaji Pokok', 'basic_salary'], ['Total Tunjangan', 'allowances'], ['Total Potongan', 'deductions'],
-            ['Take Home Pay', 'net_salary'], ['PTKP', 'ptkp_status'], ['Badan Usaha', 'business_entity'], ['Catatan', 'notes'],
+            [tx("Kode Karyawan"), 'employee_code'], [tx("Nama"), 'full_name'], [tx("Jabatan"), 'position'], [tx("Departemen"), 'department'],
+            [tx("Periode"), (r) => new Date(r.period).toLocaleDateString(locale(), { month: 'long', year: 'numeric' })],
+            [tx("Gaji Pokok"), 'basic_salary'], [tx("Total Tunjangan"), 'allowances'], [tx("Total Potongan"), 'deductions'],
+            ['Take Home Pay', 'net_salary'], ['PTKP', 'ptkp_status'], [tx("Badan Usaha"), 'business_entity'], [tx("Catatan"), 'notes'],
           ])} />
         )}
       </div>
 
       {rows === null ? (
-        <div className="empty-state"><p>Memuat...</p></div>
+        <div className="empty-state"><p>{tx("Memuat...")}</p></div>
       ) : rows.length === 0 ? (
-        <div className="empty-state"><p>Belum ada slip gaji yang diinput.</p></div>
+        <div className="empty-state"><p>{tx("Belum ada slip gaji yang diinput.")}</p></div>
       ) : isDesktop ? (
         <div className="dsk-table-wrap">
           <table className="dsk-table">
-            <thead><tr><th>Karyawan</th><th>Periode</th><th>Take home pay</th><th>Aksi</th></tr></thead>
+            <thead><tr><th>{tx("Karyawan")}</th><th>{tx("Periode")}</th><th>Take home pay</th><th>{tx("Aksi")}</th></tr></thead>
             <tbody>
               {rows.map((r) => (
                 <tr key={r.id}>
                   <td style={{ fontWeight: 600 }}>{r.full_name}</td>
-                  <td>{new Date(r.period).toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })}</td>
+                  <td>{new Date(r.period).toLocaleDateString(locale(), { month: 'long', year: 'numeric' })}</td>
                   <td>{rupiah(r.net_salary)}</td>
                   <td className="acts">
-                    <button className="btn" onClick={() => resend(r)} title="Kirim ulang notifikasi"><Bell size={13} /></button>
+                    <button className="btn" onClick={() => resend(r)} title={tx("Kirim ulang notifikasi")}><Bell size={13} /></button>
                     <button className="btn" onClick={() => setEditing(r)}><Pencil size={13} /></button>
                     <button className="btn muted" onClick={() => remove(r.id)}><Trash2 size={13} /></button>
                   </td>
@@ -1708,10 +1696,10 @@ function PayslipTab({ employees, onToast, isDesktop }) {
           <div key={r.id} className="list-item">
             <div className="info">
               <div className="name">{r.full_name}</div>
-              <div className="sub">{new Date(r.period).toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })} · {rupiah(r.net_salary)}</div>
+              <div className="sub">{new Date(r.period).toLocaleDateString(locale(), { month: 'long', year: 'numeric' })} · {rupiah(r.net_salary)}</div>
             </div>
             <div className="actions">
-              <button onClick={() => resend(r)} title="Kirim ulang notifikasi"><Bell size={17} /></button>
+              <button onClick={() => resend(r)} title={tx("Kirim ulang notifikasi")}><Bell size={17} /></button>
               <button onClick={() => setEditing(r)}><Pencil size={17} /></button>
               <button onClick={() => remove(r.id)}><Trash2 size={17} /></button>
             </div>
@@ -1724,7 +1712,7 @@ function PayslipTab({ employees, onToast, isDesktop }) {
           row={editing}
           employees={employees}
           onClose={() => setEditing(null)}
-          onSaved={() => { setEditing(null); load(); onToast('Slip gaji disimpan') }}
+          onSaved={() => { setEditing(null); load(); onToast(tx("Slip gaji disimpan")) }}
         />
       )}
     </div>
@@ -1742,7 +1730,7 @@ function PayslipForm({ row, employees, onClose, onSaved }) {
   async function submit(ev) {
     ev.preventDefault()
     setError('')
-    if (!row.id && !form.employee_id) { setError('Pilih karyawan terlebih dahulu'); return }
+    if (!row.id && !form.employee_id) { setError(tx("Pilih karyawan terlebih dahulu")); return }
     setSaving(true)
     const { error } = await supabase.rpc('upsert_payslip_hr', {
       p_id: row.id || null,
@@ -1762,23 +1750,23 @@ function PayslipForm({ row, employees, onClose, onSaved }) {
     <div className="sheet-overlay" onClick={onClose}>
       <div className="sheet" onClick={(e) => e.stopPropagation()}>
         <div className="sheet-handle" />
-        <div className="sheet-title-row"><h3>{row.id ? 'Edit Slip Gaji' : 'Input Slip Gaji'}</h3></div>
+        <div className="sheet-title-row"><h3>{row.id ? tx("Edit Slip Gaji") : tx("Input Slip Gaji")}</h3></div>
         <form onSubmit={submit}>
           <div className="field">
-            <label>Karyawan</label>
+            <label>{tx("Karyawan")}</label>
             <select value={form.employee_id} onChange={(e) => setForm((f) => ({ ...f, employee_id: e.target.value }))} disabled={!!row.id}>
-              <option value="">- Pilih karyawan -</option>
+              <option value="">{tx("- Pilih karyawan -")}</option>
               {employees.map((e) => <option key={e.id} value={e.id}>{e.full_name} ({e.employee_code})</option>)}
             </select>
           </div>
-          <div className="field"><label>Periode (bulan)</label><input type="month" value={form.period} onChange={(e) => setForm((f) => ({ ...f, period: e.target.value }))} /></div>
-          <div className="field"><label>Gaji pokok</label><input type="number" value={form.basic_salary} onChange={(e) => setForm((f) => ({ ...f, basic_salary: e.target.value }))} /></div>
-          <div className="field"><label>Tunjangan (total)</label><input type="number" value={form.allowances} onChange={(e) => setForm((f) => ({ ...f, allowances: e.target.value }))} /></div>
-          <div className="field"><label>Potongan (total)</label><input type="number" value={form.deductions} onChange={(e) => setForm((f) => ({ ...f, deductions: e.target.value }))} /></div>
-          <div className="field"><label>Catatan</label><textarea value={form.notes} onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))} /></div>
+          <div className="field"><label>{tx("Periode (bulan)")}</label><input type="month" value={form.period} onChange={(e) => setForm((f) => ({ ...f, period: e.target.value }))} /></div>
+          <div className="field"><label>{tx("Gaji pokok")}</label><input type="number" value={form.basic_salary} onChange={(e) => setForm((f) => ({ ...f, basic_salary: e.target.value }))} /></div>
+          <div className="field"><label>{tx("Tunjangan (total)")}</label><input type="number" value={form.allowances} onChange={(e) => setForm((f) => ({ ...f, allowances: e.target.value }))} /></div>
+          <div className="field"><label>{tx("Potongan (total)")}</label><input type="number" value={form.deductions} onChange={(e) => setForm((f) => ({ ...f, deductions: e.target.value }))} /></div>
+          <div className="field"><label>{tx("Catatan")}</label><textarea value={form.notes} onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))} /></div>
           {error && <p className="error-text">{error}</p>}
-          <p style={{ fontSize: 12.5, color: 'var(--text-muted)' }}>Untuk rincian tunjangan/potongan per item, gunakan import Excel.</p>
-          <button className="primary-btn" disabled={saving}>{saving ? 'Menyimpan...' : 'Simpan'}</button>
+          <p style={{ fontSize: 12.5, color: 'var(--text-muted)' }}>{tx("Untuk rincian tunjangan/potongan per item, gunakan import Excel.")}</p>
+          <button className="primary-btn" disabled={saving}>{saving ? tx("Menyimpan...") : tx("Simpan")}</button>
         </form>
       </div>
     </div>

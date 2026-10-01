@@ -6,9 +6,10 @@ import { useIsDesktop } from '../lib/useIsDesktop'
 import CameraCapture from '../components/CameraCapture'
 import AttendanceDetail from '../components/AttendanceDetail'
 
+import { tx, locale } from '../lib/i18n'
 function formatTime(iso) {
   if (!iso) return null
-  return new Date(iso).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
+  return new Date(iso).toLocaleTimeString(locale(), { hour: '2-digit', minute: '2-digit' })
 }
 
 export default function PresensiOnline({ employee, onBack, onToast, onNavigate }) {
@@ -52,28 +53,27 @@ export default function PresensiOnline({ employee, onBack, onToast, onNavigate }
   if (isDesktop) {
     return (
       <div>
-        <h1 style={{ fontSize: 26, margin: '4px 0 24px' }}>Live Attendance</h1>
+        <h1 style={{ fontSize: 26, margin: '4px 0 24px' }}>{tx("Live Attendance")}</h1>
 
         <div style={{ background: '#fff', borderRadius: 16, padding: 28, boxShadow: 'var(--shadow-sm)', maxWidth: 500 }}>
           <div style={{ textAlign: 'center' }}>
             <div style={{ fontSize: 34, fontWeight: 700 }}>
-              {now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
+              {now.toLocaleTimeString(locale(), { hour: '2-digit', minute: '2-digit' })}
             </div>
             <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 4 }}>
-              {now.toLocaleDateString('id-ID', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' }).replace('.', '')}
+              {now.toLocaleDateString(locale(), { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' }).replace('.', '')}
             </div>
           </div>
 
           <div style={{ borderTop: '1px solid var(--border)', marginTop: 20, paddingTop: 20, textAlign: 'center' }}>
             {(!shift || shift?.is_day_off) ? (
               <>
-                <div style={{ fontWeight: 700, fontSize: 16, margin: '4px 0' }}>Tidak ada shift hari ini</div>
-                <div style={{ fontSize: 13.5, color: 'var(--text-muted)' }}>Selamat menikmati hari libur!</div>
+                <div style={{ fontWeight: 700, fontSize: 16, margin: '4px 0' }}>{tx("Tidak ada shift hari ini")}</div>
+                <div style={{ fontSize: 13.5, color: 'var(--text-muted)' }}>{tx("Selamat menikmati hari libur!")}</div>
               </>
             ) : (
               <>
-                <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>
-                  Schedule, {new Date(shift.work_date).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })}
+                <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>{tx("Schedule,")}{' '}{new Date(shift.work_date).toLocaleDateString(locale(), { day: '2-digit', month: 'short', year: 'numeric' })}
                 </div>
                 <div style={{ fontWeight: 700, fontSize: 16, margin: '4px 0' }}>{shift.shift_name}</div>
                 <div style={{ fontSize: 13.5, color: 'var(--text-muted)' }}>
@@ -89,8 +89,7 @@ export default function PresensiOnline({ employee, onBack, onToast, onNavigate }
                 display: 'flex', alignItems: 'center', gap: 8, background: '#eef1fb', color: '#4356C4',
                 borderRadius: 10, padding: '10px 12px', fontSize: 13, margin: '18px 0 0',
               }}>
-                <Info size={16} /> Foto selfie diperlukan untuk Clock In/Out
-              </div>
+                <Info size={16} />{' '}{tx("Foto selfie diperlukan untuk Clock In/Out")}</div>
 
               {locationStatus && (
                 <div style={{
@@ -100,17 +99,17 @@ export default function PresensiOnline({ employee, onBack, onToast, onNavigate }
                 }}>
                   {locationStatus.withinRadius ? <MapPin size={16} /> : <MapPinOff size={16} />}
                   {locationStatus.withinRadius
-                    ? `Anda dalam radius ${locationStatus.nearestName} (±${Math.round(locationStatus.distance)} m)`
-                    : `Anda ${Math.round(locationStatus.distance)} m dari ${locationStatus.nearestName}, di luar radius ${locationStatus.radius} m`}
+                    ? tx("Anda dalam radius {0} (±{1} m)", [locationStatus.nearestName, Math.round(locationStatus.distance)])
+                    : tx("Anda {0} m dari {1}, di luar radius {2} m", [Math.round(locationStatus.distance), locationStatus.nearestName, locationStatus.radius])}
                 </div>
               )}
 
               <div style={{ marginTop: 18 }}>
-                <label style={{ fontSize: 13, fontWeight: 600, display: 'block', marginBottom: 6 }}>Catatan (opsional)</label>
+                <label style={{ fontSize: 13, fontWeight: 600, display: 'block', marginBottom: 6 }}>{tx("Catatan (opsional)")}</label>
                 <textarea
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
-                  placeholder="Tulis catatan..."
+                  placeholder={tx("Tulis catatan...")}
                   rows={3}
                   style={{
                     width: '100%', border: '1px solid var(--border)', borderRadius: 10, padding: '10px 12px',
@@ -125,32 +124,29 @@ export default function PresensiOnline({ employee, onBack, onToast, onNavigate }
                   disabled={busy || !!att?.clock_in}
                   style={presensiBtnStyle(busy || !!att?.clock_in)}
                 >
-                  <LogIn size={17} /> Clock In
-                </button>
+                  <LogIn size={17} />{' '}{tx("Clock In")}</button>
                 <button
                   onClick={() => setCameraMode('out')}
                   disabled={busy || !att?.clock_in || !!att?.clock_out}
                   style={presensiBtnStyle(busy || !att?.clock_in || !!att?.clock_out)}
                 >
-                  <LogOut size={17} /> Clock Out
-                </button>
+                  <LogOut size={17} />{' '}{tx("Clock Out")}</button>
               </div>
             </>
           )}
 
           {att?.clock_in && (
             <div style={{ textAlign: 'center', marginTop: 16, paddingTop: 16, borderTop: '1px solid var(--border)' }}>
-              <div style={{ fontSize: 13.5, color: 'var(--text-muted)' }}>
-                Anda telah berhasil clock in pada pukul {formatTime(att.clock_in)}
-                {att.clock_out && <> · clock out pukul {formatTime(att.clock_out)}</>}
+              <div style={{ fontSize: 13.5, color: 'var(--text-muted)' }}>{tx("Anda telah berhasil clock in pada pukul")}{' '}{formatTime(att.clock_in)}
+                {att.clock_out && <>{' '}{tx("· clock out pukul")}{' '}{formatTime(att.clock_out)}</>}
               </div>
             </div>
           )}
 
           <div style={{ marginTop: 28 }}>
-            <strong style={{ fontSize: 15 }}>Attendance log</strong>
+            <strong style={{ fontSize: 15 }}>{tx("Attendance log")}</strong>
             {!att?.clock_in && !att?.clock_out ? (
-              <p style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 10 }}>Belum ada aktivitas absensi hari ini.</p>
+              <p style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 10 }}>{tx("Belum ada aktivitas absensi hari ini.")}</p>
             ) : (
               <div style={{ marginTop: 6 }}>
                 {att?.clock_in && (
@@ -160,10 +156,10 @@ export default function PresensiOnline({ employee, onBack, onToast, onNavigate }
                     <div style={{ minWidth: 70 }}>
                       <div style={{ fontWeight: 600, fontSize: 14 }}>{formatTime(att.clock_in)}</div>
                       <div style={{ fontSize: 11.5, color: 'var(--text-muted)' }}>
-                        {new Date(att.clock_in).toLocaleDateString('id-ID', { day: '2-digit', month: 'short' })}
+                        {new Date(att.clock_in).toLocaleDateString(locale(), { day: '2-digit', month: 'short' })}
                       </div>
                     </div>
-                    <div style={{ flex: 1, fontSize: 13.5 }}>Clock In</div>
+                    <div style={{ flex: 1, fontSize: 13.5 }}>{tx("Clock In")}</div>
                     <span style={{ fontSize: 13, color: 'var(--blue)' }}>Detail</span>
                   </div>
                 )}
@@ -174,10 +170,10 @@ export default function PresensiOnline({ employee, onBack, onToast, onNavigate }
                     <div style={{ minWidth: 70 }}>
                       <div style={{ fontWeight: 600, fontSize: 14 }}>{formatTime(att.clock_out)}</div>
                       <div style={{ fontSize: 11.5, color: 'var(--text-muted)' }}>
-                        {new Date(att.clock_out).toLocaleDateString('id-ID', { day: '2-digit', month: 'short' })}
+                        {new Date(att.clock_out).toLocaleDateString(locale(), { day: '2-digit', month: 'short' })}
                       </div>
                     </div>
-                    <div style={{ flex: 1, fontSize: 13.5 }}>Clock Out</div>
+                    <div style={{ flex: 1, fontSize: 13.5 }}>{tx("Clock Out")}</div>
                     <span style={{ fontSize: 13, color: 'var(--blue)' }}>Detail</span>
                   </div>
                 )}
@@ -195,16 +191,16 @@ export default function PresensiOnline({ employee, onBack, onToast, onNavigate }
     <div>
       <div className="page-header">
         <button className="back-btn" onClick={onBack}><ArrowLeft size={22} /></button>
-        <h1>Presensi Online</h1>
+        <h1>{tx("Presensi Online")}</h1>
         <span style={{ width: 22 }} />
       </div>
 
       <div style={{ background: 'var(--red)', color: '#fff', textAlign: 'center', padding: '18px 16px 60px' }}>
         <div style={{ fontSize: 40, fontWeight: 700, lineHeight: 1 }}>
-          {now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
+          {now.toLocaleTimeString(locale(), { hour: '2-digit', minute: '2-digit' })}
         </div>
         <div style={{ marginTop: 6, fontSize: 14.5, opacity: .9 }}>
-          {now.toLocaleDateString('id-ID', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' }).replace('.', '')}
+          {now.toLocaleDateString(locale(), { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' }).replace('.', '')}
         </div>
       </div>
 
@@ -212,14 +208,14 @@ export default function PresensiOnline({ employee, onBack, onToast, onNavigate }
         <div style={{ textAlign: 'center' }}>
           {(!shift || shift?.is_day_off) ? (
             <>
-              <div style={{ fontWeight: 700, fontSize: 17, margin: '4px 0' }}>Tidak ada shift hari ini</div>
-              <div style={{ fontSize: 14, color: 'var(--text-muted)' }}>Selamat menikmati hari libur!</div>
+              <div style={{ fontWeight: 700, fontSize: 17, margin: '4px 0' }}>{tx("Tidak ada shift hari ini")}</div>
+              <div style={{ fontSize: 14, color: 'var(--text-muted)' }}>{tx("Selamat menikmati hari libur!")}</div>
             </>
           ) : (
             <>
               <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>{shift.shift_name}</div>
               <div style={{ fontWeight: 700, fontSize: 17, margin: '4px 0' }}>
-                {new Date(shift.work_date).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })} ({shift.start_time?.slice(0,5)} - {shift.end_time?.slice(0,5)})
+                {new Date(shift.work_date).toLocaleDateString(locale(), { day: '2-digit', month: 'short', year: 'numeric' })} ({shift.start_time?.slice(0,5)} - {shift.end_time?.slice(0,5)})
               </div>
             </>
           )}
@@ -231,8 +227,7 @@ export default function PresensiOnline({ employee, onBack, onToast, onNavigate }
               display: 'flex', alignItems: 'center', gap: 8, background: '#eef1fb', color: '#4356C4',
               borderRadius: 10, padding: '10px 12px', fontSize: 13, margin: '14px 0',
             }}>
-              <Info size={16} /> Foto selfie diperlukan untuk Clock In/Out
-            </div>
+              <Info size={16} />{' '}{tx("Foto selfie diperlukan untuk Clock In/Out")}</div>
 
             {locationStatus && (
               <div style={{
@@ -242,8 +237,8 @@ export default function PresensiOnline({ employee, onBack, onToast, onNavigate }
               }}>
                 {locationStatus.withinRadius ? <MapPin size={16} /> : <MapPinOff size={16} />}
                 {locationStatus.withinRadius
-                  ? `Anda dalam radius ${locationStatus.nearestName} (±${Math.round(locationStatus.distance)} m)`
-                  : `Anda ${Math.round(locationStatus.distance)} m dari ${locationStatus.nearestName}, di luar radius ${locationStatus.radius} m`}
+                  ? tx("Anda dalam radius {0} (±{1} m)", [locationStatus.nearestName, Math.round(locationStatus.distance)])
+                  : tx("Anda {0} m dari {1}, di luar radius {2} m", [Math.round(locationStatus.distance), locationStatus.nearestName, locationStatus.radius])}
               </div>
             )}
 
@@ -253,35 +248,32 @@ export default function PresensiOnline({ employee, onBack, onToast, onNavigate }
                 disabled={busy || !!att?.clock_in}
                 style={presensiBtnStyle(busy || !!att?.clock_in)}
               >
-                <LogIn size={17} /> Clock In
-              </button>
+                <LogIn size={17} />{' '}{tx("Clock In")}</button>
               <button
                 onClick={() => setCameraMode('out')}
                 disabled={busy || !att?.clock_in || !!att?.clock_out}
                 style={presensiBtnStyle(busy || !att?.clock_in || !!att?.clock_out)}
               >
-                <LogOut size={17} /> Clock Out
-              </button>
+                <LogOut size={17} />{' '}{tx("Clock Out")}</button>
             </div>
           </>
         )}
 
         {att?.clock_in && (
           <div style={{ textAlign: 'center', marginTop: 14, paddingTop: 14, borderTop: '1px solid var(--border)' }}>
-            <div style={{ fontSize: 13.5, color: 'var(--text-muted)' }}>
-              Anda telah berhasil clock in pada pukul {formatTime(att.clock_in)}
-              {att.clock_out && <> · clock out pukul {formatTime(att.clock_out)}</>}
+            <div style={{ fontSize: 13.5, color: 'var(--text-muted)' }}>{tx("Anda telah berhasil clock in pada pukul")}{' '}{formatTime(att.clock_in)}
+              {att.clock_out && <>{' '}{tx("· clock out pukul")}{' '}{formatTime(att.clock_out)}</>}
             </div>
           </div>
         )}
       </div>
 
       <div style={{ padding: '20px 16px 6px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <strong style={{ fontSize: 17 }}>Daftar absensi</strong>
+        <strong style={{ fontSize: 17 }}>{tx("Daftar absensi")}</strong>
       </div>
 
       {!att?.clock_in && !att?.clock_out ? (
-        <div className="empty-state"><p>Belum ada aktivitas absensi hari ini.</p></div>
+        <div className="empty-state"><p>{tx("Belum ada aktivitas absensi hari ini.")}</p></div>
       ) : (
         <div>
           {att?.clock_in && (
@@ -289,9 +281,9 @@ export default function PresensiOnline({ employee, onBack, onToast, onNavigate }
               onClick={() => setDetailType('in')}>
               <div className="info">
                 <div className="name">{formatTime(att.clock_in)}</div>
-                <div className="sub">{new Date(att.clock_in).toLocaleDateString('id-ID', { day: '2-digit', month: 'short' })}</div>
+                <div className="sub">{new Date(att.clock_in).toLocaleDateString(locale(), { day: '2-digit', month: 'short' })}</div>
               </div>
-              <div style={{ fontWeight: 600 }}>Clock In</div>
+              <div style={{ fontWeight: 600 }}>{tx("Clock In")}</div>
               <ChevronRight size={18} color="#ccc" />
             </button>
           )}
@@ -300,9 +292,9 @@ export default function PresensiOnline({ employee, onBack, onToast, onNavigate }
               onClick={() => setDetailType('out')}>
               <div className="info">
                 <div className="name">{formatTime(att.clock_out)}</div>
-                <div className="sub">{new Date(att.clock_out).toLocaleDateString('id-ID', { day: '2-digit', month: 'short' })}</div>
+                <div className="sub">{new Date(att.clock_out).toLocaleDateString(locale(), { day: '2-digit', month: 'short' })}</div>
               </div>
-              <div style={{ fontWeight: 600 }}>Clock Out</div>
+              <div style={{ fontWeight: 600 }}>{tx("Clock Out")}</div>
               <ChevronRight size={18} color="#ccc" />
             </button>
           )}

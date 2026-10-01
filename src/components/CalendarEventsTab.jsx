@@ -3,12 +3,13 @@ import { Plus, Pencil, Trash2 } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
 import { todayStr } from '../lib/dateUtils'
 
+import { tx } from '../lib/i18n'
 // Tab "Kalender" di Dashboard HR: HR menjadwalkan Aktivitas dan mencatat Hari libur.
 // Baca langsung dari tabel calendar_events (SELECT terbuka untuk karyawan login);
 // tulis lewat RPC upsert_calendar_event_hr / delete_calendar_event_hr (dibatasi is_hr()).
-const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des']
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', tx("Mei"), 'Jun', 'Jul', tx("Agu"), 'Sep', tx("Okt"), 'Nov', tx("Des")]
 const fmt = (s) => { const [y, m, d] = s.split('-').map(Number); return `${d} ${MONTHS[m - 1]} ${y}` }
-const KIND_LABEL = { activity: 'Aktivitas', holiday: 'Hari libur' }
+const KIND_LABEL = { activity: tx("Aktivitas"), holiday: tx("Hari libur") }
 
 export default function CalendarEventsTab({ onToast, isDesktop }) {
   const [list, setList] = useState(null)
@@ -23,10 +24,10 @@ export default function CalendarEventsTab({ onToast, isDesktop }) {
   useEffect(() => { load() }, [])
 
   async function remove(id) {
-    if (!confirm('Hapus acara ini?')) return
+    if (!confirm(tx("Hapus acara ini?"))) return
     const { error } = await supabase.rpc('delete_calendar_event_hr', { p_id: id })
     if (error) { onToast(error.message); return }
-    onToast('Acara dihapus')
+    onToast(tx("Acara dihapus"))
     load()
   }
 
@@ -37,10 +38,9 @@ export default function CalendarEventsTab({ onToast, isDesktop }) {
       {isDesktop ? (
         <div className="dsk-toolbar" style={{ marginBottom: 4 }}>
           <button className="dsk-outline-btn" style={{ display: 'flex', alignItems: 'center', gap: 8 }} onClick={() => setEditing({})}>
-            <Plus size={16} /> TAMBAH ACARA
-          </button>
+            <Plus size={16} />{' '}{tx("TAMBAH ACARA")}</button>
           <div className="tabs" style={{ padding: 0, border: 'none' }}>
-            {[['', 'Semua'], ['activity', 'Aktivitas'], ['holiday', 'Hari libur']].map(([k, l]) => (
+            {[['', tx("Semua")], ['activity', tx("Aktivitas")], ['holiday', tx("Hari libur")]].map(([k, l]) => (
               <button key={k} className={filter === k ? 'active' : ''} onClick={() => setFilter(k)}>{l}</button>
             ))}
           </div>
@@ -52,11 +52,10 @@ export default function CalendarEventsTab({ onToast, isDesktop }) {
             style={{ marginBottom: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
             onClick={() => setEditing({})}
           >
-            <Plus size={18} /> Tambah acara
-          </button>
+            <Plus size={18} />{' '}{tx("Tambah acara")}</button>
 
           <div className="tabs" style={{ padding: '0 0 6px', gap: 18 }}>
-            {[['', 'Semua'], ['activity', 'Aktivitas'], ['holiday', 'Hari libur']].map(([k, l]) => (
+            {[['', tx("Semua")], ['activity', tx("Aktivitas")], ['holiday', tx("Hari libur")]].map(([k, l]) => (
               <button key={k} className={filter === k ? 'active' : ''} onClick={() => setFilter(k)}>{l}</button>
             ))}
           </div>
@@ -66,10 +65,10 @@ export default function CalendarEventsTab({ onToast, isDesktop }) {
       {isDesktop ? (
         <div className="dsk-table-wrap" style={{ marginTop: 18 }}>
           <table className="dsk-table">
-            <thead><tr><th>Acara</th><th>Jenis</th><th>Tanggal</th><th>Jam / Lokasi</th><th>Aksi</th></tr></thead>
+            <thead><tr><th>{tx("Acara")}</th><th>{tx("Jenis")}</th><th>{tx("Tanggal")}</th><th>{tx("Jam / Lokasi")}</th><th>{tx("Aksi")}</th></tr></thead>
             <tbody>
-              {list === null ? <tr><td colSpan={5} className="empty">Memuat...</td></tr>
-                : shown.length === 0 ? <tr><td colSpan={5} className="empty">Belum ada acara. Tambahkan aktivitas atau hari libur agar muncul di Kalender semua karyawan.</td></tr>
+              {list === null ? <tr><td colSpan={5} className="empty">{tx("Memuat...")}</td></tr>
+                : shown.length === 0 ? <tr><td colSpan={5} className="empty">{tx("Belum ada acara. Tambahkan aktivitas atau hari libur agar muncul di Kalender semua karyawan.")}</td></tr>
                 : shown.map((e) => (
                   <tr key={e.id}>
                     <td style={{ fontWeight: 600 }}>{e.title}{e.description && <div style={{ fontWeight: 400, fontSize: 12.5, color: '#888', marginTop: 3, whiteSpace: 'pre-wrap' }}>{e.description}</div>}</td>
@@ -91,9 +90,9 @@ export default function CalendarEventsTab({ onToast, isDesktop }) {
           </table>
         </div>
       ) : list === null ? (
-        <div className="empty-state"><p>Memuat...</p></div>
+        <div className="empty-state"><p>{tx("Memuat...")}</p></div>
       ) : shown.length === 0 ? (
-        <div className="empty-state"><p>Belum ada acara. Tambahkan aktivitas atau hari libur agar muncul di Kalender semua karyawan.</p></div>
+        <div className="empty-state"><p>{tx("Belum ada acara. Tambahkan aktivitas atau hari libur agar muncul di Kalender semua karyawan.")}</p></div>
       ) : shown.map((e) => (
         <div key={e.id} className="list-item" style={{ margin: '10px 0 0', alignItems: 'flex-start' }}>
           <div className="info">
@@ -142,8 +141,8 @@ function EventForm({ row, onClose, onSaved }) {
   async function submit(ev) {
     ev.preventDefault()
     setError('')
-    if (!form.title.trim()) { setError('Judul wajib diisi'); return }
-    if (form.end_date < form.start_date) { setError('Tanggal selesai tidak boleh sebelum tanggal mulai'); return }
+    if (!form.title.trim()) { setError(tx("Judul wajib diisi")); return }
+    if (form.end_date < form.start_date) { setError(tx("Tanggal selesai tidak boleh sebelum tanggal mulai")); return }
     setSaving(true)
     const { error } = await supabase.rpc('upsert_calendar_event_hr', {
       p_id: row.id || null, p_kind: form.kind, p_title: form.title, p_description: form.description || null,
@@ -154,33 +153,33 @@ function EventForm({ row, onClose, onSaved }) {
     })
     setSaving(false)
     if (error) { setError(error.message); return }
-    onSaved(row.id ? 'Acara diperbarui' : 'Acara ditambahkan')
+    onSaved(row.id ? tx("Acara diperbarui") : tx("Acara ditambahkan"))
   }
 
   return (
     <div className="sheet-overlay" onClick={onClose}>
       <div className="sheet" onClick={(e) => e.stopPropagation()}>
         <div className="sheet-handle" />
-        <div className="sheet-title-row"><h3>{row.id ? 'Edit Acara' : 'Tambah Acara'}</h3></div>
+        <div className="sheet-title-row"><h3>{row.id ? tx("Edit Acara") : tx("Tambah Acara")}</h3></div>
         <form onSubmit={submit}>
           <div className="field">
-            <label>Jenis</label>
+            <label>{tx("Jenis")}</label>
             <select value={form.kind} onChange={set('kind')}>
-              <option value="activity">Aktivitas (dijadwalkan HR)</option>
-              <option value="holiday">Hari libur</option>
+              <option value="activity">{tx("Aktivitas (dijadwalkan HR)")}</option>
+              <option value="holiday">{tx("Hari libur")}</option>
             </select>
           </div>
           <div className="field">
-            <label>Judul</label>
-            <input value={form.title} onChange={set('title')} placeholder={isActivity ? 'mis. Town Hall Bulanan' : 'mis. Hari Raya Idul Adha'} />
+            <label>{tx("Judul")}</label>
+            <input value={form.title} onChange={set('title')} placeholder={isActivity ? tx("mis. Town Hall Bulanan") : tx("mis. Hari Raya Idul Adha")} />
           </div>
           <div style={{ display: 'flex', gap: 10 }}>
             <div className="field" style={{ flex: 1 }}>
-              <label>Mulai</label>
+              <label>{tx("Mulai")}</label>
               <input type="date" value={form.start_date} onChange={(e) => setForm((f) => ({ ...f, start_date: e.target.value, end_date: f.end_date < e.target.value ? e.target.value : f.end_date }))} />
             </div>
             <div className="field" style={{ flex: 1 }}>
-              <label>Selesai</label>
+              <label>{tx("Selesai")}</label>
               <input type="date" min={form.start_date} value={form.end_date} onChange={set('end_date')} />
             </div>
           </div>
@@ -188,26 +187,26 @@ function EventForm({ row, onClose, onSaved }) {
             <>
               <div style={{ display: 'flex', gap: 10 }}>
                 <div className="field" style={{ flex: 1 }}>
-                  <label>Jam mulai (opsional)</label>
+                  <label>{tx("Jam mulai (opsional)")}</label>
                   <input type="time" value={form.start_time} onChange={set('start_time')} />
                 </div>
                 <div className="field" style={{ flex: 1 }}>
-                  <label>Jam selesai (opsional)</label>
+                  <label>{tx("Jam selesai (opsional)")}</label>
                   <input type="time" value={form.end_time} onChange={set('end_time')} />
                 </div>
               </div>
               <div className="field">
-                <label>Lokasi (opsional)</label>
-                <input value={form.location} onChange={set('location')} placeholder="mis. Ruang Meeting Lt. 2" />
+                <label>{tx("Lokasi (opsional)")}</label>
+                <input value={form.location} onChange={set('location')} placeholder={tx("mis. Ruang Meeting Lt. 2")} />
               </div>
             </>
           )}
           <div className="field">
-            <label>Keterangan (opsional)</label>
+            <label>{tx("Keterangan (opsional)")}</label>
             <textarea value={form.description} onChange={set('description')} />
           </div>
           {error && <p className="error-text">{error}</p>}
-          <button className="primary-btn" disabled={saving}>{saving ? 'Menyimpan...' : row.id ? 'Simpan' : 'Tambah'}</button>
+          <button className="primary-btn" disabled={saving}>{saving ? tx("Menyimpan...") : row.id ? tx("Simpan") : tx("Tambah")}</button>
         </form>
       </div>
     </div>

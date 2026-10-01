@@ -6,7 +6,8 @@ import { useIsDesktop } from '../lib/useIsDesktop'
 import CutiRequestDesktop from './CutiRequestDesktop'
 import { RequestListPage, DetailDrawer, SelectFilter, SearchFilter, RowChevron, StatusPill, fmtDate, fmtStamp, fmtDateTime } from '../components/RequestDesktop'
 
-const MONTHS_ID = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember']
+import { tx } from '../lib/i18n'
+const MONTHS_ID = [tx("Januari"), tx("Februari"), tx("Maret"), 'April', tx("Mei"), tx("Juni"), tx("Juli"), tx("Agustus"), 'September', tx("Oktober"), 'November', tx("Desember")]
 
 export default function Cuti({ onBack, startNew, onToast, employee }) {
   const [showForm, setShowForm] = useState(!!startNew)
@@ -43,7 +44,7 @@ export default function Cuti({ onBack, startNew, onToast, employee }) {
   const filtered = items.filter((it) => {
     if (statusFilter && it.status !== statusFilter) return false
     if (monthFilter && String(new Date(it.start_date).getMonth()) !== monthFilter) return false
-    if (query && !(`${it.leave_types?.name || ''} ${it.start_date} ${it.reason || ''}`).toLowerCase().includes(query.toLowerCase())) return false
+    if (query && !(`${tx(it.leave_types?.name) || ''} ${it.start_date} ${it.reason || ''}`).toLowerCase().includes(query.toLowerCase())) return false
     return true
   })
 
@@ -53,40 +54,40 @@ export default function Cuti({ onBack, startNew, onToast, employee }) {
     const pendingN = items.filter((i) => i.status === 'pending').length
     return (
       <RequestListPage
-        title="Cuti" subtitle="Riwayat pengajuan cuti Anda." actionLabel="Ajukan Cuti" onAction={() => setShowForm(true)}
+        title={tx("Cuti")} subtitle={tx("Riwayat pengajuan cuti Anda.")} actionLabel={tx("Ajukan Cuti")} onAction={() => setShowForm(true)}
         kpis={[
-          { label: `Cuti disetujui ${yr}`, value: `${approvedDays} hari`, tone: 'g' },
-          { label: 'Menunggu persetujuan', value: pendingN, tone: pendingN ? 'w' : '' },
-          { label: 'Total pengajuan', value: items.length },
+          { label: tx("Cuti disetujui {0}", [yr]), value: tx("{0} hari", [approvedDays]), tone: 'g' },
+          { label: tx("Menunggu persetujuan"), value: pendingN, tone: pendingN ? 'w' : '' },
+          { label: tx("Total pengajuan"), value: items.length },
         ]}
         filters={
           <>
-            <SelectFilter label="Status" value={statusFilter} onChange={setStatusFilter} options={[['', 'Semua status'], ['pending', 'Menunggu'], ['approved', 'Disetujui'], ['rejected', 'Ditolak'], ['cancelled', 'Dibatalkan']]} />
-            <SelectFilter label="Bulan" value={monthFilter} onChange={setMonthFilter} options={[['', 'Semua bulan'], ...MONTHS_ID.map((m, i) => [String(i), m])]} />
-            <SearchFilter value={query} onChange={setQuery} placeholder="Cari jenis atau alasan..." />
+            <SelectFilter label="Status" value={statusFilter} onChange={setStatusFilter} options={[['', tx("Semua status")], ['pending', tx("Menunggu")], ['approved', tx("Disetujui")], ['rejected', tx("Ditolak")], ['cancelled', tx("Dibatalkan")]]} />
+            <SelectFilter label={tx("Bulan")} value={monthFilter} onChange={setMonthFilter} options={[['', tx("Semua bulan")], ...MONTHS_ID.map((m, i) => [String(i), m])]} />
+            <SearchFilter value={query} onChange={setQuery} placeholder={tx("Cari jenis atau alasan...")} />
           </>
         }
-        columns={['Diajukan', 'Jenis cuti', 'Periode', 'Durasi', 'Status']}
-        loading={loading} rows={filtered} total={items.length} empty="Tidak ada pengajuan cuti yang cocok."
+        columns={[tx("Diajukan"), tx("Jenis cuti"), tx("Periode"), tx("Durasi"), 'Status']}
+        loading={loading} rows={filtered} total={items.length} empty={tx("Tidak ada pengajuan cuti yang cocok.")}
         renderRow={(it) => (
           <tr key={it.id} tabIndex={0} onClick={() => setDetailRow(it)} onKeyDown={(e) => { if (e.key === 'Enter') setDetailRow(it) }}>
             <td>{fmtStamp(it.created_at)}</td>
-            <td><b>{it.leave_types?.name || 'Cuti'}</b></td>
+            <td><b>{tx(it.leave_types?.name) || tx("Cuti")}</b></td>
             <td>{fmtDate(it.start_date)}{it.end_date !== it.start_date ? ` – ${fmtDate(it.end_date)}` : ''}</td>
-            <td>{Number(it.total_days)} hari</td>
+            <td>{Number(it.total_days)}{' '}{tx("hari")}</td>
             <td><StatusPill status={it.status} /></td>
             <RowChevron />
           </tr>
         )}
         drawer={detailRow && (
-          <DetailDrawer title="Detail pengajuan cuti" status={detailRow.status} reason={detailRow.reason} onClose={() => setDetailRow(null)}
+          <DetailDrawer title={tx("Detail pengajuan cuti")} status={detailRow.status} reason={detailRow.reason} onClose={() => setDetailRow(null)}
             items={[
-              ['Jenis cuti', detailRow.leave_types?.name || 'Cuti'],
-              ['Mulai', fmtDate(detailRow.start_date)],
-              ['Selesai', fmtDate(detailRow.end_date)],
-              ['Durasi', `${Number(detailRow.total_days)} hari`],
-              ['Diajukan', fmtStamp(detailRow.created_at)],
-              ['Diputuskan', detailRow.decided_at ? fmtDateTime(detailRow.decided_at) : 'Belum diputuskan'],
+              [tx("Jenis cuti"), tx(detailRow.leave_types?.name) || tx("Cuti")],
+              [tx("Mulai"), fmtDate(detailRow.start_date)],
+              [tx("Selesai"), fmtDate(detailRow.end_date)],
+              [tx("Durasi"), tx("{0} hari", [Number(detailRow.total_days)])],
+              [tx("Diajukan"), fmtStamp(detailRow.created_at)],
+              [tx("Diputuskan"), detailRow.decided_at ? fmtDateTime(detailRow.decided_at) : tx("Belum diputuskan")],
             ]} />
         )}
       />
@@ -97,37 +98,37 @@ export default function Cuti({ onBack, startNew, onToast, employee }) {
     <div>
       <div className="page-header">
         <button className="back-btn" onClick={onBack}><ArrowLeft size={22} /></button>
-        <h1>Cuti</h1>
+        <h1>{tx("Cuti")}</h1>
         <span style={{ width: 22 }} />
       </div>
 
       <div className="tabs">
-        <button className={tab === 'saya' ? 'active' : ''} onClick={() => setTab('saya')}>Pengajuan saya</button>
-        <button className={tab === 'delegasi' ? 'active' : ''} onClick={() => setTab('delegasi')}>Delegasi</button>
+        <button className={tab === 'saya' ? 'active' : ''} onClick={() => setTab('saya')}>{tx("Pengajuan saya")}</button>
+        <button className={tab === 'delegasi' ? 'active' : ''} onClick={() => setTab('delegasi')}>{tx("Delegasi")}</button>
       </div>
 
       <div className="balance-card">
-        <h4>Saldo saya</h4>
+        <h4>{tx("Saldo saya")}</h4>
         <FileQuestion size={40} color="#c0392b" />
-        <p style={{ fontWeight: 700, margin: '10px 0 4px' }}>Tidak ada kebijakan</p>
-        <p style={{ fontSize: 13.5, color: '#6b5f56' }}>Kebijakan cuti yang diterapkan akan muncul di sini.</p>
+        <p style={{ fontWeight: 700, margin: '10px 0 4px' }}>{tx("Tidak ada kebijakan")}</p>
+        <p style={{ fontSize: 13.5, color: '#6b5f56' }}>{tx("Kebijakan cuti yang diterapkan akan muncul di sini.")}</p>
       </div>
 
       <div style={{ padding: '14px 16px 0' }}>
         {tab === 'saya' && (
-          loading ? <p style={{ color: '#a39c94' }}>Memuat...</p> :
+          loading ? <p style={{ color: '#a39c94' }}>{tx("Memuat...")}</p> :
           items.length === 0 ? (
             <div className="empty-state">
               <FileQuestion size={40} color="#c8c1b9" />
-              <h3>Tidak ada pengajuan</h3>
-              <p>Pengajuan cuti Anda akan muncul di sini.</p>
+              <h3>{tx("Tidak ada pengajuan")}</h3>
+              <p>{tx("Pengajuan cuti Anda akan muncul di sini.")}</p>
             </div>
           ) : items.map((it) => (
             <div key={it.id} className="shift-hist-row" style={{ borderRadius: 12, marginBottom: 8 }}>
               <div className="top">
                 <div>
-                  <div className="date">{it.leave_types?.name || 'Cuti'}</div>
-                  <div className="desc">{it.start_date} – {it.end_date} ({it.total_days} hari)</div>
+                  <div className="date">{tx(it.leave_types?.name) || tx("Cuti")}</div>
+                  <div className="desc">{it.start_date} – {it.end_date} ({it.total_days}{' '}{tx("hari)")}</div>
                 </div>
                 <span className={`status-${it.status}`}>{statusLabel(it.status)}</span>
               </div>
@@ -135,17 +136,17 @@ export default function Cuti({ onBack, startNew, onToast, employee }) {
           ))
         )}
         {tab === 'delegasi' && (
-          <div className="empty-state"><h3>Tidak ada delegasi</h3><p>Delegasi cuti yang diterima akan muncul di sini.</p></div>
+          <div className="empty-state"><h3>{tx("Tidak ada delegasi")}</h3><p>{tx("Delegasi cuti yang diterima akan muncul di sini.")}</p></div>
         )}
       </div>
 
-      <button className="fab-bottom-btn" onClick={() => setShowForm(true)}><Plus size={16} style={{verticalAlign:'-2px'}}/> Ajukan</button>
+      <button className="fab-bottom-btn" onClick={() => setShowForm(true)}><Plus size={16} style={{verticalAlign:'-2px'}}/>{' '}{tx("Ajukan")}</button>
     </div>
   )
 }
 
 function statusLabel(s) {
-  return { pending: 'Menunggu', approved: 'Disetujui', rejected: 'Ditolak', cancelled: 'Dibatalkan' }[s] || s
+  return { pending: tx("Menunggu"), approved: tx("Disetujui"), rejected: tx("Ditolak"), cancelled: tx("Dibatalkan") }[s] || s
 }
 
 function CutiForm({ onDone, onCancel, onToast }) {
@@ -167,14 +168,14 @@ function CutiForm({ onDone, onCancel, onToast }) {
   async function submit(e) {
     e.preventDefault()
     setError('')
-    if (!start || !end) { setError('Lengkapi tanggal mulai dan selesai'); return }
+    if (!start || !end) { setError(tx("Lengkapi tanggal mulai dan selesai")); return }
     setLoading(true)
     const { error } = await supabase.rpc('submit_leave_request', {
       p_leave_type_id: typeId || null, p_start_date: start, p_end_date: end, p_reason: reason,
     })
     setLoading(false)
     if (error) { setError(error.message); return }
-    onToast('Pengajuan cuti terkirim')
+    onToast(tx("Pengajuan cuti terkirim"))
     onDone()
   }
 
@@ -182,30 +183,30 @@ function CutiForm({ onDone, onCancel, onToast }) {
     <div>
       <div className="page-header">
         <button className="back-btn" onClick={onCancel}><ArrowLeft size={22} /></button>
-        <h1>Ajukan Cuti</h1>
+        <h1>{tx("Ajukan Cuti")}</h1>
         <span style={{ width: 22 }} />
       </div>
       <form className="form-page" onSubmit={submit}>
         <div className="field">
-          <label>Jenis cuti</label>
+          <label>{tx("Jenis cuti")}</label>
           <select value={typeId} onChange={(e) => setTypeId(e.target.value)}>
-            {types.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+            {types.map((t) => <option key={t.id} value={t.id}>{tx(t.name)}</option>)}
           </select>
         </div>
         <div className="field">
-          <label>Tanggal mulai</label>
+          <label>{tx("Tanggal mulai")}</label>
           <input type="date" value={start} onChange={(e) => setStart(e.target.value)} />
         </div>
         <div className="field">
-          <label>Tanggal selesai</label>
+          <label>{tx("Tanggal selesai")}</label>
           <input type="date" value={end} onChange={(e) => setEnd(e.target.value)} />
         </div>
         <div className="field">
-          <label>Alasan</label>
-          <textarea value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Tambahkan alasan..." />
+          <label>{tx("Alasan")}</label>
+          <textarea value={reason} onChange={(e) => setReason(e.target.value)} placeholder={tx("Tambahkan alasan...")} />
         </div>
         {error && <p className="error-text">{error}</p>}
-        <button className="primary-btn" disabled={loading}>{loading ? 'Mengirim...' : 'Kirim pengajuan'}</button>
+        <button className="primary-btn" disabled={loading}>{loading ? tx("Mengirim...") : tx("Kirim pengajuan")}</button>
       </form>
     </div>
   )

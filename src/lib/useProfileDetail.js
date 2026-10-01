@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from './supabaseClient'
 
+import { tx } from './i18n'
 // Backs all the "Info saya" detail pages in Akun (Info personal, pekerjaan,
 // kontak darurat, keluarga, pendidikan & pengalaman, payroll, tambahan,
 // file saya, peringatan). One shared loader + set of mutation helpers.
@@ -43,7 +44,7 @@ export function useProfileDetail() {
       await load()
       return { ok: true }
     } catch (e) {
-      return { ok: false, message: e.message || 'Gagal mengunggah file' }
+      return { ok: false, message: e.message || tx("Gagal mengunggah file") }
     } finally {
       setSaving(false)
     }
