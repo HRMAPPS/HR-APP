@@ -1,0 +1,12 @@
+.pv-trigger{display:block;padding:0;border:0;background:none;border-radius:50%;cursor:zoom-in;line-height:0;transition:transform .15s,box-shadow .15s}
+.pv-trigger:hover{transform:scale(1.03);box-shadow:0 6px 18px rgba(29,26,23,.22)}
+.pv-trigger:focus-visible{outline:3px solid var(--blue,#3b52c4);outline-offset:3px}
+.pv-ovl{position:fixed;inset:0;z-index:200;display:grid;place-items:center;padding:24px;background:rgba(18,14,11,.82);backdrop-filter:blur(6px);animation:pvfade .15s ease}
+.pv-box{position:relative;display:flex;flex-direction:column;align-items:center;gap:14px;max-width:100%;animation:pvpop .2s ease}
+.pv-box img{display:block;max-width:min(92vw,720px);max-height:78vh;width:auto;height:auto;object-fit:contain;border-radius:20px;background:#222;box-shadow:0 24px 80px rgba(0,0,0,.5)}
+.pv-cap{color:#fff;font-weight:700;font-size:16px;text-shadow:0 1px 8px rgba(0,0,0,.5)}
+.pv-close{position:absolute;top:-14px;right:-14px;display:grid;place-items:center;width:40px;height:40px;border-radius:50%;border:0;background:#fff;color:#1d1a17;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.35)}
+.pv-close:focus-visible{outline:3px solid #fff;outline-offset:2px}
+@media (max-width:600px){.pv-close{top:-8px;right:-4px}}
+@keyframes pvfade{from{opacity:0}to{opacity:1}}
+@keyframes pvpop{from{transform:scale(.94);opacity:0}to{transform:none;opacity:1}}

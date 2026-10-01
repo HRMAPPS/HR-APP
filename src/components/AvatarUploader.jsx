@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react'
 import { Camera } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
+import ViewablePhoto from './PhotoViewer'
 
 // Avatar bulat dengan tombol kamera untuk ganti foto profil.
 // Alur: pilih gambar -> potong persegi (center-crop) & kecilkan ke 512px (JPEG)
@@ -102,7 +103,11 @@ export default function AvatarUploader({ name, url, size = 68, fontSize = 20, on
     <div style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'center' }}>
       <div style={{ position: 'relative', width: size, height: size }}>
         {url
-          ? <img src={url} alt="" style={{ width: size, height: size, borderRadius: '50%', objectFit: 'cover', display: 'block', opacity: busy ? 0.5 : 1 }} />
+          ? (
+            <ViewablePhoto url={url} name={name}>
+              <img src={url} alt="" style={{ width: size, height: size, borderRadius: '50%', objectFit: 'cover', display: 'block', opacity: busy ? 0.5 : 1 }} />
+            </ViewablePhoto>
+          )
           : <div className="avatar" style={{ width: size, height: size, fontSize, opacity: busy ? 0.5 : 1 }}>{initials(name)}</div>}
         <button
           type="button"

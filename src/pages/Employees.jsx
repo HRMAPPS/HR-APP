@@ -3,6 +3,7 @@ import { ArrowLeft, Search, Phone, Mail, MessageCircle, ChevronUp, ChevronDown, 
 import { supabase } from '../lib/supabaseClient'
 import { useBackHandler } from '../lib/backStack'
 import { useIsDesktop } from '../lib/useIsDesktop'
+import ViewablePhoto from '../components/PhotoViewer'
 
 function initials(name) {
   return (name || '').split(' ').slice(0, 2).map((n) => n[0]).join('').toUpperCase()
@@ -218,7 +219,11 @@ function EmployeeDetail({ emp, isHr, onBack }) {
       </div>
       <div style={{ textAlign: 'center', padding: '8px 20px 20px' }}>
         {emp.avatar_url
-          ? <img src={emp.avatar_url} alt="" style={{ width: 76, height: 76, borderRadius: '50%', objectFit: 'cover', display: 'block', margin: '0 auto 14px' }} />
+          ? (
+            <ViewablePhoto url={emp.avatar_url} name={emp.full_name} style={{ margin: '0 auto 14px' }}>
+              <img src={emp.avatar_url} alt="" style={{ width: 76, height: 76, borderRadius: '50%', objectFit: 'cover', display: 'block' }} />
+            </ViewablePhoto>
+          )
           : <div className="avatar" style={{ width: 76, height: 76, fontSize: 24, margin: '0 auto 14px' }}>{initials(emp.full_name)}</div>}
         <div style={{ fontSize: 19, fontWeight: 700 }}>{emp.full_name}</div>
         <div style={{ fontSize: 14, color: 'var(--text-muted)', marginTop: 2 }}>{emp.position || '-'}</div>
