@@ -1,6 +1,14 @@
 import { useEffect, useState } from 'react'
 import { supabase } from './supabaseClient'
 
+// Hanya kolom non-sensitif. Data pribadi (NIK, rekening, NPWP, BPJS, alamat, dll.)
+// tidak boleh dibaca lewat tabel langsung; ambil lewat RPC get_profile_detail().
+export const EMPLOYEE_COLUMNS = [
+  'id', 'auth_user_id', 'employee_code', 'full_name', 'position', 'department', 'department_id',
+  'phone', 'email', 'avatar_url', 'manager_id', 'join_date', 'employment_status', 'role', 'grade',
+  'default_shift_id', 'default_work_days', 'created_at',
+].join(', ')
+
 // Wraps Supabase Auth session state + the linked `employees` row for the
 // logged-in user (employees.auth_user_id references auth.users.id).
 export function useAuth() {
@@ -12,7 +20,7 @@ export function useAuth() {
     if (!userId) { setEmployee(null); return }
     const { data, error } = await supabase
       .from('employees')
-      .select('*')
+      .select(EMPLOYEE_COLUMNS)
       .eq('auth_user_id', userId)
       .maybeSingle()
     if (!error) setEmployee(data)

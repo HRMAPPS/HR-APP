@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { supabase } from './supabaseClient'
+import { uploadEmployeeFile, removeEmployeeFile } from './employeeFiles'
 
 import { tx } from './i18n'
 // Backs all the "Info saya" detail pages in Akun (Info personal, pekerjaan,
@@ -31,16 +32,7 @@ export function useProfileDetail() {
   async function uploadFile(file) {
     setSaving(true)
     try {
-      const { data: auth } = await supabase.auth.getUser()
-      const empId = data?.employee?.id
-      const path = `${auth.user.id}/${Date.now()}-${file.name}`
-      const { error: upErr } = await supabase.storage.from('employee-files').upload(path, file)
-      if (upErr) throw upErr
-      const { data: pub } = supabase.storage.from('employee-files').getPublicUrl(path)
-      const { error: insErr } = await supabase.from('employee_files').insert({
-        employee_id: empId, file_name: file.name, file_url: pub.publicUrl,
-      })
-      if (insErr) throw insErr
+      await uploadEmployeeFile(file, data?.employee?.id)
       await load()
       return { ok: true }
     } catch (e) {
@@ -50,13 +42,17 @@ export function useProfileDetail() {
     }
   }
 
-  async function deleteFile(id) {
+  async function deleteFile(id, fileUrl) {
     setSaving(true)
-    const { error } = await supabase.from('employee_files').delete().eq('id', id)
-    setSaving(false)
-    if (error) return { ok: false, message: error.message }
-    await load()
-    return { ok: true }
+    try {
+      await removeEmployeeFile(id, fileUrl)
+      await load()
+      return { ok: true }
+    } catch (e) {
+      return { ok: false, message: e.message }
+    } finally {
+      setSaving(false)
+    }
   }
 
   return {

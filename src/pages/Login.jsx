@@ -26,7 +26,7 @@ export default function Login() {
     e.preventDefault()
     setError('')
     if (!employeeCode.trim()) { setError(tx("Kode karyawan wajib diisi. Minta kode ini ke HR.")); return }
-    if (password.length < 6) { setError(tx("Kata sandi minimal 6 karakter")); return }
+    if (password.length < 8) { setError(tx("Kata sandi minimal 8 karakter")); return }
     if (password !== confirm) { setError(tx("Konfirmasi kata sandi tidak sama")); return }
 
     setLoading(true)
@@ -101,7 +101,7 @@ export default function Login() {
             <div className="field">
               <label>{tx("Kata sandi")}</label>
               <input type="password" value={password} onChange={(e) => setPassword(e.target.value)}
-                placeholder={tx("Minimal 6 karakter")} required />
+                placeholder={tx("Minimal 8 karakter")} required />
             </div>
             <div className="field">
               <label>{tx("Konfirmasi kata sandi")}</label>

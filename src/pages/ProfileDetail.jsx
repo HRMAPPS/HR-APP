@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { ArrowLeft, Plus, Pencil, Trash2, FileText, Download, AlertTriangle } from 'lucide-react'
 import { useProfileDetail } from '../lib/useProfileDetail'
 import { supabase } from '../lib/supabaseClient'
+import { uploadEmployeeFile, openEmployeeFile, removeEmployeeFile } from '../lib/employeeFiles'
 
 import { tx, locale } from '../lib/i18n'
 const SECTION_TITLES = {
@@ -424,14 +425,7 @@ export function FilesList({ employeeId, onToast }) {
     if (!file) return
     setUploading(true)
     try {
-      const path = `${employeeId}/${Date.now()}-${file.name}`
-      const { error: upErr } = await supabase.storage.from('employee-files').upload(path, file)
-      if (upErr) throw upErr
-      const { data: pub } = supabase.storage.from('employee-files').getPublicUrl(path)
-      const { error: insErr } = await supabase.from('employee_files').insert({
-        employee_id: employeeId, file_name: file.name, file_url: pub.publicUrl,
-      })
-      if (insErr) throw insErr
+      await uploadEmployeeFile(file, employeeId)
       onToast(tx("File berhasil diunggah"))
       await load()
     } catch (err) {
@@ -442,9 +436,19 @@ export function FilesList({ employeeId, onToast }) {
   }
 
   async function handleDelete(id) {
-    await supabase.from('employee_files').delete().eq('id', id)
-    onToast(tx("File dihapus"))
+    const f = (files || []).find((x) => x.id === id)
+    try {
+      await removeEmployeeFile(id, f?.file_url)
+      onToast(tx("File dihapus"))
+    } catch (err) {
+      onToast(err.message || tx("Gagal menghapus file"))
+    }
     load()
+  }
+
+  async function handleOpen(f) {
+    const ok = await openEmployeeFile(f.file_url)
+    if (!ok) onToast(tx("Gagal membuka file"))
   }
 
   if (files === null) return <div className="empty-state"><p>{tx("Memuat...")}</p></div>
@@ -462,7 +466,7 @@ export function FilesList({ employeeId, onToast }) {
               <div className="sub">{new Date(f.created_at).toLocaleDateString(locale(), { day: '2-digit', month: 'short', year: 'numeric' })}</div>
             </div>
             <div className="actions">
-              <a href={f.file_url} target="_blank" rel="noreferrer"><Download size={17} /></a>
+              <button onClick={() => handleOpen(f)}><Download size={17} /></button>
               <button onClick={() => handleDelete(f.id)}><Trash2 size={17} /></button>
             </div>
           </div>

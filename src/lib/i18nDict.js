@@ -3851,6 +3851,22 @@ export const PAIRS = [
 [
 "{0}{1} ({2} hari)",
 "{0}{1} ({2} days)"
+],
+[
+"Kata sandi minimal 8 karakter",
+"Password must be at least 8 characters"
+],
+[
+"Minimal 8 karakter",
+"At least 8 characters"
+],
+[
+"Gagal menghapus file",
+"Failed to delete file"
+],
+[
+"Gagal membuka file",
+"Failed to open file"
 ]
 ]
 export const ONEWAY = [
