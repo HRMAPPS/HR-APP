@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { ChevronRight, User, Bell, CalendarDays, AlarmClock, Receipt, MapPin, RefreshCw } from 'lucide-react'
+import { ChevronRight, User, Bell, CalendarDays, AlarmClock, Receipt, MapPin, RefreshCw, UserCircle } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
 import { ApprovalCategoryPage } from './ApprovalCenter'
 import Avatar from './Avatar'
@@ -13,6 +13,7 @@ const FOLDERS = [
   { key: 'reimbursement_requests', label: tx("Reimbursement"), icon: Receipt },
   { key: 'absence_requests', label: tx("Presensi"), icon: MapPin },
   { key: 'shift_change_requests', label: tx("Perubahan Shift"), icon: RefreshCw },
+  { key: 'data_change_requests', label: tx("Perubahan Data"), icon: UserCircle },
 ]
 
 const APPROVAL_TABLES = FOLDERS.filter((f) => f.key !== 'notifikasi').map((f) => f.key)

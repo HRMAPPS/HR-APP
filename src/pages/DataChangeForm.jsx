@@ -50,11 +50,12 @@ export default function DataChangeForm({ employee, onBack, onToast }) {
         </div>
         <div className="field">
           <label>{tx("Data baru")}</label>
-          <input value={newValue} onChange={(e) => setNewValue(e.target.value)} placeholder={tx("Masukkan data baru")} />
+          <input type={field === 'phone' ? 'tel' : field === 'email' ? 'email' : 'text'} value={newValue}
+            onChange={(e) => setNewValue(e.target.value)} placeholder={tx("Masukkan data baru")} maxLength={field === 'full_name' ? 100 : 254} />
         </div>
         <div className="field">
           <label>{tx("Alasan")}</label>
-          <textarea value={reason} onChange={(e) => setReason(e.target.value)} placeholder={tx("Tambahkan alasan...")} />
+          <textarea value={reason} onChange={(e) => setReason(e.target.value)} placeholder={tx("Tambahkan alasan...")} maxLength={500} />
         </div>
         {error && <p className="error-text">{error}</p>}
         <button className="primary-btn" disabled={loading}>{loading ? tx("Mengirim...") : tx("Kirim pengajuan")}</button>

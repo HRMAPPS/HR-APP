@@ -351,6 +351,21 @@ export function PayrollForm({ profile, onToast }) {
     npwp: e.npwp || '', bpjs_kesehatan: e.bpjs_kesehatan || '', bpjs_ketenagakerjaan: e.bpjs_ketenagakerjaan || '',
   })
   const [error, setError] = useState('')
+  const [pending, setPending] = useState(null)
+
+  async function loadPending() {
+    const { data } = await supabase.rpc('my_pending_bank_change')
+    setPending(data || null)
+    return data || null
+  }
+  useEffect(() => { loadPending() }, [])
+
+  async function cancelPending() {
+    const { error: err } = await supabase.rpc('cancel_my_data_change', { p_id: pending.id })
+    if (err) { onToast(err.message); return }
+    onToast(tx("Pengajuan dibatalkan"))
+    loadPending()
+  }
 
   async function submit(ev) {
     ev.preventDefault()
@@ -361,11 +376,24 @@ export function PayrollForm({ profile, onToast }) {
       p_bpjs_kesehatan: form.bpjs_kesehatan || null, p_bpjs_ketenagakerjaan: form.bpjs_ketenagakerjaan || null,
     })
     if (!r.ok) { setError(r.message); return }
-    onToast(tx("Info payroll disimpan"))
+    const p = await loadPending()
+    onToast(p ? tx("Perubahan rekening diajukan dan menunggu persetujuan HR") : tx("Info payroll disimpan"))
   }
+
+  const maskAcc = (n) => (n ? '••••' + String(n).slice(-4) : '-')
 
   return (
     <form onSubmit={submit}>
+      {pending && (
+        <div style={{ background: '#FBEEDD', color: '#8a5a0b', borderRadius: 10, padding: '10px 12px', fontSize: 13, marginBottom: 14 }}>
+          <b>{tx("Perubahan rekening menunggu persetujuan HR")}</b>
+          <div style={{ marginTop: 4 }}>{pending.new_value?.bank_name} {maskAcc(pending.new_value?.bank_account_number)}</div>
+          <button type="button" onClick={cancelPending} style={{ marginTop: 8, background: 'none', border: 0, padding: 0, color: '#C0392B', fontWeight: 600, cursor: 'pointer' }}>
+            {tx("Batalkan pengajuan")}
+          </button>
+        </div>
+      )}
+      <p style={{ fontSize: 12.5, color: 'var(--text-muted)', margin: '0 0 12px' }}>{tx("Perubahan data rekening bank perlu persetujuan HR.")}</p>
       <div className="field"><label>{tx("Nama bank")}</label><input value={form.bank_name} onChange={(ev) => setForm((f) => ({ ...f, bank_name: ev.target.value }))} /></div>
       <div className="field"><label>{tx("Nomor rekening")}</label><input value={form.bank_account_number} onChange={(ev) => setForm((f) => ({ ...f, bank_account_number: ev.target.value }))} /></div>
       <div className="field"><label>{tx("Atas nama")}</label><input value={form.bank_account_holder} onChange={(ev) => setForm((f) => ({ ...f, bank_account_holder: ev.target.value }))} /></div>

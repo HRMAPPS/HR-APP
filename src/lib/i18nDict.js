@@ -3867,6 +3867,38 @@ export const PAIRS = [
 [
 "Gagal membuka file",
 "Failed to open file"
+],
+[
+"Pengajuan perubahan {0}",
+"Change request: {0}"
+],
+[
+"Rekening bank",
+"Bank account"
+],
+[
+"Verifikasi rekening langsung dengan karyawan sebelum menyetujui.",
+"Verify the account directly with the employee before approving."
+],
+[
+"Perubahan rekening menunggu persetujuan HR",
+"Bank account change awaiting HR approval"
+],
+[
+"Perubahan rekening diajukan dan menunggu persetujuan HR",
+"Bank account change submitted and awaiting HR approval"
+],
+[
+"Batalkan pengajuan",
+"Cancel request"
+],
+[
+"Pengajuan dibatalkan",
+"Request cancelled"
+],
+[
+"Perubahan data rekening bank perlu persetujuan HR.",
+"Changes to bank account details require HR approval."
 ]
 ]
 export const ONEWAY = [

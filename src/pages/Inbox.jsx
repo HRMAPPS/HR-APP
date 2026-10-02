@@ -8,7 +8,7 @@ import Avatar from '../components/Avatar'
 import { useAvatarsByName } from '../lib/useAvatarsByName'
 
 import { tx, locale } from '../lib/i18n'
-const APPROVAL_TABLES = ['leave_requests', 'overtime_requests', 'reimbursement_requests', 'shift_change_requests', 'absence_requests']
+const APPROVAL_TABLES = ['leave_requests', 'overtime_requests', 'reimbursement_requests', 'shift_change_requests', 'absence_requests', 'data_change_requests']
 
 function initials(name) {
   return (name || '?').split(' ').slice(0, 2).map((n) => n[0]).join('').toUpperCase()

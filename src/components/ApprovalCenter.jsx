@@ -14,7 +14,7 @@ const CATEGORIES = [
   { key: 'absence_requests', label: tx("Presensi"), icon: MapPin },
   { key: 'overtime_requests', label: tx("Lembur"), icon: AlarmClock },
   { key: 'shift_change_requests', label: tx("Perubahan shift"), icon: RefreshCw },
-  { key: 'data_change_requests', label: tx("Perubahan data"), icon: UserCircle, noBacking: true },
+  { key: 'data_change_requests', label: tx("Perubahan data"), icon: UserCircle },
   { key: 'formulir', label: tx("Formulir"), icon: FileText, noBacking: true },
   { key: 'goal', label: tx("Goal"), icon: Target, noBacking: true },
   { key: 'timesheet', label: 'Timesheet', icon: ListChecks, noBacking: true },
@@ -185,6 +185,7 @@ function titleFor(category, r) {
     case 'reimbursement_requests': return tx("Pengajuan reimbursement untuk {0}", [tx(d.category_name) || tx("Reimbursement")])
     case 'shift_change_requests': return tx("Pengajuan ubah shift untuk {0}", [fmtDay(d.work_date)])
     case 'absence_requests': return tx("Pengajuan presensi untuk {0}", [fmtDay(d.work_date)])
+    case 'data_change_requests': return tx("Pengajuan perubahan {0}", [fieldLabel(d.field_name)])
     default: return ''
   }
 }
@@ -212,9 +213,32 @@ function bulletsFor(category, r) {
         lines.push(tx("Usulan: {0} - {1}", [d.requested_clock_in?.slice(0, 5) || '-', d.requested_clock_out?.slice(0, 5) || '-']))
       }
       break
+    case 'data_change_requests':
+      lines.push(d.field_name === 'bank_account'
+        ? tx("{0} menjadi {1}", [bankText(d.old_value), bankText(d.new_value)])
+        : tx("{0} menjadi {1}", [d.old_value || '-', d.new_value || '-']))
+      break
   }
   if (r.reason) lines.push(tx("Alasan: {0}", [r.reason]))
   return lines
+}
+
+const FIELD_LABELS = {
+  phone: () => tx("Nomor telepon"),
+  email: () => 'Email',
+  full_name: () => tx("Nama lengkap"),
+  bank_account: () => tx("Rekening bank"),
+}
+function fieldLabel(f) { return (FIELD_LABELS[f] || (() => f || '-'))() }
+
+// Rekening bank disimpan sebagai JSON {bank_name, bank_account_number, bank_account_holder}
+function parseBank(v) {
+  try { const o = typeof v === 'string' ? JSON.parse(v) : v; return o && typeof o === 'object' ? o : null } catch { return null }
+}
+function bankText(v) {
+  const b = parseBank(v)
+  if (!b || (!b.bank_name && !b.bank_account_number)) return '-'
+  return `${b.bank_name || '-'} ${b.bank_account_number || '-'} (${b.bank_account_holder || '-'})`
 }
 
 function fmtDay(d) {
@@ -340,9 +364,27 @@ function FieldRows({ table, row }) {
     if (row.requested_clock_in || row.requested_clock_out) {
       rows.push([tx("Usulan jam"), `${row.requested_clock_in?.slice(0, 5) || '-'} - ${row.requested_clock_out?.slice(0, 5) || '-'}`])
     }
+  } else if (table === 'data_change_requests') {
+    rows.push([tx("Data yang diubah"), fieldLabel(row.field_name)])
+    if (row.field_name === 'bank_account') {
+      const o = parseBank(row.old_value) || {}
+      const n = parseBank(row.new_value) || {}
+      rows.push([tx("Data saat ini"), bankText(o)])
+      rows.push([tx("Nama bank"), n.bank_name || '-'])
+      rows.push([tx("Nomor rekening"), n.bank_account_number || '-'])
+      rows.push([tx("Atas nama"), n.bank_account_holder || '-'])
+    } else {
+      rows.push([tx("Data saat ini"), row.old_value || '-'])
+      rows.push([tx("Data baru"), row.new_value || '-'])
+    }
   }
   return (
     <>
+      {table === 'data_change_requests' && row.field_name === 'bank_account' && row.status === 'pending' && (
+        <div style={{ background: '#FBEEDD', color: '#8a5a0b', borderRadius: 10, padding: '10px 12px', fontSize: 13, marginBottom: 14 }}>
+          {tx("Verifikasi rekening langsung dengan karyawan sebelum menyetujui.")}
+        </div>
+      )}
       {rows.map(([label, value]) => (
         <div key={label} style={{ marginBottom: 12 }}>
           <div style={{ fontSize: 12.5, color: 'var(--text-muted)' }}>{label}</div>
@@ -362,7 +404,7 @@ function Timeline({ row, detail }) {
     { label: tx("Diajukan oleh {0}", [detail.requester_name]), time: row.created_at, color: '#4356C4', done: true },
   ]
   if (row.status === 'pending') {
-    items.push({ label: tx("Menunggu persetujuan dari {0}", [detail.manager_name || 'HR']), time: null, color: '#c58a12', pending: true })
+    items.push({ label: tx("Menunggu persetujuan dari {0}", [row.field_name ? 'HR' : (detail.manager_name || 'HR')]), time: null, color: '#c58a12', pending: true })
   } else if (row.status === 'approved') {
     items.push({ label: tx("Disetujui oleh {0}", [detail.approver_name || 'HR']), time: row.decided_at, color: '#1E8E5A', done: true })
   } else if (row.status === 'rejected') {
