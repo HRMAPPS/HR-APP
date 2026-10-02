@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { MapPin } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
 import { useSignedPhoto } from '../lib/signedUrl'
+import SecurityPanel from './AttendanceFlags'
 
 import { tx, locale } from '../lib/i18n'
 const fmtClock = (iso) => (iso ? new Date(iso).toLocaleTimeString(locale(), { hour: '2-digit', minute: '2-digit', second: '2-digit' }).replace(/\./g, ':') : '-')
@@ -64,6 +65,8 @@ export default function HRAttendanceDetail({ attendanceId, onClose }) {
                 }}>{d.status === 'late' ? tx("Telat") : tx("Tepat waktu")}</span>
               </div>
             </div>
+
+            <SecurityPanel detail={d} />
 
             <div className="tabs" style={{ marginBottom: 12 }}>
               <button className={isIn ? 'active' : ''} onClick={() => setTab('in')}>{tx("Clock In")}</button>

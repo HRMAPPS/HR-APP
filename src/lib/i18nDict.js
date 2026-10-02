@@ -3899,6 +3899,102 @@ export const PAIRS = [
 [
 "Perubahan data rekening bank perlu persetujuan HR.",
 "Changes to bank account details require HR approval."
+],
+[
+"Koordinat tepat di titik kantor (kemungkinan lokasi dipalsukan)",
+"Coordinates exactly at the office point (location possibly spoofed)"
+],
+[
+"Perpindahan lokasi tidak masuk akal dari absen sebelumnya",
+"Implausible movement since the previous clock event"
+],
+[
+"Data wajah hampir identik dengan absen sebelumnya",
+"Face data nearly identical to the previous clock event"
+],
+[
+"Akurasi GPS nol (tidak wajar)",
+"GPS accuracy is zero (abnormal)"
+],
+[
+"Koordinat sama persis dengan absen sebelumnya",
+"Coordinates identical to the previous clock event"
+],
+[
+"Lokasi GPS sudah lama (basi)",
+"GPS fix is stale"
+],
+[
+"Koordinat dibulatkan (tidak seperti GPS asli)",
+"Rounded coordinates (unlike a real GPS fix)"
+],
+[
+"Akurasi GPS rendah (lebih dari 100 m)",
+"Low GPS accuracy (over 100 m)"
+],
+[
+"Perangkat baru yang belum pernah dipakai",
+"New device not used before"
+],
+[
+"Kecocokan wajah lemah",
+"Weak face match"
+],
+[
+"Durasi kerja kurang dari 30 menit",
+"Work duration under 30 minutes"
+],
+[
+"Wajah didaftarkan ulang",
+"Face re-enrolled"
+],
+[
+"Perangkat tidak teridentifikasi (aplikasi versi lama)",
+"Device not identified (old app version)"
+],
+[
+"Akurasi GPS tidak dikirim (aplikasi versi lama)",
+"GPS accuracy not sent (old app version)"
+],
+[
+"Ada tanda risiko absensi, klik untuk detail",
+"Attendance risk flags present, click for details"
+],
+[
+"Reset data wajah {0}? Karyawan harus mendaftarkan wajah lagi sebelum bisa absen.",
+"Reset face data for {0}? The employee must enroll their face again before clocking in."
+],
+[
+"Data wajah direset. Karyawan perlu mendaftarkan wajah kembali.",
+"Face data reset. The employee needs to enroll their face again."
+],
+[
+"Perlu ditinjau",
+"Needs review"
+],
+[
+"Catatan keamanan",
+"Security notes"
+],
+[
+"Jejak perangkat dan jaringan",
+"Device and network trail"
+],
+[
+"Perangkat",
+"Device"
+],
+[
+"Akurasi",
+"Accuracy"
+],
+[
+"Jarak wajah",
+"Face distance"
+],
+[
+"Reset data wajah karyawan",
+"Reset employee face data"
 ]
 ]
 export const ONEWAY = [

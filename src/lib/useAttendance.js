@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from './supabaseClient'
 import { todayStr } from './dateUtils'
+import { getDeviceId } from './deviceId'
 
 import { tx } from './i18n'
 function haversineMeters(lat1, lng1, lat2, lng2) {
@@ -54,9 +55,12 @@ export function useAttendance(employee) {
     return new Promise((resolve) => {
       if (!navigator.geolocation) return resolve({ lat: null, lng: null })
       navigator.geolocation.getCurrentPosition(
-        (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+        (pos) => resolve({
+          lat: pos.coords.latitude, lng: pos.coords.longitude,
+          accuracy: pos.coords.accuracy, fixTime: new Date(pos.timestamp).toISOString(),
+        }),
         () => resolve({ lat: null, lng: null }),
-        { timeout: 6000, enableHighAccuracy: true }
+        { timeout: 8000, enableHighAccuracy: true, maximumAge: 0 } // selalu minta posisi baru, bukan cache
       )
     })
   }
@@ -77,7 +81,7 @@ export function useAttendance(employee) {
     setBusy(true)
     let result = { ok: false, message: '' }
     try {
-      const [{ lat, lng }, photoUrl] = await Promise.all([
+      const [{ lat, lng, accuracy, fixTime }, photoUrl] = await Promise.all([
         withGeolocation(),
         uploadSelfie(blob, kind),
       ])
@@ -89,6 +93,8 @@ export function useAttendance(employee) {
       const { error } = await supabase.rpc(rpcName, {
         p_lat: lat, p_lng: lng, p_photo_url: photoUrl, p_notes: notes || null,
         p_face_descriptor: faceDescriptor || null,
+        // Sinyal tambahan untuk audit server (tidak memblokir bila kosong)
+        p_accuracy: accuracy ?? null, p_fix_time: fixTime ?? null, p_device_id: getDeviceId(),
       })
       if (error) throw error
       result = { ok: true, message: kind === 'in' ? tx("Berhasil clock in") : tx("Berhasil clock out") }

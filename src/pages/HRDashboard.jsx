@@ -7,6 +7,7 @@ import { linkifyText } from '../lib/linkify'
 import CalendarEventsTab from '../components/CalendarEventsTab'
 import EmployeeImportModal from '../components/EmployeeImportModal'
 import HRAttendanceDetail from '../components/HRAttendanceDetail'
+import { FlagBadge } from '../components/AttendanceFlags'
 
 import { tx, locale } from '../lib/i18n'
 const TABS = [
@@ -1213,7 +1214,7 @@ function AttendanceTab({ onToast, isDesktop }) {
                 : filtered.length === 0 ? <tr><td colSpan={5} className="empty">{tx("Tidak ada data absensi pada rentang ini.")}</td></tr>
                 : filtered.map((r) => (
                   <tr key={r.id} onClick={() => setDetailId(r.id)} style={{ cursor: 'pointer' }} title={tx("Klik untuk lihat detail")}>
-                    <td style={{ fontWeight: 600 }}>{r.full_name}</td>
+                    <td style={{ fontWeight: 600 }}>{r.full_name}<FlagBadge flags={r.flags} /></td>
                     <td>{fmtDate(r.work_date)}</td>
                     <td>{fmtTime(r.clock_in)}</td>
                     <td>{fmtTime(r.clock_out)}</td>
@@ -1269,7 +1270,7 @@ function AttendanceTab({ onToast, isDesktop }) {
         filtered.map((r) => (
           <div key={r.id} className="list-item" onClick={() => setDetailId(r.id)} style={{ cursor: 'pointer' }}>
             <div className="info">
-              <div className="name">{r.full_name}</div>
+              <div className="name">{r.full_name}<FlagBadge flags={r.flags} /></div>
               <div className="sub">{fmtDate(r.work_date)}{' '}{tx("· masuk")}{' '}{fmtTime(r.clock_in)}{' '}{tx("· keluar")}{' '}{fmtTime(r.clock_out)}</div>
             </div>
             <span style={{
