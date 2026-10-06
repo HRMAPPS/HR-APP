@@ -3995,6 +3995,14 @@ export const PAIRS = [
 [
 "Reset data wajah karyawan",
 "Reset employee face data"
+],
+[
+"Sisa {0}",
+"Remaining {0}"
+],
+[
+"Terpakai {0} · menunggu {1} · kuota {2} hari",
+"Used {0} · pending {1} · quota {2} days"
 ]
 ]
 export const ONEWAY = [

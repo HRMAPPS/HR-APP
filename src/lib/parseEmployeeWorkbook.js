@@ -86,7 +86,8 @@ export function parseEmployeeWorkbook(buffer, fileName) {
 
   let wb
   try {
-    wb = XLSX.read(buffer, { type: 'array' })
+    // Tanpa formula/HTML sel, dan baca maksimal 500 baris per sheet (template hanya puluhan baris)
+    wb = XLSX.read(buffer, { type: 'array', cellFormula: false, cellHTML: false, sheetRows: 500 })
   } catch (e) {
     issues.push('File tidak bisa dibaca. Pastikan formatnya .xlsx')
     result.empty = true

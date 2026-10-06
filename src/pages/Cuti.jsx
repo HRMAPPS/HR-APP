@@ -18,6 +18,7 @@ export default function Cuti({ onBack, startNew, onToast, employee }) {
   const [monthFilter, setMonthFilter] = useState('')
   const [query, setQuery] = useState('')
   const [detailRow, setDetailRow] = useState(null)
+  const [balances, setBalances] = useState([]) // hanya jenis cuti yang kuotanya diaktifkan HR
   useBackHandler(() => setShowForm(false), showForm)
   const isDesktop = useIsDesktop()
 
@@ -32,6 +33,9 @@ export default function Cuti({ onBack, startNew, onToast, employee }) {
   }
 
   useEffect(() => { load() }, [])
+  useEffect(() => {
+    supabase.rpc('get_leave_balances').then(({ data }) => setBalances(Array.isArray(data) ? data : []))
+  }, [items.length])
 
   if (showForm && isDesktop) {
     return <CutiRequestDesktop employee={employee} onDone={() => { setShowForm(false); load() }} onCancel={() => setShowForm(false)} onToast={onToast} />
@@ -59,6 +63,7 @@ export default function Cuti({ onBack, startNew, onToast, employee }) {
           { label: tx("Cuti disetujui {0}", [yr]), value: tx("{0} hari", [approvedDays]), tone: 'g' },
           { label: tx("Menunggu persetujuan"), value: pendingN, tone: pendingN ? 'w' : '' },
           { label: tx("Total pengajuan"), value: items.length },
+          ...balances.map((b) => ({ label: tx("Sisa {0}", [tx(b.name)]), value: tx("{0} hari", [Number(b.remaining)]), tone: Number(b.remaining) <= 0 ? 'w' : '' })),
         ]}
         filters={
           <>
@@ -109,9 +114,29 @@ export default function Cuti({ onBack, startNew, onToast, employee }) {
 
       <div className="balance-card">
         <h4>{tx("Saldo saya")}</h4>
-        <FileQuestion size={40} color="#c0392b" />
-        <p style={{ fontWeight: 700, margin: '10px 0 4px' }}>{tx("Tidak ada kebijakan")}</p>
-        <p style={{ fontSize: 13.5, color: '#6b5f56' }}>{tx("Kebijakan cuti yang diterapkan akan muncul di sini.")}</p>
+        {balances.length > 0 ? balances.map((b) => {
+          const total = Number(b.used) + Number(b.pending)
+          const pct = Number(b.quota) > 0 ? Math.min(100, (total / Number(b.quota)) * 100) : 100
+          return (
+            <div key={b.leave_type_id} style={{ textAlign: 'left', marginTop: 12 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 700 }}>
+                <span>{tx(b.name)}</span><span>{tx("{0} hari", [Number(b.remaining)])}</span>
+              </div>
+              <div style={{ height: 6, background: '#ece7e1', borderRadius: 4, margin: '6px 0' }}>
+                <div style={{ width: `${pct}%`, height: '100%', background: '#c0392b', borderRadius: 4 }} />
+              </div>
+              <div style={{ fontSize: 12.5, color: '#6b5f56' }}>
+                {tx("Terpakai {0} · menunggu {1} · kuota {2} hari", [Number(b.used), Number(b.pending), Number(b.quota)])}
+              </div>
+            </div>
+          )
+        }) : (
+          <>
+            <FileQuestion size={40} color="#c0392b" />
+            <p style={{ fontWeight: 700, margin: '10px 0 4px' }}>{tx("Tidak ada kebijakan")}</p>
+            <p style={{ fontSize: 13.5, color: '#6b5f56' }}>{tx("Kebijakan cuti yang diterapkan akan muncul di sini.")}</p>
+          </>
+        )}
       </div>
 
       <div style={{ padding: '14px 16px 0' }}>

@@ -6,6 +6,31 @@ import { parseEmployeeWorkbook, toPayload } from '../lib/parseEmployeeWorkbook'
 const supabase = sbModule.supabase || sbModule.default
 
 const CHUNK = 40
+const MAX_FILES = 200
+const MAX_BYTES = 2 * 1024 * 1024 // template terisi hanya puluhan KB; batas ini mencegah file raksasa/berbahaya
+
+const normText = (s) => String(s || '').toLowerCase().replace(/\s+/g, ' ').trim()
+
+// Tandai file yang merujuk karyawan yang sama dalam satu unggahan (yang terakhir diproses menimpa yang sebelumnya)
+function markDuplicates(list) {
+  const groups = new Map()
+  list.forEach((it, idx) => {
+    if (it.empty) return
+    const e = it.employee || {}
+    const key = normText(e.employee_code) ? 'k:' + normText(e.employee_code)
+      : normText(e.email) ? 'e:' + normText(e.email) : 'n:' + normText(e.full_name)
+    if (!groups.has(key)) groups.set(key, [])
+    groups.get(key).push(idx)
+  })
+  for (const idxs of groups.values()) {
+    if (idxs.length < 2) continue
+    for (const i of idxs) {
+      const others = idxs.filter((j) => j !== i).map((j) => list[j].source)
+      list[i].issues = [...(list[i].issues || []),
+        `Duplikat dalam unggahan: karyawan yang sama juga ada di ${others.slice(0, 2).join(', ')}${others.length > 2 ? ` (+${others.length - 2})` : ''}. File yang diproses paling akhir menimpa yang sebelumnya.`]
+    }
+  }
+}
 
 const STATUS = {
   update: { label: 'Update', bg: '#dcfce7', fg: '#166534' },
@@ -46,6 +71,7 @@ export default function ImportEmployees({ onBack }) {
   const [createMissing, setCreateMissing] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
+  const [partial, setPartial] = useState('') // pesan galat bila pengiriman terhenti di tengah jalan
 
   useEffect(() => {
     let alive = true
@@ -59,18 +85,27 @@ export default function ImportEmployees({ onBack }) {
 
   async function onPickFiles(e) {
     setError('')
+    setPartial('')
     setRows([])
     setPhase('pick')
-    const files = Array.from(e.target.files || [])
+    let files = Array.from(e.target.files || [])
     const parsed = []
+    if (files.length > MAX_FILES) {
+      setError(`Maksimal ${MAX_FILES} file per unggahan. ${files.length - MAX_FILES} file terakhir tidak dibaca; unggah sisanya pada gelombang berikutnya.`)
+      files = files.slice(0, MAX_FILES)
+    }
+    const reject = (f, why) => parsed.push({ source: f.name, employee: {}, family: [], education: [], issues: [why], empty: true })
     for (const f of files) {
+      if (!/\.xlsx$/i.test(f.name)) { reject(f, 'Bukan file .xlsx'); continue }
+      if (f.size > MAX_BYTES) { reject(f, `Ukuran file melebihi ${MAX_BYTES / 1024 / 1024} MB`); continue }
       try {
         const buf = await f.arrayBuffer()
         parsed.push(parseEmployeeWorkbook(buf, f.name))
       } catch (err) {
-        parsed.push({ source: f.name, employee: {}, family: [], education: [], issues: ['Gagal membaca file'], empty: true })
+        reject(f, 'Gagal membaca file')
       }
     }
+    markDuplicates(parsed)
     setItems(parsed)
     e.target.value = ''
   }
@@ -79,28 +114,44 @@ export default function ImportEmployees({ onBack }) {
   async function run(dryRun) {
     const payload = sendable.map(toPayload)
     const out = []
+    let failure = ''
     for (let off = 0; off < payload.length; off += CHUNK) {
       const chunk = payload.slice(off, off + CHUNK)
-      const { data, error: err } = await supabase.rpc('bulk_import_employee_data', {
-        p_rows: chunk,
-        p_dry_run: dryRun,
-        p_create_missing: createMissing,
-      })
-      if (err) throw err
-      for (const r of data.results) out.push({ ...r, _src: sendable[off + r.row - 1] })
+      try {
+        const { data, error: err } = await supabase.rpc('bulk_import_employee_data', {
+          p_rows: chunk,
+          p_dry_run: dryRun,
+          p_create_missing: createMissing,
+        })
+        if (err) throw err
+        for (const r of data.results) out.push({ ...r, _src: sendable[off + r.row - 1] })
+      } catch (err) {
+        // Potongan sebelumnya sudah tersimpan: jangan buang hasilnya. Tandai sisanya "tidak terkirim".
+        failure = err.message || 'Koneksi terputus'
+        for (let i = off; i < payload.length; i++) {
+          out.push({ status: 'error', source: sendable[i].source, full_name: sendable[i].employee?.full_name || '',
+            error: 'Tidak terkirim: ' + failure, warnings: [], _src: sendable[i] })
+        }
+        break
+      }
     }
     // tambahkan file yang dilewati di sisi klien
     const skipped = items.filter((i) => i.empty).map((i) => ({
       status: 'skipped', source: i.source, full_name: '', error: i.issues.join('; '), warnings: [], _src: i,
     }))
-    return [...out, ...skipped]
+    return { rows: [...out, ...skipped], failure }
   }
 
   async function onPreview() {
-    setBusy(true); setError('')
+    setBusy(true); setError(''); setPartial('')
     try {
-      setRows(await run(true))
+      const { rows: r, failure } = await run(true)
+      setRows(r)
       setPhase('previewed')
+      if (failure) {
+        setPartial(failure)
+        setError(`Pengecekan terhenti: ${failure}. Beberapa file belum dicek (ditandai "Tidak terkirim"). Coba "Cek dulu" lagi sebelum import.`)
+      }
     } catch (err) {
       setError(err.message || 'Gagal melakukan pengecekan')
     } finally { setBusy(false) }
@@ -111,8 +162,15 @@ export default function ImportEmployees({ onBack }) {
     if (!window.confirm(`Import data ${okCount} karyawan sekarang? Kolom yang terisi akan menimpa data lama.`)) return
     setBusy(true); setError('')
     try {
-      setRows(await run(false))
+      const { rows: r, failure } = await run(false)
+      setRows(r)
       setPhase('done')
+      if (failure) {
+        const saved = r.filter((x) => x.status === 'update' || x.status === 'create').length
+        const notSent = r.filter((x) => String(x.error || '').startsWith('Tidak terkirim')).length
+        setError(`Import terhenti di tengah jalan (${failure}). ${saved} karyawan sudah tersimpan, ${notSent} belum terkirim` +
+          ` (potongan yang sedang dikirim saat terputus mungkin sudah tersimpan). Aman diulang: pilih file yang sama, klik "Cek dulu", lalu "Import sekarang" — data yang sama hanya ditimpa dengan nilai yang sama.`)
+      }
     } catch (err) {
       setError(err.message || 'Gagal import')
     } finally { setBusy(false) }
@@ -149,6 +207,7 @@ export default function ImportEmployees({ onBack }) {
           <li>Hanya kolom yang terisi yang menimpa data lama; kolom kosong tidak menghapus apa pun.</li>
           <li>Jabatan, departemen, golongan, atasan, dan role tidak diubah oleh import ini.</li>
           <li>Jika sheet Keluarga / Pendidikan terisi, daftar lama karyawan itu diganti dengan isi file.</li>
+          <li>Maksimal 200 file per unggahan, format .xlsx, ukuran maksimal 2 MB per file.</li>
         </ul>
       </div>
 
@@ -160,7 +219,7 @@ export default function ImportEmployees({ onBack }) {
               <span style={{ color: '#6b7280', fontSize: 13 }}> · {sendable.length} siap dicek</span>
             </div>
             <label style={{ fontSize: 13, display: 'flex', alignItems: 'center', gap: 6 }}>
-              <input type="checkbox" checked={createMissing} onChange={(e) => { setCreateMissing(e.target.checked); setPhase('pick'); setRows([]) }} />
+              <input type="checkbox" checked={createMissing} onChange={(e) => { setCreateMissing(e.target.checked); setPhase('pick'); setRows([]); setPartial('') }} />
               Buat karyawan baru jika tidak ditemukan
             </label>
           </div>
@@ -173,8 +232,8 @@ export default function ImportEmployees({ onBack }) {
               {busy && phase === 'pick' ? 'Mengecek…' : '1. Cek dulu (tidak mengubah data)'}
             </button>
             <button
-              style={{ ...s.btn, ...(busy || phase !== 'previewed' || okCount === 0 ? s.btnOff : {}) }}
-              disabled={busy || phase !== 'previewed' || okCount === 0}
+              style={{ ...s.btn, ...(busy || phase !== 'previewed' || okCount === 0 || !!partial ? s.btnOff : {}) }}
+              disabled={busy || phase !== 'previewed' || okCount === 0 || !!partial}
               onClick={onImport}
             >
               {busy && phase === 'previewed' ? 'Mengimpor…' : '2. Import sekarang'}
