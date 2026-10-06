@@ -1,0 +1,327 @@
+diff --git a/src/components/LeavePolicyManager.jsx b/src/components/LeavePolicyManager.jsx
+new file mode 100644
+index 0000000..3e6a1a8
+--- /dev/null
++++ b/src/components/LeavePolicyManager.jsx
+@@ -0,0 +1,153 @@
++import { useEffect, useState } from 'react'
++import { Pencil, Info } from 'lucide-react'
++import { supabase } from '../lib/supabaseClient'
++import { tx } from '../lib/i18n'
++
++// Pengaturan kuota cuti (khusus HR). Kuota bersifat OPSIONAL per jenis cuti dan mati secara default.
++// Penegakannya ada di database (submit_leave_request); halaman ini hanya mengatur lewat RPC set_leave_policy.
++const days = (n) => tx("{0} hari", [Number(n)])
++
++function Pill({ on }) {
++  return (
++    <span style={{
++      fontSize: 11.5, fontWeight: 700, padding: '2px 9px', borderRadius: 999, whiteSpace: 'nowrap',
++      background: on ? '#dcfce7' : '#e5e7eb', color: on ? '#166534' : '#374151',
++    }}>{on ? tx("Diterapkan") : tx("Tidak diterapkan")}</span>
++  )
++}
++
++export default function LeavePolicyManager({ onToast, isDesktop }) {
++  const [types, setTypes] = useState(null)
++  const [editing, setEditing] = useState(null)
++
++  async function load() {
++    const { data, error } = await supabase.from('leave_types').select('id, name, default_days, enforce_quota').order('name')
++    if (error) { onToast(error.message); return }
++    setTypes(data || [])
++  }
++  useEffect(() => { load() }, [])
++
++  return (
++    <div className="form-page">
++      <div style={{
++        display: 'flex', alignItems: 'flex-start', gap: 8, background: '#eef1fb', color: '#4356C4',
++        borderRadius: 10, padding: '10px 12px', fontSize: 13, marginBottom: 14,
++      }}>
++        <Info size={16} style={{ flexShrink: 0, marginTop: 1 }} />
++        <span>{tx("Secara default kuota cuti tidak diterapkan. Jika diaktifkan untuk satu jenis cuti, karyawan tidak bisa mengajukan melebihi kuota per tahun kalender (terpakai + menunggu persetujuan + pengajuan baru). Hanya berlaku untuk pengajuan baru; pengajuan yang sudah ada tidak berubah.")}</span>
++      </div>
++
++      {types === null ? (
++        <div className="empty-state"><p>{tx("Memuat...")}</p></div>
++      ) : types.length === 0 ? (
++        <div className="empty-state"><p>{tx("Belum ada jenis cuti.")}</p></div>
++      ) : isDesktop ? (
++        <div className="dsk-table-wrap">
++          <table className="dsk-table">
++            <thead><tr><th>{tx("Jenis cuti")}</th><th>{tx("Kuota per tahun")}</th><th>Status</th><th>{tx("Aksi")}</th></tr></thead>
++            <tbody>
++              {types.map((t) => (
++                <tr key={t.id}>
++                  <td style={{ fontWeight: 600 }}>{tx(t.name)}</td>
++                  <td>{t.enforce_quota ? days(t.default_days) : <span style={{ color: 'var(--text-muted)' }}>{tx("Tanpa batas")}</span>}</td>
++                  <td><Pill on={t.enforce_quota} /></td>
++                  <td><button className="btn" onClick={() => setEditing(t)} aria-label={tx("Atur kuota")}><Pencil size={13} /></button></td>
++                </tr>
++              ))}
++            </tbody>
++          </table>
++        </div>
++      ) : (
++        types.map((t) => (
++          <div key={t.id} className="list-item">
++            <div className="info">
++              <div className="name">{tx(t.name)}</div>
++              <div className="sub">{t.enforce_quota ? tx("Kuota {0} per tahun", [days(t.default_days)]) : tx("Tanpa batas")}</div>
++            </div>
++            <div className="actions" style={{ alignItems: 'center', gap: 10 }}>
++              <Pill on={t.enforce_quota} />
++              <button onClick={() => setEditing(t)} aria-label={tx("Atur kuota")}><Pencil size={17} /></button>
++            </div>
++          </div>
++        ))
++      )}
++
++      {editing && (
++        <QuotaForm row={editing} onClose={() => setEditing(null)}
++          onSaved={(msg) => { setEditing(null); load(); onToast(msg) }} />
++      )}
++    </div>
++  )
++}
++
++function QuotaForm({ row, onClose, onSaved }) {
++  const [enforce, setEnforce] = useState(!!row.enforce_quota)
++  const [quota, setQuota] = useState(row.default_days ?? 0)
++  const [impact, setImpact] = useState(null)
++  const [error, setError] = useState('')
++  const [saving, setSaving] = useState(false)
++
++  const q = Number(quota)
++  const valid = quota !== '' && Number.isFinite(q) && q >= 0 && q <= 365
++
++  // Tampilkan dampaknya SEBELUM kuota dinyalakan: berapa karyawan yang tahun ini sudah melewati/tepat di kuota.
++  useEffect(() => {
++    if (!enforce || !valid) { setImpact(null); return }
++    let alive = true
++    const t = setTimeout(async () => {
++      const { data } = await supabase.rpc('get_leave_quota_impact', { p_leave_type_id: row.id, p_days: q })
++      if (alive) setImpact(data || null)
++    }, 300)
++    return () => { alive = false; clearTimeout(t) }
++  }, [enforce, quota, row.id])
++
++  async function submit(ev) {
++    ev.preventDefault()
++    setError('')
++    if (enforce && !valid) { setError(tx("Kuota harus berupa angka 0 sampai 365 hari")); return }
++    setSaving(true)
++    const { error: err } = await supabase.rpc('set_leave_policy', {
++      p_leave_type_id: row.id, p_enforce: enforce, p_days: valid ? q : null,
++    })
++    setSaving(false)
++    if (err) { setError(err.message); return }
++    onSaved(enforce ? tx("Kuota cuti diterapkan") : tx("Kuota cuti dinonaktifkan"))
++  }
++
++  return (
++    <div className="sheet-overlay" onClick={onClose}>
++      <div className="sheet" onClick={(e) => e.stopPropagation()}>
++        <div className="sheet-handle" />
++        <div className="sheet-title-row"><h3>{tx("Kuota")} · {tx(row.name)}</h3></div>
++        <form onSubmit={submit}>
++          <label style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 14.5, fontWeight: 600, margin: '4px 0 14px', cursor: 'pointer' }}>
++            <input type="checkbox" checked={enforce} onChange={(e) => setEnforce(e.target.checked)} style={{ width: 18, height: 18 }} />
++            {tx("Terapkan kuota untuk jenis cuti ini")}
++          </label>
++
++          <div className="field" style={{ opacity: enforce ? 1 : 0.55 }}>
++            <label>{tx("Kuota (hari per tahun)")}</label>
++            <input type="number" min="0" max="365" step="0.5" value={quota} disabled={!enforce}
++              onChange={(e) => setQuota(e.target.value)} />
++          </div>
++
++          {enforce && valid && q === 0 && (
++            <p style={{ fontSize: 13, color: '#8a5a0b', margin: '0 0 10px' }}>{tx("Kuota 0 berarti semua pengajuan baru untuk jenis cuti ini akan ditolak.")}</p>
++          )}
++          {enforce && impact && (impact.employees_over > 0 || impact.employees_at_limit > 0) && (
++            <div style={{ background: '#FBEEDD', color: '#8a5a0b', borderRadius: 10, padding: '10px 12px', fontSize: 13, margin: '0 0 12px' }}>
++              {impact.employees_over > 0 && <div>{tx("{0} karyawan pada {1} sudah memakai/mengajukan lebih dari {2} hari. Pengajuan mereka yang ada tidak berubah, tetapi mereka tidak bisa mengajukan lagi.", [impact.employees_over, impact.year, q])}</div>}
++              {impact.employees_at_limit > 0 && <div>{tx("{0} karyawan pada {1} tepat berada di batas {2} hari.", [impact.employees_at_limit, impact.year, q])}</div>}
++            </div>
++          )}
++          {enforce && impact && impact.employees_over === 0 && impact.employees_at_limit === 0 && (
++            <p style={{ fontSize: 13, color: '#166534', margin: '0 0 12px' }}>{tx("Tidak ada karyawan yang terdampak pada {0}.", [impact.year])}</p>
++          )}
++
++          {error && <p className="error-text">{error}</p>}
++          <button className="primary-btn" disabled={saving}>{saving ? tx("Menyimpan...") : tx("Simpan")}</button>
++        </form>
++      </div>
++    </div>
++  )
++}
+diff --git a/src/lib/i18nDict.js b/src/lib/i18nDict.js
+index 73602de..47a1859 100644
+--- a/src/lib/i18nDict.js
++++ b/src/lib/i18nDict.js
+@@ -4003,6 +4003,82 @@ export const PAIRS = [
+ [
+ "Terpakai {0} · menunggu {1} · kuota {2} hari",
+ "Used {0} · pending {1} · quota {2} days"
++],
++[
++"Diterapkan",
++"Enforced"
++],
++[
++"Tidak diterapkan",
++"Not enforced"
++],
++[
++"Secara default kuota cuti tidak diterapkan. Jika diaktifkan untuk satu jenis cuti, karyawan tidak bisa mengajukan melebihi kuota per tahun kalender (terpakai + menunggu persetujuan + pengajuan baru). Hanya berlaku untuk pengajuan baru; pengajuan yang sudah ada tidak berubah.",
++"Leave quotas are not enforced by default. When enabled for a leave type, employees cannot request more than the quota per calendar year (used + pending + new request). It only applies to new requests; existing requests are unchanged."
++],
++[
++"Belum ada jenis cuti.",
++"No leave types yet."
++],
++[
++"Kuota per tahun",
++"Quota per year"
++],
++[
++"Tanpa batas",
++"No limit"
++],
++[
++"Atur kuota",
++"Set quota"
++],
++[
++"Kuota {0} per tahun",
++"Quota {0} per year"
++],
++[
++"Kuota harus berupa angka 0 sampai 365 hari",
++"Quota must be a number from 0 to 365 days"
++],
++[
++"Kuota cuti diterapkan",
++"Leave quota enforced"
++],
++[
++"Kuota cuti dinonaktifkan",
++"Leave quota disabled"
++],
++[
++"Kuota",
++"Quota"
++],
++[
++"Terapkan kuota untuk jenis cuti ini",
++"Enforce a quota for this leave type"
++],
++[
++"Kuota (hari per tahun)",
++"Quota (days per year)"
++],
++[
++"Kuota 0 berarti semua pengajuan baru untuk jenis cuti ini akan ditolak.",
++"A quota of 0 means all new requests for this leave type will be rejected."
++],
++[
++"{0} karyawan pada {1} sudah memakai/mengajukan lebih dari {2} hari. Pengajuan mereka yang ada tidak berubah, tetapi mereka tidak bisa mengajukan lagi.",
++"{0} employee(s) in {1} have already used/requested more than {2} days. Their existing requests are unchanged, but they will not be able to request again."
++],
++[
++"{0} karyawan pada {1} tepat berada di batas {2} hari.",
++"{0} employee(s) in {1} are exactly at the {2}-day limit."
++],
++[
++"Tidak ada karyawan yang terdampak pada {0}.",
++"No employees are affected in {0}."
++],
++[
++"Kuota Cuti",
++"Leave Quota"
+ ]
+ ]
+ export const ONEWAY = [
+diff --git a/src/pages/HRDashboard.jsx b/src/pages/HRDashboard.jsx
+index 8234085..ff6b1bd 100644
+--- a/src/pages/HRDashboard.jsx
++++ b/src/pages/HRDashboard.jsx
+@@ -8,6 +8,7 @@ import CalendarEventsTab from '../components/CalendarEventsTab'
+ import EmployeeImportModal from '../components/EmployeeImportModal'
+ import HRAttendanceDetail from '../components/HRAttendanceDetail'
+ import { FlagBadge } from '../components/AttendanceFlags'
++import LeavePolicyManager from '../components/LeavePolicyManager'
+ 
+ import { tx, locale } from '../lib/i18n'
+ const TABS = [
+@@ -1394,7 +1395,7 @@ function ApprovalTab({ onToast, rpcName, table, statusOptions, renderRow, export
+ 
+ const STATUS_OPTS = [['pending', tx("Menunggu")], ['approved', tx("Disetujui")], ['rejected', tx("Ditolak")], ['', tx("Semua")]]
+ 
+-function LeaveTab({ onToast, isDesktop }) {
++function LeaveRequestsTab({ onToast, isDesktop }) {
+   return (
+     <ApprovalTab
+       onToast={onToast} isDesktop={isDesktop} rpcName="get_hr_leave" table="leave_requests" statusOptions={STATUS_OPTS}
+@@ -1419,6 +1420,22 @@ function LeaveTab({ onToast, isDesktop }) {
+   )
+ }
+ 
++// Cuti = daftar pengajuan + pengaturan kuota (opsional) per jenis cuti
++function LeaveTab({ onToast, isDesktop }) {
++  const [sub, setSub] = useState('pengajuan') // 'pengajuan' | 'kuota'
++  return (
++    <div>
++      <div className="tabs" style={{ padding: 0, marginBottom: 14 }}>
++        <button className={sub === 'pengajuan' ? 'active' : ''} onClick={() => setSub('pengajuan')}>{tx("Pengajuan")}</button>
++        <button className={sub === 'kuota' ? 'active' : ''} onClick={() => setSub('kuota')}>{tx("Kuota Cuti")}</button>
++      </div>
++      {sub === 'pengajuan'
++        ? <LeaveRequestsTab onToast={onToast} isDesktop={isDesktop} />
++        : <LeavePolicyManager onToast={onToast} isDesktop={isDesktop} />}
++    </div>
++  )
++}
++
+ function OvertimeTab({ onToast, isDesktop }) {
+   return (
+     <ApprovalTab
+diff --git a/supabase/migrations/20261005110000_leave_quota_impact.sql b/supabase/migrations/20261005110000_leave_quota_impact.sql
+new file mode 100644
+index 0000000..e3e1f28
+--- /dev/null
++++ b/supabase/migrations/20261005110000_leave_quota_impact.sql
+@@ -0,0 +1,31 @@
++-- Dampak kuota cuti (khusus HR): berapa karyawan yang pada tahun berjalan sudah memakai/mengajukan
++-- lebih dari (atau tepat) p_days hari untuk jenis cuti tertentu. Dipakai tombol "Kuota Cuti" di dashboard HR
++-- agar HR melihat dampaknya SEBELUM menyalakan kuota. Hanya membaca data, tidak mengubah apa pun.
++create or replace function public.get_leave_quota_impact(p_leave_type_id uuid, p_days numeric)
++returns json
++language plpgsql
++stable
++security definer
++set search_path to 'public'
++as $$
++declare v_year int := extract(year from (now() at time zone 'Asia/Jakarta'))::int;
++begin
++  if not is_hr() then raise exception 'Akses khusus HR'; end if;
++  if p_days is null or p_days < 0 or p_days > 365 then raise exception 'Jumlah hari tidak valid'; end if;
++  return (
++    select json_build_object(
++      'year', v_year,
++      'employees_over',     count(*) filter (where d > p_days),
++      'employees_at_limit', count(*) filter (where d = p_days))
++    from (
++      select employee_id, sum(total_days) as d
++        from leave_requests
++       where leave_type_id = p_leave_type_id and status in ('pending','approved')
++         and extract(year from start_date)::int = v_year
++       group by employee_id
++    ) x
++  );
++end $$;
++
++revoke execute on function public.get_leave_quota_impact(uuid, numeric) from public, anon;
++grant  execute on function public.get_leave_quota_impact(uuid, numeric) to authenticated;

@@ -4003,6 +4003,82 @@ export const PAIRS = [
 [
 "Terpakai {0} · menunggu {1} · kuota {2} hari",
 "Used {0} · pending {1} · quota {2} days"
+],
+[
+"Diterapkan",
+"Enforced"
+],
+[
+"Tidak diterapkan",
+"Not enforced"
+],
+[
+"Secara default kuota cuti tidak diterapkan. Jika diaktifkan untuk satu jenis cuti, karyawan tidak bisa mengajukan melebihi kuota per tahun kalender (terpakai + menunggu persetujuan + pengajuan baru). Hanya berlaku untuk pengajuan baru; pengajuan yang sudah ada tidak berubah.",
+"Leave quotas are not enforced by default. When enabled for a leave type, employees cannot request more than the quota per calendar year (used + pending + new request). It only applies to new requests; existing requests are unchanged."
+],
+[
+"Belum ada jenis cuti.",
+"No leave types yet."
+],
+[
+"Kuota per tahun",
+"Quota per year"
+],
+[
+"Tanpa batas",
+"No limit"
+],
+[
+"Atur kuota",
+"Set quota"
+],
+[
+"Kuota {0} per tahun",
+"Quota {0} per year"
+],
+[
+"Kuota harus berupa angka 0 sampai 365 hari",
+"Quota must be a number from 0 to 365 days"
+],
+[
+"Kuota cuti diterapkan",
+"Leave quota enforced"
+],
+[
+"Kuota cuti dinonaktifkan",
+"Leave quota disabled"
+],
+[
+"Kuota",
+"Quota"
+],
+[
+"Terapkan kuota untuk jenis cuti ini",
+"Enforce a quota for this leave type"
+],
+[
+"Kuota (hari per tahun)",
+"Quota (days per year)"
+],
+[
+"Kuota 0 berarti semua pengajuan baru untuk jenis cuti ini akan ditolak.",
+"A quota of 0 means all new requests for this leave type will be rejected."
+],
+[
+"{0} karyawan pada {1} sudah memakai/mengajukan lebih dari {2} hari. Pengajuan mereka yang ada tidak berubah, tetapi mereka tidak bisa mengajukan lagi.",
+"{0} employee(s) in {1} have already used/requested more than {2} days. Their existing requests are unchanged, but they will not be able to request again."
+],
+[
+"{0} karyawan pada {1} tepat berada di batas {2} hari.",
+"{0} employee(s) in {1} are exactly at the {2}-day limit."
+],
+[
+"Tidak ada karyawan yang terdampak pada {0}.",
+"No employees are affected in {0}."
+],
+[
+"Kuota Cuti",
+"Leave Quota"
 ]
 ]
 export const ONEWAY = [

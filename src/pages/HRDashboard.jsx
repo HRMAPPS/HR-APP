@@ -8,6 +8,7 @@ import CalendarEventsTab from '../components/CalendarEventsTab'
 import EmployeeImportModal from '../components/EmployeeImportModal'
 import HRAttendanceDetail from '../components/HRAttendanceDetail'
 import { FlagBadge } from '../components/AttendanceFlags'
+import LeavePolicyManager from '../components/LeavePolicyManager'
 
 import { tx, locale } from '../lib/i18n'
 const TABS = [
@@ -1394,7 +1395,7 @@ function ApprovalTab({ onToast, rpcName, table, statusOptions, renderRow, export
 
 const STATUS_OPTS = [['pending', tx("Menunggu")], ['approved', tx("Disetujui")], ['rejected', tx("Ditolak")], ['', tx("Semua")]]
 
-function LeaveTab({ onToast, isDesktop }) {
+function LeaveRequestsTab({ onToast, isDesktop }) {
   return (
     <ApprovalTab
       onToast={onToast} isDesktop={isDesktop} rpcName="get_hr_leave" table="leave_requests" statusOptions={STATUS_OPTS}
@@ -1416,6 +1417,22 @@ function LeaveTab({ onToast, isDesktop }) {
         </div>
       )}
     />
+  )
+}
+
+// Cuti = daftar pengajuan + pengaturan kuota (opsional) per jenis cuti
+function LeaveTab({ onToast, isDesktop }) {
+  const [sub, setSub] = useState('pengajuan') // 'pengajuan' | 'kuota'
+  return (
+    <div>
+      <div className="tabs" style={{ padding: 0, marginBottom: 14 }}>
+        <button className={sub === 'pengajuan' ? 'active' : ''} onClick={() => setSub('pengajuan')}>{tx("Pengajuan")}</button>
+        <button className={sub === 'kuota' ? 'active' : ''} onClick={() => setSub('kuota')}>{tx("Kuota Cuti")}</button>
+      </div>
+      {sub === 'pengajuan'
+        ? <LeaveRequestsTab onToast={onToast} isDesktop={isDesktop} />
+        : <LeavePolicyManager onToast={onToast} isDesktop={isDesktop} />}
+    </div>
   )
 }
 
