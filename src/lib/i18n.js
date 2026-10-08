@@ -60,5 +60,8 @@ export const locale = () => (lang === 'en' ? 'en-GB' : 'id-ID')
 export function setLang(next) {
   if (next !== 'id' && next !== 'en') return
   try { localStorage.setItem(KEY, next) } catch { /* noop */ }
+  // Tandai bahwa reload ini karena ganti bahasa, supaya App memulihkan modul
+  // yang sedang dibuka (tab/page) beserta posisi scroll, bukan kembali ke Beranda.
+  try { sessionStorage.setItem('napocut_restore', JSON.stringify({ y: window.scrollY || 0 })) } catch { /* noop */ }
   window.location.reload()
 }

@@ -33,11 +33,37 @@ import { ApprovalCategoryPage } from './components/ApprovalCenter'
 import DesktopProfile from './pages/DesktopProfile'
 
 import { tx } from './lib/i18n'
+
+// Dibaca SEKALI saat modul dimuat: hanya ada kalau reload berasal dari tombol ID/EN.
+// (Dibaca di level modul agar aman dari double-invoke StrictMode.)
+const NAV_KEY = 'napocut_nav'
+const restored = (() => {
+  try {
+    const flag = sessionStorage.getItem('napocut_restore')
+    if (!flag) return null
+    sessionStorage.removeItem('napocut_restore')
+    const nav = JSON.parse(sessionStorage.getItem(NAV_KEY) || 'null')
+    return { nav, y: JSON.parse(flag).y || 0 }
+  } catch { return null }
+})()
+
 export default function App() {
   const { isLoggedIn, loading, employee, signOut, refreshEmployee } = useAuth()
   const isDesktop = useIsDesktop()
-  const [tab, setTab] = useState('home')
-  const [page, setPage] = useState(null) // full-screen page overlay, e.g. 'reimbursement'
+  const [tab, setTab] = useState(restored?.nav?.tab || 'home')
+  const [page, setPage] = useState(restored?.nav?.page || null) // full-screen page overlay, e.g. 'reimbursement'
+
+  // Simpan posisi navigasi supaya bisa dipulihkan setelah ganti bahasa (reload).
+  useEffect(() => {
+    try { sessionStorage.setItem(NAV_KEY, JSON.stringify({ tab, page })) } catch { /* noop */ }
+  }, [tab, page])
+
+  // Pulihkan posisi scroll setelah data selesai dimuat.
+  useEffect(() => {
+    if (loading || !restored?.y) return
+    const t = setTimeout(() => window.scrollTo(0, restored.y), 150)
+    return () => clearTimeout(t)
+  }, [loading])
   const [showAllApps, setShowAllApps] = useState(false)
   const [showRequestSheet, setShowRequestSheet] = useState(false)
   const [toast, setToast] = useState('')

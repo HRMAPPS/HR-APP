@@ -1,3 +1,47 @@
+diff --git a/src/App.jsx b/src/App.jsx
+index b19ac30..c7c203a 100644
+--- a/src/App.jsx
++++ b/src/App.jsx
+@@ -33,11 +33,37 @@ import { ApprovalCategoryPage } from './components/ApprovalCenter'
+ import DesktopProfile from './pages/DesktopProfile'
+ 
+ import { tx } from './lib/i18n'
++
++// Dibaca SEKALI saat modul dimuat: hanya ada kalau reload berasal dari tombol ID/EN.
++// (Dibaca di level modul agar aman dari double-invoke StrictMode.)
++const NAV_KEY = 'napocut_nav'
++const restored = (() => {
++  try {
++    const flag = sessionStorage.getItem('napocut_restore')
++    if (!flag) return null
++    sessionStorage.removeItem('napocut_restore')
++    const nav = JSON.parse(sessionStorage.getItem(NAV_KEY) || 'null')
++    return { nav, y: JSON.parse(flag).y || 0 }
++  } catch { return null }
++})()
++
+ export default function App() {
+   const { isLoggedIn, loading, employee, signOut, refreshEmployee } = useAuth()
+   const isDesktop = useIsDesktop()
+-  const [tab, setTab] = useState('home')
+-  const [page, setPage] = useState(null) // full-screen page overlay, e.g. 'reimbursement'
++  const [tab, setTab] = useState(restored?.nav?.tab || 'home')
++  const [page, setPage] = useState(restored?.nav?.page || null) // full-screen page overlay, e.g. 'reimbursement'
++
++  // Simpan posisi navigasi supaya bisa dipulihkan setelah ganti bahasa (reload).
++  useEffect(() => {
++    try { sessionStorage.setItem(NAV_KEY, JSON.stringify({ tab, page })) } catch { /* noop */ }
++  }, [tab, page])
++
++  // Pulihkan posisi scroll setelah data selesai dimuat.
++  useEffect(() => {
++    if (loading || !restored?.y) return
++    const t = setTimeout(() => window.scrollTo(0, restored.y), 150)
++    return () => clearTimeout(t)
++  }, [loading])
+   const [showAllApps, setShowAllApps] = useState(false)
+   const [showRequestSheet, setShowRequestSheet] = useState(false)
+   const [toast, setToast] = useState('')
 diff --git a/src/components/AllAppsSheet.jsx b/src/components/AllAppsSheet.jsx
 index 7190484..90c6eb7 100644
 --- a/src/components/AllAppsSheet.jsx
@@ -117,6 +161,19 @@ index 835ae44..a115511 100644
  .dcuti-tabs button{
    background:none; border:none; border-left:3px solid #d6d6d6; padding:22px 0; font-size:12.5px; font-weight:700;
    letter-spacing:.14em; color:#8b8b8b; cursor:pointer;
+diff --git a/src/lib/i18n.js b/src/lib/i18n.js
+index fba7040..f1cdcc1 100644
+--- a/src/lib/i18n.js
++++ b/src/lib/i18n.js
+@@ -60,5 +60,8 @@ export const locale = () => (lang === 'en' ? 'en-GB' : 'id-ID')
+ export function setLang(next) {
+   if (next !== 'id' && next !== 'en') return
+   try { localStorage.setItem(KEY, next) } catch { /* noop */ }
++  // Tandai bahwa reload ini karena ganti bahasa, supaya App memulihkan modul
++  // yang sedang dibuka (tab/page) beserta posisi scroll, bukan kembali ke Beranda.
++  try { sessionStorage.setItem('napocut_restore', JSON.stringify({ y: window.scrollY || 0 })) } catch { /* noop */ }
+   window.location.reload()
+ }
 diff --git a/src/pages/Absensi.jsx b/src/pages/Absensi.jsx
 index 7cceb81..be48949 100644
 --- a/src/pages/Absensi.jsx
