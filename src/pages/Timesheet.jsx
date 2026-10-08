@@ -3,6 +3,7 @@ import { ArrowLeft, ListChecks, Pencil, Trash2 } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
 
 import { tx, locale } from '../lib/i18n'
+import { todayStr } from '../lib/dateUtils'
 export default function Timesheet({ employee, onBack, onToast }) {
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
@@ -32,7 +33,7 @@ export default function Timesheet({ employee, onBack, onToast }) {
     )
   }
 
-  const thisMonth = new Date().toISOString().slice(0, 7)
+  const thisMonth = todayStr().slice(0, 7)
   const monthTotal = items
     .filter((it) => it.work_date?.slice(0, 7) === thisMonth)
     .reduce((sum, it) => sum + Number(it.hours || 0), 0)
@@ -89,7 +90,7 @@ export default function Timesheet({ employee, onBack, onToast }) {
 
 function TimesheetForm({ row, employee, onCancel, onSaved }) {
   const [form, setForm] = useState({
-    work_date: row.work_date || new Date().toISOString().slice(0, 10),
+    work_date: row.work_date || todayStr(),
     hours: row.hours || '', project: row.project || '', description: row.description || '',
   })
   const [error, setError] = useState('')

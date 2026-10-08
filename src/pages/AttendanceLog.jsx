@@ -193,7 +193,7 @@ export default function AttendanceLog() {
                       </td>
                       <td>
                         {r.kind === 'holiday' ? <span className="al-hol">{r.hol.title}</span>
-                          : r.kind === 'off' ? <span className="al-dim">Off</span>
+                          : r.kind === 'off' ? <span className="al-dim">{tx("Libur")}</span>
                           : <b>{r.shift?.name}</b>}
                       </td>
                       <td className="al-t al-dim">{r.shift && r.kind !== 'off' && r.kind !== 'holiday' ? `${r.shift.start_time.slice(0, 5)} – ${r.shift.end_time.slice(0, 5)}` : '–'}</td>

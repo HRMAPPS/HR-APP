@@ -196,7 +196,7 @@ export default function Home({ employee, onNavigate, onOpenAllApps }) {
                     <p style={{
                       fontSize: 13, color: 'var(--text-muted)', marginTop: 6, lineHeight: 1.5, whiteSpace: 'pre-wrap',
                     }}>
-                      {linkifyText(a.body)}
+                      {linkifyText(String(a.body).replace(/\n{3,}/g, '\n\n').trim())}
                     </p>
                   )}
                   {a.attachment_url && (

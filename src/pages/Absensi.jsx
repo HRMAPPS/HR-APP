@@ -219,7 +219,7 @@ export default function Absensi({ employee, onBack, startNew, onToast, onNavigat
             </div>
           </div>
 
-          <div className="stats-strip" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '14px 8px' }}>
+          <div className="stats-strip" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: '14px 8px' }}>
             {STAT_CARDS.map((c) => (
               <button key={c.key} className="stat" style={{ background: 'none', border: 'none', cursor: c.rows.length ? 'pointer' : 'default' }}
                 onClick={() => c.rows.length && setIssueList(c)}>
@@ -387,7 +387,7 @@ function MonthPickerSheet({ year, monthIndex, onClose, onApply }) {
           <span style={{ fontSize: 16 }}>{y}</span>
           <button onClick={() => setY((v) => v + 1)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}><ChevronRight size={20} /></button>
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 20 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 12, marginBottom: 20 }}>
           {MONTHS_ID.map((label, i) => (
             <button key={label} onClick={() => setM(i)} style={{
               padding: '12px 0', borderRadius: '50%', border: 'none', cursor: 'pointer', fontSize: 15,
@@ -504,7 +504,7 @@ function DayDetailSheet({ attendance, shift, issue, onClose, onOpenEvent, onAjuk
             borderBottom: '1px solid #eee', cursor: attendance.clock_in ? 'pointer' : 'default', opacity: attendance.clock_in ? 1 : 0.5,
           }}>
             <strong style={{ fontSize: 15, width: 60 }}>{fmtTime(attendance.clock_in) || '-'}</strong>
-            <span style={{ flex: 1, textAlign: 'left', fontSize: 14.5 }}>Clock in</span>
+            <span style={{ flex: 1, textAlign: 'left', fontSize: 14.5 }}>{tx("Clock In")}</span>
             {attendance.clock_in && <ChevronRight size={18} color="#bbb" />}
           </button>
           <button onClick={() => attendance.clock_out && onOpenEvent('out')} disabled={!attendance.clock_out} style={{
@@ -512,7 +512,7 @@ function DayDetailSheet({ attendance, shift, issue, onClose, onOpenEvent, onAjuk
             cursor: attendance.clock_out ? 'pointer' : 'default', opacity: attendance.clock_out ? 1 : 0.5,
           }}>
             <strong style={{ fontSize: 15, width: 60 }}>{fmtTime(attendance.clock_out) || '-'}</strong>
-            <span style={{ flex: 1, textAlign: 'left', fontSize: 14.5 }}>Clock out</span>
+            <span style={{ flex: 1, textAlign: 'left', fontSize: 14.5 }}>{tx("Clock Out")}</span>
             {attendance.clock_out && <ChevronRight size={18} color="#bbb" />}
           </button>
         </div>
@@ -594,7 +594,7 @@ function CorrectionRequestForm({ attendance, shift, issue, onCancel, onDone, onT
         </label>
         <div className="field">
           <div style={{ position: 'relative' }}>
-            <input type="time" value={clockIn} onChange={(e) => setClockIn(e.target.value)} disabled={!wantIn} placeholder="Clock in" style={{ paddingRight: 40 }} />
+            <input type="time" value={clockIn} onChange={(e) => setClockIn(e.target.value)} disabled={!wantIn} placeholder={tx("Clock In")} style={{ paddingRight: 40 }} />
             <Clock size={18} color="#8a847c" style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />
           </div>
         </div>
@@ -604,7 +604,7 @@ function CorrectionRequestForm({ attendance, shift, issue, onCancel, onDone, onT
         </label>
         <div className="field">
           <div style={{ position: 'relative' }}>
-            <input type="time" value={clockOut} onChange={(e) => setClockOut(e.target.value)} disabled={!wantOut} placeholder="Clock out" style={{ paddingRight: 40 }} />
+            <input type="time" value={clockOut} onChange={(e) => setClockOut(e.target.value)} disabled={!wantOut} placeholder={tx("Clock Out")} style={{ paddingRight: 40 }} />
             <Clock size={18} color="#8a847c" style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />
           </div>
         </div>

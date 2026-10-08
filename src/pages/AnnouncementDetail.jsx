@@ -65,7 +65,7 @@ export default function AnnouncementDetail({ id, onBack }) {
 
           <div style={isDesktop ? { padding: '0 48px 40px', maxWidth: 760 } : { background: '#fff', borderRadius: '22px 22px 0 0', padding: '24px 18px', minHeight: '55vh' }}>
             {a.body && (
-              <div style={{ fontSize: isDesktop ? 16 : 14.5, lineHeight: 1.8, whiteSpace: 'pre-wrap', color: isDesktop ? '#3a3530' : 'inherit' }}>{linkifyText(a.body)}</div>
+              <div style={{ fontSize: isDesktop ? 16 : 14.5, lineHeight: 1.8, whiteSpace: 'pre-wrap', color: isDesktop ? '#3a3530' : 'inherit' }}>{linkifyText(String(a.body).replace(/\n{3,}/g, '\n\n').trim())}</div>
             )}
 
             {a.attachment_url && (

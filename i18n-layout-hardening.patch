@@ -1,0 +1,308 @@
+diff --git a/src/components/AllAppsSheet.jsx b/src/components/AllAppsSheet.jsx
+index 7190484..90c6eb7 100644
+--- a/src/components/AllAppsSheet.jsx
++++ b/src/components/AllAppsSheet.jsx
+@@ -41,7 +41,7 @@ export default function AllAppsSheet({ onClose, onNavigate, onToast, employee })
+             </button>
+           </div>
+ 
+-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '26px 10px' }}>
++          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, minmax(0, 1fr))', gap: '26px 10px' }}>
+             {apps.map((app) => {
+               const Icon = app.icon
+               return (
+diff --git a/src/components/AttendanceLogDesktop.css b/src/components/AttendanceLogDesktop.css
+index a465c30..806ae4c 100644
+--- a/src/components/AttendanceLogDesktop.css
++++ b/src/components/AttendanceLogDesktop.css
+@@ -23,7 +23,7 @@
+ .adx-ring b{position:absolute;inset:0;display:grid;place-items:center;font-size:28px;font-weight:800;letter-spacing:-.03em}
+ .adx-score h2{margin:0 0 4px;font-size:18px;letter-spacing:-.01em}
+ .adx-score p{margin:0;color:var(--adx-mute);max-width:34ch}
+-.adx-stats{display:grid;grid-template-columns:repeat(4,1fr);overflow:hidden}
++.adx-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));overflow:hidden}
+ .adx-stat{font:inherit;color:inherit;text-align:left;background:none;border:0;border-right:1px solid var(--adx-line);border-bottom:1px solid var(--adx-line);padding:18px 20px;cursor:pointer}
+ .adx-stat:disabled,div.adx-stat{cursor:default}
+ .adx-stat:nth-child(4n){border-right:0}
+diff --git a/src/index.css b/src/index.css
+index 835ae44..a115511 100644
+--- a/src/index.css
++++ b/src/index.css
+@@ -307,15 +307,22 @@ button:active:not(:disabled){ transform: translateY(1px) scale(.98); }
+ 
+ /* ---------- quick menu grid ---------- */
+ .quick-grid{
+-  display:grid; grid-template-columns: repeat(4,1fr);
++  display:grid; grid-template-columns: repeat(4,minmax(0,1fr));
+   gap: 18px 4px; background:#fff; margin: 12px 16px 0; padding: 20px 4px;
+   border-radius: var(--radius-lg);
+   box-shadow: var(--shadow-md);
+ }
+ .quick-item{
+-  display:flex; flex-direction:column; align-items:center; gap:8px;
+-  background:none; border:none; cursor:pointer; color: var(--text); font-size:12.5px;
++  display:flex; flex-direction:column; align-items:center; justify-content:flex-start; gap:8px;
++  background:none; border:none; cursor:pointer; color: var(--text);
++  font-size: clamp(10.5px, 2.95vw, 12.5px); letter-spacing:-.01em; line-height:1.25;
+   text-align:center;
++  /* Presisi lintas bahasa: lebar = kolom (tidak melebar karena kata panjang),
++     kata terlalu panjang dipenggal/hyphen, tinggi selalu cukup untuk 2 baris
++     sehingga tinggi kartu & bottom sheet sama di EN maupun ID. */
++  min-width:0; width:100%; padding:0 1px;
++  overflow-wrap:anywhere; hyphens:auto; -webkit-hyphens:auto;
++  min-height: calc(52px + 8px + 2.5em);
+ }
+ .quick-item .ic{
+   width:52px; height:52px; border-radius:16px; display:flex; align-items:center; justify-content:center;
+@@ -337,7 +344,7 @@ button:active:not(:disabled){ transform: translateY(1px) scale(.98); }
+ /* ---------- bottom nav ---------- */
+ .bottom-nav{
+   display:flex; background:#fff; border-top:1px solid var(--border);
+-  position: sticky; bottom:0; padding: 8px 0 12px;
++  position: sticky; bottom:0; padding: 8px 0 calc(12px + env(safe-area-inset-bottom, 0px));
+   box-shadow: 0 -6px 16px rgba(40,30,20,.08);
+ }
+ .bottom-nav button{
+@@ -354,7 +361,7 @@ button:active:not(:disabled){ transform: translateY(1px) scale(.98); }
+ }
+ .sheet{
+   width:100%; max-width:460px; background:#fff; border-radius: 22px 22px 0 0;
+-  padding: 10px 18px 22px; max-height: 82vh; overflow-y:auto;
++  padding: 10px 18px calc(22px + env(safe-area-inset-bottom, 0px)); max-height: 82vh; overflow-y:auto;
+   box-shadow: 0 -12px 34px rgba(20,15,10,.22);
+ }
+ .sheet-handle{ width:40px; height:5px; background:#ddd; border-radius:4px; margin:4px auto 14px;}
+@@ -373,7 +380,7 @@ button:active:not(:disabled){ transform: translateY(1px) scale(.98); }
+   box-shadow: inset 0 1px 1px rgba(255,255,255,.5), 0 2px 6px rgba(40,30,20,.12);
+ }
+ .sheet-list-item .chev{ margin-left:auto; color:#bbb; }
+-.app-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap: 20px 6px; }
++.app-grid{ display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap: 20px 6px; }
+ 
+ /* ---------- lists (employees, inbox, notifications) ---------- */
+ .search-box{
+@@ -391,7 +398,7 @@ button:active:not(:disabled){ transform: translateY(1px) scale(.98); }
+ }
+ .list-item:active{ box-shadow: var(--shadow-xs); transform: translateY(1px); }
+ .list-item .avatar{ width:42px;height:42px; font-size:13px; }
+-.list-item .info{ flex:1; min-width:0; }
++.list-item .info{ flex:1; min-width:0; overflow-wrap:anywhere; }
+ .list-item .info .name{ font-weight:600; font-size:15px; }
+ .list-item .info .sub{ font-size:13px; color:var(--text-muted); }
+ .list-item .actions{ display:flex; gap:10px; color: var(--blue); }
+@@ -523,7 +530,7 @@ button:active:not(:disabled){ transform: translateY(1px) scale(.98); }
+ .login-page p{ color:var(--text-muted); margin-bottom:28px; }
+ 
+ /* ---------- calendar ---------- */
+-.cal-grid{ display:grid; grid-template-columns:repeat(7,1fr); gap:4px; padding: 6px 16px 0; }
++.cal-grid{ display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:4px; padding: 6px 16px 0; }
+ .cal-dow{ text-align:center; font-size:12.5px; color:var(--text-muted); padding-bottom:6px; }
+ .cal-cell{
+   aspect-ratio:1; display:flex; align-items:center; justify-content:center; border-radius:12px;
+@@ -591,7 +598,7 @@ button:active:not(:disabled){ transform: translateY(1px) scale(.98); }
+ .dcal-month strong{ font-size:21px; font-weight:600; min-width:190px; text-align:center; }
+ .dcal-month button{ background:none; border:none; cursor:pointer; padding:6px; border-radius:50%; color:#222; display:flex; }
+ .dcal-month button:hover{ background: rgba(0,0,0,.08); }
+-.dcal-grid{ display:grid; grid-template-columns:repeat(7,1fr); row-gap: 6px; flex:1; align-content:start; }
++.dcal-grid{ display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); row-gap: 6px; flex:1; align-content:start; }
+ .dcal-dow{ text-align:center; font-weight:700; font-size:14px; padding: 8px 0 14px; }
+ .dcal-dow.sun{ color:#d21f2b; }
+ .dcal-cell{
+@@ -647,7 +654,7 @@ button:active:not(:disabled){ transform: translateY(1px) scale(.98); }
+ .dcuti-stats b{ font-size:22px; color:#96101c; }
+ .dcuti-stats span{ font-size:13px; color:#6b6560; }
+ .dcuti-btns{ display:flex; gap:10px; margin-bottom: 30px; }
+-.dcuti-tabs{ display:grid; grid-template-columns:repeat(3,1fr); margin-bottom: 26px; }
++.dcuti-tabs{ display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); margin-bottom: 26px; }
+ .dcuti-tabs button{
+   background:none; border:none; border-left:3px solid #d6d6d6; padding:22px 0; font-size:12.5px; font-weight:700;
+   letter-spacing:.14em; color:#8b8b8b; cursor:pointer;
+diff --git a/src/pages/Absensi.jsx b/src/pages/Absensi.jsx
+index 7cceb81..be48949 100644
+--- a/src/pages/Absensi.jsx
++++ b/src/pages/Absensi.jsx
+@@ -219,7 +219,7 @@ export default function Absensi({ employee, onBack, startNew, onToast, onNavigat
+             </div>
+           </div>
+ 
+-          <div className="stats-strip" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '14px 8px' }}>
++          <div className="stats-strip" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: '14px 8px' }}>
+             {STAT_CARDS.map((c) => (
+               <button key={c.key} className="stat" style={{ background: 'none', border: 'none', cursor: c.rows.length ? 'pointer' : 'default' }}
+                 onClick={() => c.rows.length && setIssueList(c)}>
+@@ -387,7 +387,7 @@ function MonthPickerSheet({ year, monthIndex, onClose, onApply }) {
+           <span style={{ fontSize: 16 }}>{y}</span>
+           <button onClick={() => setY((v) => v + 1)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}><ChevronRight size={20} /></button>
+         </div>
+-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 20 }}>
++        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 12, marginBottom: 20 }}>
+           {MONTHS_ID.map((label, i) => (
+             <button key={label} onClick={() => setM(i)} style={{
+               padding: '12px 0', borderRadius: '50%', border: 'none', cursor: 'pointer', fontSize: 15,
+@@ -504,7 +504,7 @@ function DayDetailSheet({ attendance, shift, issue, onClose, onOpenEvent, onAjuk
+             borderBottom: '1px solid #eee', cursor: attendance.clock_in ? 'pointer' : 'default', opacity: attendance.clock_in ? 1 : 0.5,
+           }}>
+             <strong style={{ fontSize: 15, width: 60 }}>{fmtTime(attendance.clock_in) || '-'}</strong>
+-            <span style={{ flex: 1, textAlign: 'left', fontSize: 14.5 }}>Clock in</span>
++            <span style={{ flex: 1, textAlign: 'left', fontSize: 14.5 }}>{tx("Clock In")}</span>
+             {attendance.clock_in && <ChevronRight size={18} color="#bbb" />}
+           </button>
+           <button onClick={() => attendance.clock_out && onOpenEvent('out')} disabled={!attendance.clock_out} style={{
+@@ -512,7 +512,7 @@ function DayDetailSheet({ attendance, shift, issue, onClose, onOpenEvent, onAjuk
+             cursor: attendance.clock_out ? 'pointer' : 'default', opacity: attendance.clock_out ? 1 : 0.5,
+           }}>
+             <strong style={{ fontSize: 15, width: 60 }}>{fmtTime(attendance.clock_out) || '-'}</strong>
+-            <span style={{ flex: 1, textAlign: 'left', fontSize: 14.5 }}>Clock out</span>
++            <span style={{ flex: 1, textAlign: 'left', fontSize: 14.5 }}>{tx("Clock Out")}</span>
+             {attendance.clock_out && <ChevronRight size={18} color="#bbb" />}
+           </button>
+         </div>
+@@ -594,7 +594,7 @@ function CorrectionRequestForm({ attendance, shift, issue, onCancel, onDone, onT
+         </label>
+         <div className="field">
+           <div style={{ position: 'relative' }}>
+-            <input type="time" value={clockIn} onChange={(e) => setClockIn(e.target.value)} disabled={!wantIn} placeholder="Clock in" style={{ paddingRight: 40 }} />
++            <input type="time" value={clockIn} onChange={(e) => setClockIn(e.target.value)} disabled={!wantIn} placeholder={tx("Clock In")} style={{ paddingRight: 40 }} />
+             <Clock size={18} color="#8a847c" style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />
+           </div>
+         </div>
+@@ -604,7 +604,7 @@ function CorrectionRequestForm({ attendance, shift, issue, onCancel, onDone, onT
+         </label>
+         <div className="field">
+           <div style={{ position: 'relative' }}>
+-            <input type="time" value={clockOut} onChange={(e) => setClockOut(e.target.value)} disabled={!wantOut} placeholder="Clock out" style={{ paddingRight: 40 }} />
++            <input type="time" value={clockOut} onChange={(e) => setClockOut(e.target.value)} disabled={!wantOut} placeholder={tx("Clock Out")} style={{ paddingRight: 40 }} />
+             <Clock size={18} color="#8a847c" style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />
+           </div>
+         </div>
+diff --git a/src/pages/AnnouncementDetail.jsx b/src/pages/AnnouncementDetail.jsx
+index 48b6529..0182097 100644
+--- a/src/pages/AnnouncementDetail.jsx
++++ b/src/pages/AnnouncementDetail.jsx
+@@ -65,7 +65,7 @@ export default function AnnouncementDetail({ id, onBack }) {
+ 
+           <div style={isDesktop ? { padding: '0 48px 40px', maxWidth: 760 } : { background: '#fff', borderRadius: '22px 22px 0 0', padding: '24px 18px', minHeight: '55vh' }}>
+             {a.body && (
+-              <div style={{ fontSize: isDesktop ? 16 : 14.5, lineHeight: 1.8, whiteSpace: 'pre-wrap', color: isDesktop ? '#3a3530' : 'inherit' }}>{linkifyText(a.body)}</div>
++              <div style={{ fontSize: isDesktop ? 16 : 14.5, lineHeight: 1.8, whiteSpace: 'pre-wrap', color: isDesktop ? '#3a3530' : 'inherit' }}>{linkifyText(String(a.body).replace(/\n{3,}/g, '\n\n').trim())}</div>
+             )}
+ 
+             {a.attachment_url && (
+diff --git a/src/pages/AttendanceLog.css b/src/pages/AttendanceLog.css
+index 446dd28..c059665 100644
+--- a/src/pages/AttendanceLog.css
++++ b/src/pages/AttendanceLog.css
+@@ -19,7 +19,7 @@
+ .al-ring b{position:absolute;inset:0;display:grid;place-items:center;font-size:30px;font-weight:800;letter-spacing:-.03em}
+ .al-score h2{margin:0 0 4px;font-size:18px;letter-spacing:-.01em}
+ .al-score p{margin:0;color:var(--mute);max-width:36ch}
+-.al-stats{display:grid;grid-template-columns:repeat(4,1fr);overflow:hidden}
++.al-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));overflow:hidden}
+ .al-stat{padding:20px 22px;border-right:1px solid var(--line);border-bottom:1px solid var(--line)}
+ .al-stat:nth-child(4n){border-right:0}
+ .al-stat:nth-child(n+5){border-bottom:0}
+diff --git a/src/pages/AttendanceLog.jsx b/src/pages/AttendanceLog.jsx
+index 69bcae0..f2332b9 100644
+--- a/src/pages/AttendanceLog.jsx
++++ b/src/pages/AttendanceLog.jsx
+@@ -193,7 +193,7 @@ export default function AttendanceLog() {
+                       </td>
+                       <td>
+                         {r.kind === 'holiday' ? <span className="al-hol">{r.hol.title}</span>
+-                          : r.kind === 'off' ? <span className="al-dim">Off</span>
++                          : r.kind === 'off' ? <span className="al-dim">{tx("Libur")}</span>
+                           : <b>{r.shift?.name}</b>}
+                       </td>
+                       <td className="al-t al-dim">{r.shift && r.kind !== 'off' && r.kind !== 'holiday' ? `${r.shift.start_time.slice(0, 5)} – ${r.shift.end_time.slice(0, 5)}` : '–'}</td>
+diff --git a/src/pages/HRDashboard.jsx b/src/pages/HRDashboard.jsx
+index a63bfa6..c7a371a 100644
+--- a/src/pages/HRDashboard.jsx
++++ b/src/pages/HRDashboard.jsx
+@@ -171,7 +171,7 @@ function OverviewTab({ onToast, onGo, isDesktop }) {
+ 
+   if (isDesktop) {
+     return (
+-      <div className="dsk-grid-cards" style={{ gridTemplateColumns: 'repeat(5, 1fr)' }}>
++      <div className="dsk-grid-cards" style={{ gridTemplateColumns: 'repeat(5, minmax(0, 1fr))' }}>
+         {cards.map((c) => (
+           <button key={c.label} className="dsk-card" onClick={() => onGo(c.go)}>
+             <span style={{ fontSize: 30, fontWeight: 300, color: '#96101c' }}>{c.value}</span>
+@@ -790,7 +790,7 @@ function AnnouncementTab({ onToast, isDesktop }) {
+                   {tx(a.category)}
+                 </span>
+               )}
+-              {a.body && <div className="sub" style={{ marginTop: 3, whiteSpace: 'pre-wrap' }}>{a.body}</div>}
++              {a.body && <div className="sub" style={{ marginTop: 3, whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{linkifyText(a.body.replace(/\n{3,}/g, '\n\n').trim())}</div>}
+               <div className="sub" style={{ marginTop: 6, fontSize: 11.5 }}>
+                 {fmtDate(a.published_at)}{a.author ? ` · ${a.author}` : ''}
+               </div>
+@@ -835,7 +835,7 @@ function AnnouncementTab({ onToast, isDesktop }) {
+               </div>
+               {detail.body && (
+                 <p style={{ fontSize: 14.5, marginTop: 18, lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>
+-                  {linkifyText(detail.body)}
++                  {linkifyText(String(detail.body).replace(/\n{3,}/g, '\n\n').trim())}
+                 </p>
+               )}
+               {detail.attachment_url && (
+diff --git a/src/pages/Home.jsx b/src/pages/Home.jsx
+index ae8a06f..c9ac709 100644
+--- a/src/pages/Home.jsx
++++ b/src/pages/Home.jsx
+@@ -196,7 +196,7 @@ export default function Home({ employee, onNavigate, onOpenAllApps }) {
+                     <p style={{
+                       fontSize: 13, color: 'var(--text-muted)', marginTop: 6, lineHeight: 1.5, whiteSpace: 'pre-wrap',
+                     }}>
+-                      {linkifyText(a.body)}
++                      {linkifyText(String(a.body).replace(/\n{3,}/g, '\n\n').trim())}
+                     </p>
+                   )}
+                   {a.attachment_url && (
+diff --git a/src/pages/TeamReport.jsx b/src/pages/TeamReport.jsx
+index 0be16eb..fe62b80 100644
+--- a/src/pages/TeamReport.jsx
++++ b/src/pages/TeamReport.jsx
+@@ -256,11 +256,11 @@ export default function TeamReport({ employee, onBack }) {
+                 <b>{detail.shift ? (detail.shift.is_day_off ? tx("Libur") : `${detail.shift.name} (${detail.shift.start_time?.slice(0, 5)}-${detail.shift.end_time?.slice(0, 5)})`) : '-'}</b>
+               </div>
+               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+-                <span style={{ color: 'var(--text-muted)' }}>Clock in</span>
++                <span style={{ color: 'var(--text-muted)' }}>{tx("Clock In")}</span>
+                 <b>{fmtTime(detail.att?.clock_in) || '-'}</b>
+               </div>
+               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+-                <span style={{ color: 'var(--text-muted)' }}>Clock out</span>
++                <span style={{ color: 'var(--text-muted)' }}>{tx("Clock Out")}</span>
+                 <b>{fmtTime(detail.att?.clock_out) || '-'}</b>
+               </div>
+               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+diff --git a/src/pages/Timesheet.jsx b/src/pages/Timesheet.jsx
+index 50138d5..df2fc84 100644
+--- a/src/pages/Timesheet.jsx
++++ b/src/pages/Timesheet.jsx
+@@ -3,6 +3,7 @@ import { ArrowLeft, ListChecks, Pencil, Trash2 } from 'lucide-react'
+ import { supabase } from '../lib/supabaseClient'
+ 
+ import { tx, locale } from '../lib/i18n'
++import { todayStr } from '../lib/dateUtils'
+ export default function Timesheet({ employee, onBack, onToast }) {
+   const [items, setItems] = useState([])
+   const [loading, setLoading] = useState(true)
+@@ -32,7 +33,7 @@ export default function Timesheet({ employee, onBack, onToast }) {
+     )
+   }
+ 
+-  const thisMonth = new Date().toISOString().slice(0, 7)
++  const thisMonth = todayStr().slice(0, 7)
+   const monthTotal = items
+     .filter((it) => it.work_date?.slice(0, 7) === thisMonth)
+     .reduce((sum, it) => sum + Number(it.hours || 0), 0)
+@@ -89,7 +90,7 @@ export default function Timesheet({ employee, onBack, onToast }) {
+ 
+ function TimesheetForm({ row, employee, onCancel, onSaved }) {
+   const [form, setForm] = useState({
+-    work_date: row.work_date || new Date().toISOString().slice(0, 10),
++    work_date: row.work_date || todayStr(),
+     hours: row.hours || '', project: row.project || '', description: row.description || '',
+   })
+   const [error, setError] = useState('')

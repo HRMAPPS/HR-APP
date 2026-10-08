@@ -41,7 +41,7 @@ export default function AllAppsSheet({ onClose, onNavigate, onToast, employee })
             </button>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '26px 10px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, minmax(0, 1fr))', gap: '26px 10px' }}>
             {apps.map((app) => {
               const Icon = app.icon
               return (

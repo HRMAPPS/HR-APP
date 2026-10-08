@@ -256,11 +256,11 @@ export default function TeamReport({ employee, onBack }) {
                 <b>{detail.shift ? (detail.shift.is_day_off ? tx("Libur") : `${detail.shift.name} (${detail.shift.start_time?.slice(0, 5)}-${detail.shift.end_time?.slice(0, 5)})`) : '-'}</b>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span style={{ color: 'var(--text-muted)' }}>Clock in</span>
+                <span style={{ color: 'var(--text-muted)' }}>{tx("Clock In")}</span>
                 <b>{fmtTime(detail.att?.clock_in) || '-'}</b>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span style={{ color: 'var(--text-muted)' }}>Clock out</span>
+                <span style={{ color: 'var(--text-muted)' }}>{tx("Clock Out")}</span>
                 <b>{fmtTime(detail.att?.clock_out) || '-'}</b>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>

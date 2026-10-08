@@ -23,7 +23,7 @@
 .adx-ring b{position:absolute;inset:0;display:grid;place-items:center;font-size:28px;font-weight:800;letter-spacing:-.03em}
 .adx-score h2{margin:0 0 4px;font-size:18px;letter-spacing:-.01em}
 .adx-score p{margin:0;color:var(--adx-mute);max-width:34ch}
-.adx-stats{display:grid;grid-template-columns:repeat(4,1fr);overflow:hidden}
+.adx-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));overflow:hidden}
 .adx-stat{font:inherit;color:inherit;text-align:left;background:none;border:0;border-right:1px solid var(--adx-line);border-bottom:1px solid var(--adx-line);padding:18px 20px;cursor:pointer}
 .adx-stat:disabled,div.adx-stat{cursor:default}
 .adx-stat:nth-child(4n){border-right:0}

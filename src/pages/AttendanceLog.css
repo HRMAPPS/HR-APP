@@ -19,7 +19,7 @@
 .al-ring b{position:absolute;inset:0;display:grid;place-items:center;font-size:30px;font-weight:800;letter-spacing:-.03em}
 .al-score h2{margin:0 0 4px;font-size:18px;letter-spacing:-.01em}
 .al-score p{margin:0;color:var(--mute);max-width:36ch}
-.al-stats{display:grid;grid-template-columns:repeat(4,1fr);overflow:hidden}
+.al-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));overflow:hidden}
 .al-stat{padding:20px 22px;border-right:1px solid var(--line);border-bottom:1px solid var(--line)}
 .al-stat:nth-child(4n){border-right:0}
 .al-stat:nth-child(n+5){border-bottom:0}

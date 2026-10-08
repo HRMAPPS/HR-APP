@@ -171,7 +171,7 @@ function OverviewTab({ onToast, onGo, isDesktop }) {
 
   if (isDesktop) {
     return (
-      <div className="dsk-grid-cards" style={{ gridTemplateColumns: 'repeat(5, 1fr)' }}>
+      <div className="dsk-grid-cards" style={{ gridTemplateColumns: 'repeat(5, minmax(0, 1fr))' }}>
         {cards.map((c) => (
           <button key={c.label} className="dsk-card" onClick={() => onGo(c.go)}>
             <span style={{ fontSize: 30, fontWeight: 300, color: '#96101c' }}>{c.value}</span>
@@ -790,7 +790,7 @@ function AnnouncementTab({ onToast, isDesktop }) {
                   {tx(a.category)}
                 </span>
               )}
-              {a.body && <div className="sub" style={{ marginTop: 3, whiteSpace: 'pre-wrap' }}>{a.body}</div>}
+              {a.body && <div className="sub" style={{ marginTop: 3, whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{linkifyText(a.body.replace(/\n{3,}/g, '\n\n').trim())}</div>}
               <div className="sub" style={{ marginTop: 6, fontSize: 11.5 }}>
                 {fmtDate(a.published_at)}{a.author ? ` · ${a.author}` : ''}
               </div>
@@ -835,7 +835,7 @@ function AnnouncementTab({ onToast, isDesktop }) {
               </div>
               {detail.body && (
                 <p style={{ fontSize: 14.5, marginTop: 18, lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>
-                  {linkifyText(detail.body)}
+                  {linkifyText(String(detail.body).replace(/\n{3,}/g, '\n\n').trim())}
                 </p>
               )}
               {detail.attachment_url && (

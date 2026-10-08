@@ -307,15 +307,22 @@ button:active:not(:disabled){ transform: translateY(1px) scale(.98); }
 
 /* ---------- quick menu grid ---------- */
 .quick-grid{
-  display:grid; grid-template-columns: repeat(4,1fr);
+  display:grid; grid-template-columns: repeat(4,minmax(0,1fr));
   gap: 18px 4px; background:#fff; margin: 12px 16px 0; padding: 20px 4px;
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-md);
 }
 .quick-item{
-  display:flex; flex-direction:column; align-items:center; gap:8px;
-  background:none; border:none; cursor:pointer; color: var(--text); font-size:12.5px;
+  display:flex; flex-direction:column; align-items:center; justify-content:flex-start; gap:8px;
+  background:none; border:none; cursor:pointer; color: var(--text);
+  font-size: clamp(10.5px, 2.95vw, 12.5px); letter-spacing:-.01em; line-height:1.25;
   text-align:center;
+  /* Presisi lintas bahasa: lebar = kolom (tidak melebar karena kata panjang),
+     kata terlalu panjang dipenggal/hyphen, tinggi selalu cukup untuk 2 baris
+     sehingga tinggi kartu & bottom sheet sama di EN maupun ID. */
+  min-width:0; width:100%; padding:0 1px;
+  overflow-wrap:anywhere; hyphens:auto; -webkit-hyphens:auto;
+  min-height: calc(52px + 8px + 2.5em);
 }
 .quick-item .ic{
   width:52px; height:52px; border-radius:16px; display:flex; align-items:center; justify-content:center;
@@ -337,7 +344,7 @@ button:active:not(:disabled){ transform: translateY(1px) scale(.98); }
 /* ---------- bottom nav ---------- */
 .bottom-nav{
   display:flex; background:#fff; border-top:1px solid var(--border);
-  position: sticky; bottom:0; padding: 8px 0 12px;
+  position: sticky; bottom:0; padding: 8px 0 calc(12px + env(safe-area-inset-bottom, 0px));
   box-shadow: 0 -6px 16px rgba(40,30,20,.08);
 }
 .bottom-nav button{
@@ -354,7 +361,7 @@ button:active:not(:disabled){ transform: translateY(1px) scale(.98); }
 }
 .sheet{
   width:100%; max-width:460px; background:#fff; border-radius: 22px 22px 0 0;
-  padding: 10px 18px 22px; max-height: 82vh; overflow-y:auto;
+  padding: 10px 18px calc(22px + env(safe-area-inset-bottom, 0px)); max-height: 82vh; overflow-y:auto;
   box-shadow: 0 -12px 34px rgba(20,15,10,.22);
 }
 .sheet-handle{ width:40px; height:5px; background:#ddd; border-radius:4px; margin:4px auto 14px;}
@@ -373,7 +380,7 @@ button:active:not(:disabled){ transform: translateY(1px) scale(.98); }
   box-shadow: inset 0 1px 1px rgba(255,255,255,.5), 0 2px 6px rgba(40,30,20,.12);
 }
 .sheet-list-item .chev{ margin-left:auto; color:#bbb; }
-.app-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap: 20px 6px; }
+.app-grid{ display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap: 20px 6px; }
 
 /* ---------- lists (employees, inbox, notifications) ---------- */
 .search-box{
@@ -391,7 +398,7 @@ button:active:not(:disabled){ transform: translateY(1px) scale(.98); }
 }
 .list-item:active{ box-shadow: var(--shadow-xs); transform: translateY(1px); }
 .list-item .avatar{ width:42px;height:42px; font-size:13px; }
-.list-item .info{ flex:1; min-width:0; }
+.list-item .info{ flex:1; min-width:0; overflow-wrap:anywhere; }
 .list-item .info .name{ font-weight:600; font-size:15px; }
 .list-item .info .sub{ font-size:13px; color:var(--text-muted); }
 .list-item .actions{ display:flex; gap:10px; color: var(--blue); }
@@ -523,7 +530,7 @@ button:active:not(:disabled){ transform: translateY(1px) scale(.98); }
 .login-page p{ color:var(--text-muted); margin-bottom:28px; }
 
 /* ---------- calendar ---------- */
-.cal-grid{ display:grid; grid-template-columns:repeat(7,1fr); gap:4px; padding: 6px 16px 0; }
+.cal-grid{ display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:4px; padding: 6px 16px 0; }
 .cal-dow{ text-align:center; font-size:12.5px; color:var(--text-muted); padding-bottom:6px; }
 .cal-cell{
   aspect-ratio:1; display:flex; align-items:center; justify-content:center; border-radius:12px;
@@ -591,7 +598,7 @@ button:active:not(:disabled){ transform: translateY(1px) scale(.98); }
 .dcal-month strong{ font-size:21px; font-weight:600; min-width:190px; text-align:center; }
 .dcal-month button{ background:none; border:none; cursor:pointer; padding:6px; border-radius:50%; color:#222; display:flex; }
 .dcal-month button:hover{ background: rgba(0,0,0,.08); }
-.dcal-grid{ display:grid; grid-template-columns:repeat(7,1fr); row-gap: 6px; flex:1; align-content:start; }
+.dcal-grid{ display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); row-gap: 6px; flex:1; align-content:start; }
 .dcal-dow{ text-align:center; font-weight:700; font-size:14px; padding: 8px 0 14px; }
 .dcal-dow.sun{ color:#d21f2b; }
 .dcal-cell{
@@ -647,7 +654,7 @@ button:active:not(:disabled){ transform: translateY(1px) scale(.98); }
 .dcuti-stats b{ font-size:22px; color:#96101c; }
 .dcuti-stats span{ font-size:13px; color:#6b6560; }
 .dcuti-btns{ display:flex; gap:10px; margin-bottom: 30px; }
-.dcuti-tabs{ display:grid; grid-template-columns:repeat(3,1fr); margin-bottom: 26px; }
+.dcuti-tabs{ display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); margin-bottom: 26px; }
 .dcuti-tabs button{
   background:none; border:none; border-left:3px solid #d6d6d6; padding:22px 0; font-size:12.5px; font-weight:700;
   letter-spacing:.14em; color:#8b8b8b; cursor:pointer;
