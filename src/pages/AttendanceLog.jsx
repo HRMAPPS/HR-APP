@@ -12,12 +12,12 @@ const hhmm = (ts) =>
   ts ? new Date(ts).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: TZ }) : null
 
 // Period runs from the 25th of the previous month to the 24th of the chosen month.
-function periodOf(ym) {
+export function periodOf(ym) {
   const [y, m] = ym.split('-').map(Number)
   return { start: utc(y, m - 2, 25), end: utc(y, m - 1, 24) }
 }
 
-function buildRows({ start, end }, att, sched, shifts, holidays, emp, today) {
+export function buildRows({ start, end }, att, sched, shifts, holidays, emp, today) {
   const rows = []
   for (let d = new Date(start); d <= end; d = utc(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() + 1)) {
     const key = iso(d)

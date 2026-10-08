@@ -1,0 +1,53 @@
+/* Laporan Tim Saya (mobile) + kehadiran bulanan anggota. Prefix tr- agar tidak bentrok. */
+.tr-page{ min-height:100vh; padding-bottom:28px; }
+.tr-head{ display:flex; align-items:center; justify-content:space-between; padding:calc(14px + env(safe-area-inset-top,0px)) 16px 12px; }
+.tr-back{ background:none; border:none; color:var(--blue); padding:6px; margin-left:-6px; display:flex; }
+.tr-head-sp{ width:32px; flex:none; }
+.tr-title{ position:relative; display:flex; flex-direction:column; align-items:center; font-weight:600; color:#2b2926; cursor:pointer; min-width:0; }
+.tr-title-main{ display:flex; align-items:center; gap:6px; font-size:clamp(19px,5.6vw,23px); line-height:1.2; }
+.tr-title small{ font-size:14px; color:var(--text-muted); font-weight:500; margin-top:2px; max-width:60vw; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.tr-title input, .tr-title select{ position:absolute; inset:0; width:100%; height:100%; opacity:0; cursor:pointer; font-size:16px; border:0; }
+
+.tr-stats{ background:#fff; margin:4px 8px 0; border-radius:16px; padding:16px 0 14px; }
+.tr-strip{ display:flex; gap:12px; overflow-x:auto; padding:0 16px; scroll-snap-type:x proximity; scroll-padding:0 16px; scrollbar-width:none; -webkit-overflow-scrolling:touch; }
+.tr-strip::-webkit-scrollbar{ display:none; }
+.tr-card{ flex:none; border:1.5px solid #e3dfda; border-radius:14px; padding:16px 18px 18px; scroll-snap-align:start; background:#fff; }
+.tr-card-h{ display:flex; align-items:center; gap:8px; font-size:20px; font-weight:600; color:#2b2926; margin-bottom:14px; }
+.tr-help{ background:none; border:none; padding:0; color:#6b7684; display:flex; }
+.tr-cols{ display:flex; gap:22px; }
+.tr-col{ display:flex; flex-direction:column; gap:6px; white-space:nowrap; }
+.tr-lbl{ font-size:14.5px; color:#2b2926; }
+.tr-num{ font-size:30px; font-weight:500; color:var(--blue); line-height:1.1; }
+.tr-dots{ display:flex; justify-content:center; margin-top:16px; }
+.tr-dots i{ width:32px; height:10px; background:#efebe6; }
+.tr-dots i:first-child{ border-radius:5px 0 0 5px; } .tr-dots i:last-child{ border-radius:0 5px 5px 0; }
+.tr-dots i.on{ background:var(--blue); border-radius:5px; }
+
+.tr-list{ background:#fff; margin:12px 8px 0; border-radius:16px; padding:2px 0; overflow:hidden; }
+.tr-empty{ padding:36px 20px; text-align:center; color:var(--text-muted); }
+.tr-item{ border-bottom:1.5px solid #e6e2dc; }
+.tr-item:last-child{ border-bottom:none; }
+.tr-item-head{ display:flex; align-items:flex-start; gap:14px; width:100%; padding:16px; background:none; border:none; text-align:left; color:inherit; font:inherit; }
+.tr-info{ flex:1; min-width:0; }
+.tr-name{ font-size:clamp(16px,4.7vw,19px); font-weight:500; color:#2b2926; overflow-wrap:anywhere; line-height:1.25; }
+.tr-sub{ font-size:14.5px; color:#6b7280; margin-top:2px; overflow-wrap:anywhere; }
+.tr-times{ display:flex; gap:clamp(16px,7vw,32px); margin-top:6px; }
+.tr-t{ display:flex; align-items:center; gap:6px; font-size:14.5px; font-weight:700; color:#5b6773; }
+.tr-t.g svg{ color:#1e8e5a; } .tr-t.b svg{ color:#4356c4; } .tr-t.late{ color:#d9645a; }
+.tr-toggle{ width:42px; height:42px; border:2.5px solid #6b7684; border-radius:10px; display:flex; align-items:center; justify-content:center; color:#6b7684; flex:none; align-self:center; }
+.tr-body{ padding:0 16px 16px; }
+.tr-shift{ font-size:clamp(16px,4.7vw,19px); color:#2b2926; margin:4px 0 12px; overflow-wrap:anywhere; }
+.tr-ev{ display:flex; align-items:center; gap:14px; width:100%; background:none; border:none; padding:10px 4px; font-size:clamp(16px,4.7vw,19px); color:#2b2926; text-align:left; font-family:inherit; }
+.tr-ev svg{ flex:none; color:#6b7684; }
+.tr-ev .t{ min-width:96px; } .tr-ev .l{ flex:1; }
+.tr-link{ background:none; border:none; color:var(--blue); text-decoration:underline; font-size:clamp(16px,4.7vw,19px); padding:22px 0 4px; font-family:inherit; text-align:left; }
+
+.tr-day{ display:grid; grid-template-columns:minmax(0,1fr) 72px 72px 26px; align-items:center; width:100%; padding:14px 16px; gap:4px; background:none; border:none; text-align:left; color:inherit; font:inherit; }
+.tr-date{ font-size:clamp(18px,5.4vw,22px); color:#2b2926; line-height:1.2; }
+.tr-loc{ font-size:14.5px; color:#555e68; margin-top:2px; overflow-wrap:anywhere; }
+.tr-date.red, .tr-loc.red{ color:#e07a6e; }
+.tr-dt{ font-size:16px; font-weight:700; color:#5b6773; }
+.tr-dt.late{ color:#e07a6e; }
+.tr-day > svg{ color:#6b7684; }
+.tr-kv{ display:flex; justify-content:space-between; gap:12px; font-size:14.5px; padding:8px 0; }
+.tr-kv span{ color:var(--text-muted); } .tr-kv b{ text-align:right; overflow-wrap:anywhere; }

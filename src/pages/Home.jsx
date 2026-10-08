@@ -290,10 +290,10 @@ export default function Home({ employee, onNavigate, onOpenAllApps }) {
       </div>
 
       {team.length > 0 && (
-        <div className="section">
+        <div className="section" style={{ cursor: 'pointer' }} onClick={() => onNavigate('team-report')}>
           <div className="section-title">
             <h2>{tx("Laporan tim saya")}</h2>
-            <a href="#" onClick={(e) => { e.preventDefault(); onNavigate('team-report') }}>{tx("Lihat aktivitas")}</a>
+            <a href="#" onClick={(e) => e.preventDefault()}>{tx("Lihat aktivitas")}</a>
           </div>
           <TeamAvatarStack team={team} />
         </div>

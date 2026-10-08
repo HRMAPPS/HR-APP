@@ -4179,6 +4179,70 @@ export const PAIRS = [
 [
 "Belum",
 "Not yet"
+],
+[
+"Hadir",
+"Present"
+],
+[
+"Tidak clock in",
+"No clock in"
+],
+[
+"Belum ada presensi",
+"No attendance yet"
+],
+[
+"Lihat semua data kehadiran",
+"View all attendance data"
+],
+[
+"Pilih bulan",
+"Select month"
+],
+[
+"Keterangan statistik",
+"About these stats"
+],
+[
+"Durasi kerja",
+"Work duration"
+],
+[
+"Gagal memuat data",
+"Failed to load data"
+],
+[
+"Clock in tidak melewati jam mulai shift dan jam clock out valid.",
+"Clock in is not after the shift start time and the clock out time is valid."
+],
+[
+"Clock in setelah jam mulai shift.",
+"Clock in after the shift start time."
+],
+[
+"Clock out sebelum jam selesai shift.",
+"Clock out before the shift end time."
+],
+[
+"Ada data pulang tetapi tidak ada data masuk.",
+"Has a clock out record but no clock in record."
+],
+[
+"Sudah clock in tetapi belum clock out.",
+"Clocked in but not clocked out yet."
+],
+[
+"Jam clock out sama dengan atau lebih awal dari jam clock in.",
+"Clock out time is equal to or earlier than clock in time."
+],
+[
+"Hari kerja tanpa presensi dan tanpa cuti disetujui.",
+"Workday with no attendance and no approved time off."
+],
+[
+"Karyawan sedang cuti yang sudah disetujui.",
+"Employee is on approved time off."
 ]
 ]
 export const ONEWAY = [

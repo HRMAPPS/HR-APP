@@ -1,8 +1,12 @@
 import { useEffect, useMemo, useState } from 'react'
-import { ArrowLeft, ChevronLeft, ChevronRight, User, X } from 'lucide-react'
+import { ArrowLeft, ChevronDown, ChevronLeft, ChevronRight, Clock, MapPin, Minus, Plus, User, X } from 'lucide-react'
 import { useIsDesktop } from '../lib/useIsDesktop'
 import { supabase } from '../lib/supabaseClient'
 import { todayStr } from '../lib/dateUtils'
+import { useBackHandler } from '../lib/backStack'
+import TeamStatsCarousel, { StatsHelpSheet } from '../components/TeamStatsCarousel'
+import TeamMemberAttendance from './TeamMemberAttendance'
+import './TeamReportMobile.css'
 
 import { tx, locale } from '../lib/i18n'
 function pad2(n) { return String(n).padStart(2, '0') }
@@ -15,7 +19,8 @@ function addDays(dateStr, delta) {
 
 function fmtTime(iso) {
   if (!iso) return null
-  return new Date(iso).toLocaleTimeString(locale(), { hour: '2-digit', minute: '2-digit' })
+  // HH:mm (titik dua) dalam WIB, tidak bergantung zona waktu perangkat
+  return new Date(iso).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Jakarta' })
 }
 
 function initials(name) {
@@ -40,8 +45,12 @@ export default function TeamReport({ employee, onBack }) {
   const [loading, setLoading] = useState(true)
   const [statsPage, setStatsPage] = useState(0)
   const [detail, setDetail] = useState(null)
+  const [openId, setOpenId] = useState(null)       // anggota yang sedang diperluas (satu per waktu)
+  const [memberView, setMemberView] = useState(null) // {id, name} -> kehadiran bulanan
+  const [help, setHelp] = useState(false)
+  useBackHandler(() => setMemberView(null), !!memberView && !isDesktop)
 
-  useEffect(() => { load() }, [date, employee?.id])
+  useEffect(() => { load(); setOpenId(null) }, [date, employee?.id])
 
   async function load() {
     if (!employee?.id) return
@@ -80,11 +89,12 @@ export default function TeamReport({ employee, onBack }) {
       const late = a?.status === 'late'
       const invalid = !!a?.clock_in && !!a?.clock_out && new Date(a.clock_out) <= new Date(a.clock_in)
       const noClockOut = !!a?.clock_in && !a?.clock_out
+      const noClockIn = !!a && !a.clock_in && !!a.clock_out
       const earlyOut = !invalid && !!a?.clock_out && !!shift?.end_time &&
         new Date(a.clock_out).toTimeString().slice(0, 5) < shift.end_time.slice(0, 5)
       const onTime = !!a?.clock_in && !late && !invalid
       const absent = isPastOrToday && !dayOff && !onLeave && !a?.clock_in && !a?.clock_out
-      return { emp: t, shift, att: a, onLeave, dayOff, late, invalid, noClockOut, earlyOut, onTime, absent }
+      return { emp: t, shift, att: a, onLeave, dayOff, late, invalid, noClockOut, noClockIn, earlyOut, onTime, absent }
     })
     setRows(merged)
     setLoading(false)
@@ -96,6 +106,7 @@ export default function TeamReport({ employee, onBack }) {
     earlyOut: rows.filter((r) => r.earlyOut).length,
     clockedIn: rows.filter((r) => r.att?.clock_in).length,
     noClockOut: rows.filter((r) => r.noClockOut).length,
+    noClockIn: rows.filter((r) => r.noClockIn).length,
     invalid: rows.filter((r) => r.invalid).length,
     absent: rows.filter((r) => r.absent).length,
     cuti: rows.filter((r) => r.onLeave).length,
@@ -168,76 +179,85 @@ export default function TeamReport({ employee, onBack }) {
     )
   }
 
+  if (memberView) {
+    return <TeamMemberAttendance empId={memberView.id} name={memberView.name} onBack={() => setMemberView(null)} />
+  }
+
+  const longDate = new Date(date + 'T00:00:00').toLocaleDateString(locale(), { day: '2-digit', month: 'short', year: 'numeric' }).replace('.', '')
+
   return (
-    <div>
-      <div className="page-header">
-        <button className="back-btn" onClick={onBack}><ArrowLeft size={22} /></button>
-        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-          <button className="icon-btn" style={{ color: '#fff' }} onClick={() => setDate((d) => addDays(d, -1))}><ChevronLeft size={18} /></button>
-          <h1 style={{ flex: 'none', fontSize: 16.5 }}>{dateLabel}</h1>
-          <button className="icon-btn" style={{ color: '#fff', opacity: isToday ? 0.4 : 1, pointerEvents: isToday ? 'none' : 'auto' }}
-            onClick={() => setDate((d) => addDays(d, 1))}>
-            <ChevronRight size={18} />
-          </button>
-        </div>
-        <span style={{ width: 22 }} />
-      </div>
+    <div className="tr-page">
+      <header className="tr-head">
+        <button type="button" className="tr-back" onClick={onBack} aria-label={tx("Kembali")}><ArrowLeft size={26} /></button>
+        <label className="tr-title">
+          <span className="tr-title-main">{longDate}<ChevronDown size={22} /></span>
+          <input type="date" value={date} max={todayStr()} aria-label={tx("Pilih tanggal")}
+            onChange={(e) => { if (e.target.value) setDate(e.target.value) }} />
+        </label>
+        <span className="tr-head-sp" />
+      </header>
 
-      <div
-        style={{ overflowX: 'auto', scrollSnapType: 'x mandatory', display: 'flex', WebkitOverflowScrolling: 'touch' }}
-        onScroll={onStatsScroll}
-      >
-        <div style={{ minWidth: '100%', scrollSnapAlign: 'start' }}>
-          <div className="stats-strip">
-            <div className="stat"><div className="num">{stats.onTime}</div><div className="lbl">{tx("Tepat waktu")}</div></div>
-            <div className="stat"><div className="num">{stats.late}</div><div className="lbl">{tx("Terlambat masuk")}</div></div>
-            <div className="stat"><div className="num">{stats.earlyOut}</div><div className="lbl">{tx("Pulang lebih awal")}</div></div>
-          </div>
-        </div>
-        <div style={{ minWidth: '100%', scrollSnapAlign: 'start', display: 'flex', gap: 10 }}>
-          <div className="stats-strip" style={{ flex: 1, margin: '14px 0 0 16px' }}>
-            <div className="stat"><div className="num">{stats.clockedIn}</div><div className="lbl">{tx("Sudah clock in")}</div></div>
-            <div className="stat"><div className="num">{stats.noClockOut}</div><div className="lbl">{tx("Tidak clock out")}</div></div>
-            <div className="stat"><div className="num">{stats.invalid}</div><div className="lbl">{tx("Tidak valid")}</div></div>
-          </div>
-          <div className="stats-strip" style={{ flex: 'none', width: 140, margin: '14px 16px 0 0', flexDirection: 'column', gap: 8, alignItems: 'flex-start' }}>
-            <div style={{ fontWeight: 700, fontSize: 12.5 }}>{tx("Tidak hadir")}</div>
-            <div style={{ display: 'flex', gap: 14, width: '100%' }}>
-              <div className="stat"><div className="num">{stats.absent}</div><div className="lbl">{tx("Absen")}</div></div>
-              <div className="stat"><div className="num">{stats.cuti}</div><div className="lbl">{tx("Cuti")}</div></div>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div style={{ display: 'flex', justifyContent: 'center', gap: 6, margin: '8px 0 2px' }}>
-        {[0, 1].map((i) => (
-          <span key={i} style={{ width: 6, height: 6, borderRadius: '50%', background: statsPage === i ? 'var(--blue)' : '#e2ddd6' }} />
-        ))}
-      </div>
+      <TeamStatsCarousel
+        onHelp={() => setHelp(true)}
+        hadir={[[tx("Tepat waktu"), stats.onTime], [tx("Terlambat masuk"), stats.late], [tx("Pulang lebih awal"), stats.earlyOut],
+          [tx("Tidak clock in"), stats.noClockIn], [tx("Tidak clock out"), stats.noClockOut], [tx("Tidak valid"), stats.invalid]]}
+        absent={[[tx("Absen"), stats.absent], [tx("Cuti"), stats.cuti]]}
+      />
 
-      <div style={{ padding: '4px 0 24px' }}>
-        {loading && <div className="empty-state"><p>{tx("Memuat...")}</p></div>}
+      <section className="tr-list">
+        {loading && <div className="tr-empty">{tx("Memuat...")}</div>}
         {!loading && rows.length === 0 && (
-          <div className="empty-state">
+          <div className="tr-empty">
             <User size={36} color="#ccc" />
             <h3>{tx("Belum ada anggota tim")}</h3>
             <p>{tx("Karyawan yang atasannya Anda akan muncul di sini.")}</p>
           </div>
         )}
-        {!loading && rows.map((r) => (
-          <div key={r.emp.id} className="list-item" onClick={() => setDetail(r)} style={{ cursor: 'pointer' }}>
-            <TeamAvatar url={r.emp.avatar_url} name={r.emp.full_name} />
-            <div className="info">
-              <div className="name">{r.emp.full_name}</div>
-              <div className="sub">{r.emp.employee_code || '-'}{r.emp.department ? ` | ${r.emp.department}` : ''}</div>
+        {!loading && rows.map((r) => {
+          const a = r.att
+          const open = openId === r.emp.id
+          const hasAtt = !!(a?.clock_in || a?.clock_out)
+          const events = []
+          if (a?.clock_in) events.push({ k: 'in', time: fmtTime(a.clock_in), label: 'Clock in' })
+          if (a?.clock_out) events.push({ k: 'out', time: fmtTime(a.clock_out), label: 'Clock out' })
+          const shiftLabel = !r.shift ? null
+            : r.shift.is_day_off ? tx("Hari libur")
+            : `${r.shift.name} (${r.shift.start_time?.slice(0, 5)} - ${r.shift.end_time?.slice(0, 5)})`
+          return (
+            <div key={r.emp.id} className="tr-item">
+              <button type="button" className="tr-item-head" aria-expanded={open} onClick={() => setOpenId(open ? null : r.emp.id)}>
+                <TeamAvatar url={r.emp.avatar_url} name={r.emp.full_name} size={44} />
+                <div className="tr-info">
+                  <div className="tr-name">{r.emp.full_name}</div>
+                  <div className="tr-sub">{r.emp.employee_code || '-'}{r.emp.department ? ` | ${r.emp.department}` : ''}</div>
+                  {hasAtt ? (
+                    <div className="tr-times">
+                      <span className={'tr-t g' + (r.late ? ' late' : '')}><Clock size={20} />{fmtTime(a.clock_in) || '-'}</span>
+                      <span className="tr-t b"><Clock size={20} />{fmtTime(a.clock_out) || '-'}</span>
+                    </div>
+                  ) : <div className="tr-sub">{tx("Belum ada presensi")}</div>}
+                </div>
+                <span className="tr-toggle">{open ? <Minus size={24} /> : <Plus size={24} />}</span>
+              </button>
+              {open && (
+                <div className="tr-body">
+                  {shiftLabel && <div className="tr-shift">{shiftLabel}</div>}
+                  {events.map((ev) => (
+                    <button key={ev.k} type="button" className="tr-ev" onClick={() => setDetail(r)}>
+                      <MapPin size={26} /><span className="t">{ev.time}</span><span className="l">{ev.label}</span><ChevronRight size={24} />
+                    </button>
+                  ))}
+                  <button type="button" className="tr-link" onClick={() => setMemberView({ id: r.emp.id, name: r.emp.full_name })}>
+                    {tx("Lihat semua data kehadiran")}
+                  </button>
+                </div>
+              )}
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 3, fontSize: 12.5, fontWeight: 600 }}>
-              <span style={{ color: r.att?.clock_in ? '#1e8e5a' : '#bbb' }}>{fmtTime(r.att?.clock_in) || '-'}</span>
-              <span style={{ color: r.att?.clock_out ? 'var(--blue)' : '#bbb' }}>{fmtTime(r.att?.clock_out) || '-'}</span>
-            </div>
-          </div>
-        ))}
-      </div>
+          )
+        })}
+      </section>
+
+      {help && <StatsHelpSheet onClose={() => setHelp(false)} />}
 
       {detail && !isDesktop && (
         <div className="sheet-overlay" onClick={() => setDetail(null)}>

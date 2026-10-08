@@ -1,0 +1,614 @@
+diff --git a/src/components/TeamStatsCarousel.jsx b/src/components/TeamStatsCarousel.jsx
+new file mode 100644
+index 0000000..ad22baa
+--- /dev/null
++++ b/src/components/TeamStatsCarousel.jsx
+@@ -0,0 +1,64 @@
++import { useState } from 'react'
++import { CircleHelp } from 'lucide-react'
++import Sheet from './Sheet'
++import { tx } from '../lib/i18n'
++import '../pages/TeamReportMobile.css'
++
++// Kartu statistik yang bisa digeser: kartu "Hadir" (6 angka, lebih lebar dari layar)
++// lalu kartu "Tidak hadir". Dipakai di laporan harian tim dan kehadiran bulanan anggota.
++export default function TeamStatsCarousel({ hadir, absent, onHelp }) {
++  const [page, setPage] = useState(0)
++  function onScroll(e) {
++    const el = e.currentTarget
++    const max = el.scrollWidth - el.clientWidth
++    setPage(max > 0 && el.scrollLeft > max / 2 ? 1 : 0)
++  }
++  return (
++    <section className="tr-stats">
++      <div className="tr-strip" onScroll={onScroll}>
++        <div className="tr-card">
++          <div className="tr-card-h">
++            {tx('Hadir')}
++            <button type="button" className="tr-help" onClick={onHelp} aria-label={tx('Bantuan')}><CircleHelp size={24} /></button>
++          </div>
++          <div className="tr-cols">
++            {hadir.map(([label, value]) => (
++              <div className="tr-col" key={label}><span className="tr-lbl">{label}</span><b className="tr-num">{value}</b></div>
++            ))}
++          </div>
++        </div>
++        <div className="tr-card">
++          <div className="tr-card-h">{tx('Tidak hadir')}</div>
++          <div className="tr-cols">
++            {absent.map(([label, value]) => (
++              <div className="tr-col" key={label}><span className="tr-lbl">{label}</span><b className="tr-num">{value}</b></div>
++            ))}
++          </div>
++        </div>
++      </div>
++      <div className="tr-dots" aria-hidden="true"><i className={page === 0 ? 'on' : ''} /><i className={page === 1 ? 'on' : ''} /></div>
++    </section>
++  )
++}
++
++export function StatsHelpSheet({ onClose }) {
++  const rows = [
++    ['Tepat waktu', 'Clock in tidak melewati jam mulai shift dan jam clock out valid.'],
++    ['Terlambat masuk', 'Clock in setelah jam mulai shift.'],
++    ['Pulang lebih awal', 'Clock out sebelum jam selesai shift.'],
++    ['Tidak clock in', 'Ada data pulang tetapi tidak ada data masuk.'],
++    ['Tidak clock out', 'Sudah clock in tetapi belum clock out.'],
++    ['Tidak valid', 'Jam clock out sama dengan atau lebih awal dari jam clock in.'],
++    ['Absen', 'Hari kerja tanpa presensi dan tanpa cuti disetujui.'],
++    ['Cuti', 'Karyawan sedang cuti yang sudah disetujui.'],
++  ]
++  return (
++    <Sheet title={tx('Keterangan statistik')} onClose={onClose}>
++      <div style={{ display: 'flex', flexDirection: 'column', gap: 14, paddingBottom: 6 }}>
++        {rows.map(([k, d]) => (
++          <div key={k}><b style={{ fontSize: 15 }}>{tx(k)}</b><div style={{ fontSize: 14, color: 'var(--text-muted)', marginTop: 2 }}>{tx(d)}</div></div>
++        ))}
++      </div>
++    </Sheet>
++  )
++}
+diff --git a/src/lib/i18nDict.js b/src/lib/i18nDict.js
+index 62ba98c..1c91a44 100644
+--- a/src/lib/i18nDict.js
++++ b/src/lib/i18nDict.js
+@@ -4179,6 +4179,70 @@ export const PAIRS = [
+ [
+ "Belum",
+ "Not yet"
++],
++[
++"Hadir",
++"Present"
++],
++[
++"Tidak clock in",
++"No clock in"
++],
++[
++"Belum ada presensi",
++"No attendance yet"
++],
++[
++"Lihat semua data kehadiran",
++"View all attendance data"
++],
++[
++"Pilih bulan",
++"Select month"
++],
++[
++"Keterangan statistik",
++"About these stats"
++],
++[
++"Durasi kerja",
++"Work duration"
++],
++[
++"Gagal memuat data",
++"Failed to load data"
++],
++[
++"Clock in tidak melewati jam mulai shift dan jam clock out valid.",
++"Clock in is not after the shift start time and the clock out time is valid."
++],
++[
++"Clock in setelah jam mulai shift.",
++"Clock in after the shift start time."
++],
++[
++"Clock out sebelum jam selesai shift.",
++"Clock out before the shift end time."
++],
++[
++"Ada data pulang tetapi tidak ada data masuk.",
++"Has a clock out record but no clock in record."
++],
++[
++"Sudah clock in tetapi belum clock out.",
++"Clocked in but not clocked out yet."
++],
++[
++"Jam clock out sama dengan atau lebih awal dari jam clock in.",
++"Clock out time is equal to or earlier than clock in time."
++],
++[
++"Hari kerja tanpa presensi dan tanpa cuti disetujui.",
++"Workday with no attendance and no approved time off."
++],
++[
++"Karyawan sedang cuti yang sudah disetujui.",
++"Employee is on approved time off."
+ ]
+ ]
+ export const ONEWAY = [
+diff --git a/src/pages/AttendanceLog.jsx b/src/pages/AttendanceLog.jsx
+index f2332b9..7b4b676 100644
+--- a/src/pages/AttendanceLog.jsx
++++ b/src/pages/AttendanceLog.jsx
+@@ -12,12 +12,12 @@ const hhmm = (ts) =>
+   ts ? new Date(ts).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: TZ }) : null
+ 
+ // Period runs from the 25th of the previous month to the 24th of the chosen month.
+-function periodOf(ym) {
++export function periodOf(ym) {
+   const [y, m] = ym.split('-').map(Number)
+   return { start: utc(y, m - 2, 25), end: utc(y, m - 1, 24) }
+ }
+ 
+-function buildRows({ start, end }, att, sched, shifts, holidays, emp, today) {
++export function buildRows({ start, end }, att, sched, shifts, holidays, emp, today) {
+   const rows = []
+   for (let d = new Date(start); d <= end; d = utc(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() + 1)) {
+     const key = iso(d)
+diff --git a/src/pages/Home.jsx b/src/pages/Home.jsx
+index c9ac709..8cee70c 100644
+--- a/src/pages/Home.jsx
++++ b/src/pages/Home.jsx
+@@ -290,10 +290,10 @@ export default function Home({ employee, onNavigate, onOpenAllApps }) {
+       </div>
+ 
+       {team.length > 0 && (
+-        <div className="section">
++        <div className="section" style={{ cursor: 'pointer' }} onClick={() => onNavigate('team-report')}>
+           <div className="section-title">
+             <h2>{tx("Laporan tim saya")}</h2>
+-            <a href="#" onClick={(e) => { e.preventDefault(); onNavigate('team-report') }}>{tx("Lihat aktivitas")}</a>
++            <a href="#" onClick={(e) => e.preventDefault()}>{tx("Lihat aktivitas")}</a>
+           </div>
+           <TeamAvatarStack team={team} />
+         </div>
+diff --git a/src/pages/TeamMemberAttendance.jsx b/src/pages/TeamMemberAttendance.jsx
+new file mode 100644
+index 0000000..ad876a7
+--- /dev/null
++++ b/src/pages/TeamMemberAttendance.jsx
+@@ -0,0 +1,158 @@
++import { useEffect, useMemo, useState } from 'react'
++import { ArrowLeft, ChevronDown, ChevronRight } from 'lucide-react'
++import { supabase } from '../lib/supabaseClient'
++import { todayStr } from '../lib/dateUtils'
++import { tx, locale } from '../lib/i18n'
++import Sheet from '../components/Sheet'
++import TeamStatsCarousel, { StatsHelpSheet } from '../components/TeamStatsCarousel'
++import { periodOf, buildRows } from './AttendanceLog'
++import './TeamReportMobile.css'
++
++const pad2 = (n) => String(n).padStart(2, '0')
++const toMin = (t) => { const [h, m] = t.split(':'); return +h * 60 + +m }
++const isoUtc = (d) => d.toISOString().slice(0, 10) // d selalu Date UTC dari periodOf
++const monthShort = (d) => d.toLocaleDateString(locale(), { month: 'short', timeZone: 'UTC' }).replace('.', '')
++const fmtDay = (d) => `${pad2(d.getUTCDate())} ${monthShort(d)}`
++const isInvalid = (r) => !!(r.clockIn && r.clockOut && toMin(r.clockOut) <= toMin(r.clockIn))
++
++// Periode aktif: tanggal 25 bulan lalu s/d 24 bulan terpilih. Mulai tgl 25, periode berikutnya jadi default.
++function defaultYm() {
++  const [y, m, d] = todayStr().split('-').map(Number)
++  const dt = new Date(Date.UTC(y, m - 1 + (d >= 25 ? 1 : 0), 1))
++  return `${dt.getUTCFullYear()}-${pad2(dt.getUTCMonth() + 1)}`
++}
++
++function statusOf(r) {
++  if (r.kind === 'leave') return tx('Cuti')
++  if (r.kind === 'holiday') return r.hol?.title || tx('Hari libur')
++  if (r.kind === 'off') return tx('Hari libur')
++  if (r.kind === 'absent') return tx('Tidak hadir')
++  if (r.kind === 'upcoming') return '-'
++  if (isInvalid(r)) return tx('Tidak valid')
++  if (r.flags.includes('noin')) return tx('Tidak clock in')
++  if (r.flags.includes('late')) return tx('Terlambat masuk')
++  if (r.flags.includes('noout')) return tx('Belum clock out')
++  if (r.flags.includes('early')) return tx('Pulang lebih awal')
++  return tx('Tepat waktu')
++}
++
++// Kehadiran bulanan satu anggota tim (dibuka dari "Lihat semua data kehadiran").
++export default function TeamMemberAttendance({ empId, name, onBack }) {
++  const [ym, setYm] = useState(defaultYm)
++  const [state, setState] = useState({ loading: true, error: null, rows: [] })
++  const [sel, setSel] = useState(null)
++  const [help, setHelp] = useState(false)
++  const period = useMemo(() => periodOf(ym), [ym])
++
++  const months = useMemo(() => {
++    const [y, m] = defaultYm().split('-').map(Number)
++    return Array.from({ length: 12 }, (_, i) => {
++      const d = new Date(Date.UTC(y, m - 1 - i, 1))
++      return { v: `${d.getUTCFullYear()}-${pad2(d.getUTCMonth() + 1)}`, t: `${monthShort(d)} ${d.getUTCFullYear()}` }
++    })
++  }, [])
++  const curMonth = months.find((o) => o.v === ym)?.t || ym
++
++  useEffect(() => {
++    let alive = true
++    ;(async () => {
++      setState((s) => ({ ...s, loading: true, error: null }))
++      try {
++        const from = isoUtc(period.start), to = isoUtc(period.end)
++        const [emp, att, sch, shf, cal, lv] = await Promise.all([
++          supabase.from('employees').select('id, full_name, position, default_shift_id, default_work_days').eq('id', empId).single(),
++          supabase.from('attendance').select('work_date, clock_in, clock_out').eq('employee_id', empId).gte('work_date', from).lte('work_date', to),
++          supabase.from('shift_schedules').select('work_date, shift_id, is_day_off').eq('employee_id', empId).gte('work_date', from).lte('work_date', to),
++          supabase.from('shifts').select('id, name, start_time, end_time'),
++          supabase.from('calendar_events').select('title, start_date, end_date').eq('kind', 'holiday').lte('start_date', to).gte('end_date', from),
++          supabase.from('leave_requests').select('start_date, end_date').eq('employee_id', empId).eq('status', 'approved').lte('start_date', to).gte('end_date', from),
++        ])
++        const err = emp.error || att.error || sch.error || shf.error || cal.error || lv.error
++        if (err) throw err
++        const by = (res, k) => Object.fromEntries((res.data || []).map((x) => [x[k], x]))
++        const leaves = lv.data || []
++        const onLeave = (key) => leaves.some((l) => l.start_date <= key && l.end_date >= key)
++        const rows = buildRows(period, by(att, 'work_date'), by(sch, 'work_date'), by(shf, 'id'), cal.data || [], emp.data, todayStr())
++          // hari kerja tanpa presensi tetapi ada cuti disetujui dihitung Cuti, bukan Absen
++          .map((r) => ((r.kind === 'absent' || r.kind === 'upcoming') && onLeave(r.key) ? { ...r, kind: 'leave' } : r))
++        if (alive) setState({ loading: false, error: null, rows })
++      } catch (e) {
++        if (alive) setState({ loading: false, error: e.message || tx('Gagal memuat data'), rows: [] })
++      }
++    })()
++    return () => { alive = false }
++  }, [empId, period])
++
++  const { rows, loading, error } = state
++  const worked = rows.filter((r) => r.kind === 'work')
++  const stats = {
++    onTime: worked.filter((r) => !r.flags.includes('late') && !r.flags.includes('noin') && !isInvalid(r)).length,
++    late: worked.filter((r) => r.flags.includes('late')).length,
++    early: worked.filter((r) => r.flags.includes('early') && !isInvalid(r)).length,
++    noIn: worked.filter((r) => r.flags.includes('noin')).length,
++    noOut: worked.filter((r) => r.flags.includes('noout')).length,
++    invalid: worked.filter(isInvalid).length,
++    absent: rows.filter((r) => r.kind === 'absent').length,
++    cuti: rows.filter((r) => r.kind === 'leave').length,
++  }
++
++  return (
++    <div className="tr-page">
++      <header className="tr-head">
++        <button type="button" className="tr-back" onClick={onBack} aria-label={tx('Kembali')}><ArrowLeft size={26} /></button>
++        <label className="tr-title">
++          <span className="tr-title-main">{curMonth}<ChevronDown size={22} /></span>
++          <small>{name}</small>
++          <select value={ym} onChange={(e) => setYm(e.target.value)} aria-label={tx('Pilih bulan')}>
++            {months.map((o) => <option key={o.v} value={o.v}>{o.t}</option>)}
++          </select>
++        </label>
++        <span className="tr-head-sp" />
++      </header>
++
++      <TeamStatsCarousel
++        onHelp={() => setHelp(true)}
++        hadir={[[tx('Tepat waktu'), stats.onTime], [tx('Terlambat masuk'), stats.late], [tx('Pulang lebih awal'), stats.early],
++          [tx('Tidak clock in'), stats.noIn], [tx('Tidak clock out'), stats.noOut], [tx('Tidak valid'), stats.invalid]]}
++        absent={[[tx('Absen'), stats.absent], [tx('Cuti'), stats.cuti]]}
++      />
++
++      <section className="tr-list">
++        {loading && <div className="tr-empty">{tx('Memuat...')}</div>}
++        {error && <div className="tr-empty" style={{ color: '#c0392b' }}>{error}</div>}
++        {!loading && !error && rows.map((r) => {
++          const red = r.kind === 'off' || r.kind === 'holiday'
++          const sub = r.kind === 'holiday' ? (r.hol?.title || tx('Hari libur'))
++            : r.kind === 'off' ? tx('Hari libur')
++            : r.kind === 'leave' ? tx('Cuti')
++            : r.kind === 'absent' ? tx('Tidak hadir')
++            : (r.shift?.name || '')
++          return (
++            <button key={r.key} type="button" className="tr-day" onClick={() => setSel(r)}>
++              <div>
++                <div className={'tr-date' + (red ? ' red' : '')}>{fmtDay(r.date)}</div>
++                <div className={'tr-loc' + (red || r.kind === 'absent' ? ' red' : '')}>{sub}</div>
++              </div>
++              <span className={'tr-dt' + (r.flags.includes('late') ? ' late' : '')}>{r.clockIn || '-'}</span>
++              <span className="tr-dt">{r.clockOut || '-'}</span>
++              <ChevronRight size={24} />
++            </button>
++          )
++        })}
++      </section>
++
++      {help && <StatsHelpSheet onClose={() => setHelp(false)} />}
++      {sel && (
++        <Sheet title={fmtDay(sel.date) + ' ' + sel.date.getUTCFullYear()} onClose={() => setSel(null)}>
++          <div style={{ paddingBottom: 6 }}>
++            <div className="tr-kv"><span>Shift</span><b>{sel.shift && sel.kind !== 'off' && sel.kind !== 'holiday' ? `${sel.shift.name} (${sel.shift.start_time.slice(0, 5)} - ${sel.shift.end_time.slice(0, 5)})` : '-'}</b></div>
++            <div className="tr-kv"><span>Clock in</span><b>{sel.clockIn || '-'}</b></div>
++            <div className="tr-kv"><span>Clock out</span><b>{sel.clockOut || '-'}</b></div>
++            <div className="tr-kv"><span>{tx('Durasi kerja')}</span><b>{sel.worked || '-'}</b></div>
++            <div className="tr-kv"><span>Status</span><b>{statusOf(sel)}</b></div>
++          </div>
++        </Sheet>
++      )}
++    </div>
++  )
++}
+diff --git a/src/pages/TeamReport.jsx b/src/pages/TeamReport.jsx
+index fe62b80..c54f2e0 100644
+--- a/src/pages/TeamReport.jsx
++++ b/src/pages/TeamReport.jsx
+@@ -1,8 +1,12 @@
+ import { useEffect, useMemo, useState } from 'react'
+-import { ArrowLeft, ChevronLeft, ChevronRight, User, X } from 'lucide-react'
++import { ArrowLeft, ChevronDown, ChevronLeft, ChevronRight, Clock, MapPin, Minus, Plus, User, X } from 'lucide-react'
+ import { useIsDesktop } from '../lib/useIsDesktop'
+ import { supabase } from '../lib/supabaseClient'
+ import { todayStr } from '../lib/dateUtils'
++import { useBackHandler } from '../lib/backStack'
++import TeamStatsCarousel, { StatsHelpSheet } from '../components/TeamStatsCarousel'
++import TeamMemberAttendance from './TeamMemberAttendance'
++import './TeamReportMobile.css'
+ 
+ import { tx, locale } from '../lib/i18n'
+ function pad2(n) { return String(n).padStart(2, '0') }
+@@ -15,7 +19,8 @@ function addDays(dateStr, delta) {
+ 
+ function fmtTime(iso) {
+   if (!iso) return null
+-  return new Date(iso).toLocaleTimeString(locale(), { hour: '2-digit', minute: '2-digit' })
++  // HH:mm (titik dua) dalam WIB, tidak bergantung zona waktu perangkat
++  return new Date(iso).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Jakarta' })
+ }
+ 
+ function initials(name) {
+@@ -40,8 +45,12 @@ export default function TeamReport({ employee, onBack }) {
+   const [loading, setLoading] = useState(true)
+   const [statsPage, setStatsPage] = useState(0)
+   const [detail, setDetail] = useState(null)
++  const [openId, setOpenId] = useState(null)       // anggota yang sedang diperluas (satu per waktu)
++  const [memberView, setMemberView] = useState(null) // {id, name} -> kehadiran bulanan
++  const [help, setHelp] = useState(false)
++  useBackHandler(() => setMemberView(null), !!memberView && !isDesktop)
+ 
+-  useEffect(() => { load() }, [date, employee?.id])
++  useEffect(() => { load(); setOpenId(null) }, [date, employee?.id])
+ 
+   async function load() {
+     if (!employee?.id) return
+@@ -80,11 +89,12 @@ export default function TeamReport({ employee, onBack }) {
+       const late = a?.status === 'late'
+       const invalid = !!a?.clock_in && !!a?.clock_out && new Date(a.clock_out) <= new Date(a.clock_in)
+       const noClockOut = !!a?.clock_in && !a?.clock_out
++      const noClockIn = !!a && !a.clock_in && !!a.clock_out
+       const earlyOut = !invalid && !!a?.clock_out && !!shift?.end_time &&
+         new Date(a.clock_out).toTimeString().slice(0, 5) < shift.end_time.slice(0, 5)
+       const onTime = !!a?.clock_in && !late && !invalid
+       const absent = isPastOrToday && !dayOff && !onLeave && !a?.clock_in && !a?.clock_out
+-      return { emp: t, shift, att: a, onLeave, dayOff, late, invalid, noClockOut, earlyOut, onTime, absent }
++      return { emp: t, shift, att: a, onLeave, dayOff, late, invalid, noClockOut, noClockIn, earlyOut, onTime, absent }
+     })
+     setRows(merged)
+     setLoading(false)
+@@ -96,6 +106,7 @@ export default function TeamReport({ employee, onBack }) {
+     earlyOut: rows.filter((r) => r.earlyOut).length,
+     clockedIn: rows.filter((r) => r.att?.clock_in).length,
+     noClockOut: rows.filter((r) => r.noClockOut).length,
++    noClockIn: rows.filter((r) => r.noClockIn).length,
+     invalid: rows.filter((r) => r.invalid).length,
+     absent: rows.filter((r) => r.absent).length,
+     cuti: rows.filter((r) => r.onLeave).length,
+@@ -168,76 +179,85 @@ export default function TeamReport({ employee, onBack }) {
+     )
+   }
+ 
++  if (memberView) {
++    return <TeamMemberAttendance empId={memberView.id} name={memberView.name} onBack={() => setMemberView(null)} />
++  }
++
++  const longDate = new Date(date + 'T00:00:00').toLocaleDateString(locale(), { day: '2-digit', month: 'short', year: 'numeric' }).replace('.', '')
++
+   return (
+-    <div>
+-      <div className="page-header">
+-        <button className="back-btn" onClick={onBack}><ArrowLeft size={22} /></button>
+-        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+-          <button className="icon-btn" style={{ color: '#fff' }} onClick={() => setDate((d) => addDays(d, -1))}><ChevronLeft size={18} /></button>
+-          <h1 style={{ flex: 'none', fontSize: 16.5 }}>{dateLabel}</h1>
+-          <button className="icon-btn" style={{ color: '#fff', opacity: isToday ? 0.4 : 1, pointerEvents: isToday ? 'none' : 'auto' }}
+-            onClick={() => setDate((d) => addDays(d, 1))}>
+-            <ChevronRight size={18} />
+-          </button>
+-        </div>
+-        <span style={{ width: 22 }} />
+-      </div>
++    <div className="tr-page">
++      <header className="tr-head">
++        <button type="button" className="tr-back" onClick={onBack} aria-label={tx("Kembali")}><ArrowLeft size={26} /></button>
++        <label className="tr-title">
++          <span className="tr-title-main">{longDate}<ChevronDown size={22} /></span>
++          <input type="date" value={date} max={todayStr()} aria-label={tx("Pilih tanggal")}
++            onChange={(e) => { if (e.target.value) setDate(e.target.value) }} />
++        </label>
++        <span className="tr-head-sp" />
++      </header>
+ 
+-      <div
+-        style={{ overflowX: 'auto', scrollSnapType: 'x mandatory', display: 'flex', WebkitOverflowScrolling: 'touch' }}
+-        onScroll={onStatsScroll}
+-      >
+-        <div style={{ minWidth: '100%', scrollSnapAlign: 'start' }}>
+-          <div className="stats-strip">
+-            <div className="stat"><div className="num">{stats.onTime}</div><div className="lbl">{tx("Tepat waktu")}</div></div>
+-            <div className="stat"><div className="num">{stats.late}</div><div className="lbl">{tx("Terlambat masuk")}</div></div>
+-            <div className="stat"><div className="num">{stats.earlyOut}</div><div className="lbl">{tx("Pulang lebih awal")}</div></div>
+-          </div>
+-        </div>
+-        <div style={{ minWidth: '100%', scrollSnapAlign: 'start', display: 'flex', gap: 10 }}>
+-          <div className="stats-strip" style={{ flex: 1, margin: '14px 0 0 16px' }}>
+-            <div className="stat"><div className="num">{stats.clockedIn}</div><div className="lbl">{tx("Sudah clock in")}</div></div>
+-            <div className="stat"><div className="num">{stats.noClockOut}</div><div className="lbl">{tx("Tidak clock out")}</div></div>
+-            <div className="stat"><div className="num">{stats.invalid}</div><div className="lbl">{tx("Tidak valid")}</div></div>
+-          </div>
+-          <div className="stats-strip" style={{ flex: 'none', width: 140, margin: '14px 16px 0 0', flexDirection: 'column', gap: 8, alignItems: 'flex-start' }}>
+-            <div style={{ fontWeight: 700, fontSize: 12.5 }}>{tx("Tidak hadir")}</div>
+-            <div style={{ display: 'flex', gap: 14, width: '100%' }}>
+-              <div className="stat"><div className="num">{stats.absent}</div><div className="lbl">{tx("Absen")}</div></div>
+-              <div className="stat"><div className="num">{stats.cuti}</div><div className="lbl">{tx("Cuti")}</div></div>
+-            </div>
+-          </div>
+-        </div>
+-      </div>
+-      <div style={{ display: 'flex', justifyContent: 'center', gap: 6, margin: '8px 0 2px' }}>
+-        {[0, 1].map((i) => (
+-          <span key={i} style={{ width: 6, height: 6, borderRadius: '50%', background: statsPage === i ? 'var(--blue)' : '#e2ddd6' }} />
+-        ))}
+-      </div>
++      <TeamStatsCarousel
++        onHelp={() => setHelp(true)}
++        hadir={[[tx("Tepat waktu"), stats.onTime], [tx("Terlambat masuk"), stats.late], [tx("Pulang lebih awal"), stats.earlyOut],
++          [tx("Tidak clock in"), stats.noClockIn], [tx("Tidak clock out"), stats.noClockOut], [tx("Tidak valid"), stats.invalid]]}
++        absent={[[tx("Absen"), stats.absent], [tx("Cuti"), stats.cuti]]}
++      />
+ 
+-      <div style={{ padding: '4px 0 24px' }}>
+-        {loading && <div className="empty-state"><p>{tx("Memuat...")}</p></div>}
++      <section className="tr-list">
++        {loading && <div className="tr-empty">{tx("Memuat...")}</div>}
+         {!loading && rows.length === 0 && (
+-          <div className="empty-state">
++          <div className="tr-empty">
+             <User size={36} color="#ccc" />
+             <h3>{tx("Belum ada anggota tim")}</h3>
+             <p>{tx("Karyawan yang atasannya Anda akan muncul di sini.")}</p>
+           </div>
+         )}
+-        {!loading && rows.map((r) => (
+-          <div key={r.emp.id} className="list-item" onClick={() => setDetail(r)} style={{ cursor: 'pointer' }}>
+-            <TeamAvatar url={r.emp.avatar_url} name={r.emp.full_name} />
+-            <div className="info">
+-              <div className="name">{r.emp.full_name}</div>
+-              <div className="sub">{r.emp.employee_code || '-'}{r.emp.department ? ` | ${r.emp.department}` : ''}</div>
++        {!loading && rows.map((r) => {
++          const a = r.att
++          const open = openId === r.emp.id
++          const hasAtt = !!(a?.clock_in || a?.clock_out)
++          const events = []
++          if (a?.clock_in) events.push({ k: 'in', time: fmtTime(a.clock_in), label: 'Clock in' })
++          if (a?.clock_out) events.push({ k: 'out', time: fmtTime(a.clock_out), label: 'Clock out' })
++          const shiftLabel = !r.shift ? null
++            : r.shift.is_day_off ? tx("Hari libur")
++            : `${r.shift.name} (${r.shift.start_time?.slice(0, 5)} - ${r.shift.end_time?.slice(0, 5)})`
++          return (
++            <div key={r.emp.id} className="tr-item">
++              <button type="button" className="tr-item-head" aria-expanded={open} onClick={() => setOpenId(open ? null : r.emp.id)}>
++                <TeamAvatar url={r.emp.avatar_url} name={r.emp.full_name} size={44} />
++                <div className="tr-info">
++                  <div className="tr-name">{r.emp.full_name}</div>
++                  <div className="tr-sub">{r.emp.employee_code || '-'}{r.emp.department ? ` | ${r.emp.department}` : ''}</div>
++                  {hasAtt ? (
++                    <div className="tr-times">
++                      <span className={'tr-t g' + (r.late ? ' late' : '')}><Clock size={20} />{fmtTime(a.clock_in) || '-'}</span>
++                      <span className="tr-t b"><Clock size={20} />{fmtTime(a.clock_out) || '-'}</span>
++                    </div>
++                  ) : <div className="tr-sub">{tx("Belum ada presensi")}</div>}
++                </div>
++                <span className="tr-toggle">{open ? <Minus size={24} /> : <Plus size={24} />}</span>
++              </button>
++              {open && (
++                <div className="tr-body">
++                  {shiftLabel && <div className="tr-shift">{shiftLabel}</div>}
++                  {events.map((ev) => (
++                    <button key={ev.k} type="button" className="tr-ev" onClick={() => setDetail(r)}>
++                      <MapPin size={26} /><span className="t">{ev.time}</span><span className="l">{ev.label}</span><ChevronRight size={24} />
++                    </button>
++                  ))}
++                  <button type="button" className="tr-link" onClick={() => setMemberView({ id: r.emp.id, name: r.emp.full_name })}>
++                    {tx("Lihat semua data kehadiran")}
++                  </button>
++                </div>
++              )}
+             </div>
+-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 3, fontSize: 12.5, fontWeight: 600 }}>
+-              <span style={{ color: r.att?.clock_in ? '#1e8e5a' : '#bbb' }}>{fmtTime(r.att?.clock_in) || '-'}</span>
+-              <span style={{ color: r.att?.clock_out ? 'var(--blue)' : '#bbb' }}>{fmtTime(r.att?.clock_out) || '-'}</span>
+-            </div>
+-          </div>
+-        ))}
+-      </div>
++          )
++        })}
++      </section>
++
++      {help && <StatsHelpSheet onClose={() => setHelp(false)} />}
+ 
+       {detail && !isDesktop && (
+         <div className="sheet-overlay" onClick={() => setDetail(null)}>
+diff --git a/src/pages/TeamReportMobile.css b/src/pages/TeamReportMobile.css
+new file mode 100644
+index 0000000..ed316a7
+--- /dev/null
++++ b/src/pages/TeamReportMobile.css
+@@ -0,0 +1,53 @@
++/* Laporan Tim Saya (mobile) + kehadiran bulanan anggota. Prefix tr- agar tidak bentrok. */
++.tr-page{ min-height:100vh; padding-bottom:28px; }
++.tr-head{ display:flex; align-items:center; justify-content:space-between; padding:calc(14px + env(safe-area-inset-top,0px)) 16px 12px; }
++.tr-back{ background:none; border:none; color:var(--blue); padding:6px; margin-left:-6px; display:flex; }
++.tr-head-sp{ width:32px; flex:none; }
++.tr-title{ position:relative; display:flex; flex-direction:column; align-items:center; font-weight:600; color:#2b2926; cursor:pointer; min-width:0; }
++.tr-title-main{ display:flex; align-items:center; gap:6px; font-size:clamp(19px,5.6vw,23px); line-height:1.2; }
++.tr-title small{ font-size:14px; color:var(--text-muted); font-weight:500; margin-top:2px; max-width:60vw; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
++.tr-title input, .tr-title select{ position:absolute; inset:0; width:100%; height:100%; opacity:0; cursor:pointer; font-size:16px; border:0; }
++
++.tr-stats{ background:#fff; margin:4px 8px 0; border-radius:16px; padding:16px 0 14px; }
++.tr-strip{ display:flex; gap:12px; overflow-x:auto; padding:0 16px; scroll-snap-type:x proximity; scroll-padding:0 16px; scrollbar-width:none; -webkit-overflow-scrolling:touch; }
++.tr-strip::-webkit-scrollbar{ display:none; }
++.tr-card{ flex:none; border:1.5px solid #e3dfda; border-radius:14px; padding:16px 18px 18px; scroll-snap-align:start; background:#fff; }
++.tr-card-h{ display:flex; align-items:center; gap:8px; font-size:20px; font-weight:600; color:#2b2926; margin-bottom:14px; }
++.tr-help{ background:none; border:none; padding:0; color:#6b7684; display:flex; }
++.tr-cols{ display:flex; gap:22px; }
++.tr-col{ display:flex; flex-direction:column; gap:6px; white-space:nowrap; }
++.tr-lbl{ font-size:14.5px; color:#2b2926; }
++.tr-num{ font-size:30px; font-weight:500; color:var(--blue); line-height:1.1; }
++.tr-dots{ display:flex; justify-content:center; margin-top:16px; }
++.tr-dots i{ width:32px; height:10px; background:#efebe6; }
++.tr-dots i:first-child{ border-radius:5px 0 0 5px; } .tr-dots i:last-child{ border-radius:0 5px 5px 0; }
++.tr-dots i.on{ background:var(--blue); border-radius:5px; }
++
++.tr-list{ background:#fff; margin:12px 8px 0; border-radius:16px; padding:2px 0; overflow:hidden; }
++.tr-empty{ padding:36px 20px; text-align:center; color:var(--text-muted); }
++.tr-item{ border-bottom:1.5px solid #e6e2dc; }
++.tr-item:last-child{ border-bottom:none; }
++.tr-item-head{ display:flex; align-items:flex-start; gap:14px; width:100%; padding:16px; background:none; border:none; text-align:left; color:inherit; font:inherit; }
++.tr-info{ flex:1; min-width:0; }
++.tr-name{ font-size:clamp(16px,4.7vw,19px); font-weight:500; color:#2b2926; overflow-wrap:anywhere; line-height:1.25; }
++.tr-sub{ font-size:14.5px; color:#6b7280; margin-top:2px; overflow-wrap:anywhere; }
++.tr-times{ display:flex; gap:clamp(16px,7vw,32px); margin-top:6px; }
++.tr-t{ display:flex; align-items:center; gap:6px; font-size:14.5px; font-weight:700; color:#5b6773; }
++.tr-t.g svg{ color:#1e8e5a; } .tr-t.b svg{ color:#4356c4; } .tr-t.late{ color:#d9645a; }
++.tr-toggle{ width:42px; height:42px; border:2.5px solid #6b7684; border-radius:10px; display:flex; align-items:center; justify-content:center; color:#6b7684; flex:none; align-self:center; }
++.tr-body{ padding:0 16px 16px; }
++.tr-shift{ font-size:clamp(16px,4.7vw,19px); color:#2b2926; margin:4px 0 12px; overflow-wrap:anywhere; }
++.tr-ev{ display:flex; align-items:center; gap:14px; width:100%; background:none; border:none; padding:10px 4px; font-size:clamp(16px,4.7vw,19px); color:#2b2926; text-align:left; font-family:inherit; }
++.tr-ev svg{ flex:none; color:#6b7684; }
++.tr-ev .t{ min-width:96px; } .tr-ev .l{ flex:1; }
++.tr-link{ background:none; border:none; color:var(--blue); text-decoration:underline; font-size:clamp(16px,4.7vw,19px); padding:22px 0 4px; font-family:inherit; text-align:left; }
++
++.tr-day{ display:grid; grid-template-columns:minmax(0,1fr) 72px 72px 26px; align-items:center; width:100%; padding:14px 16px; gap:4px; background:none; border:none; text-align:left; color:inherit; font:inherit; }
++.tr-date{ font-size:clamp(18px,5.4vw,22px); color:#2b2926; line-height:1.2; }
++.tr-loc{ font-size:14.5px; color:#555e68; margin-top:2px; overflow-wrap:anywhere; }
++.tr-date.red, .tr-loc.red{ color:#e07a6e; }
++.tr-dt{ font-size:16px; font-weight:700; color:#5b6773; }
++.tr-dt.late{ color:#e07a6e; }
++.tr-day > svg{ color:#6b7684; }
++.tr-kv{ display:flex; justify-content:space-between; gap:12px; font-size:14.5px; padding:8px 0; }
++.tr-kv span{ color:var(--text-muted); } .tr-kv b{ text-align:right; overflow-wrap:anywhere; }
