@@ -165,7 +165,7 @@ function ApprovalList({ category, onBack, onOpen, onToast }) {
                     <ul style={{ margin: '6px 0 0', padding: '0 0 0 16px', fontSize: 13.5, color: 'var(--text-muted)' }}>
                       {bulletsFor(category.key, r).map((b, i) => <li key={i}>{b}</li>)}
                     </ul>
-                    <div style={{ marginTop: 8 }}><StatusPill status={r.status} /></div>
+                    <div style={{ marginTop: 8 }}><StatusPill status={r.status} waitingFor={r.status === 'pending' && r.can_act === false ? r.waiting_for : null} /></div>
                   </div>
                 </div>
               </button>
@@ -245,7 +245,14 @@ function fmtDay(d) {
   return d ? new Date(d).toLocaleDateString(locale(), { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' }) : '-'
 }
 
-function StatusPill({ status }) {
+function StatusPill({ status, waitingFor }) {
+  if (waitingFor) {
+    return (
+      <span style={{ background: '#eef1fb', color: '#4356C4', fontSize: 11.5, fontWeight: 700, borderRadius: 8, padding: '4px 9px', whiteSpace: 'nowrap' }}>
+        {tx("Menunggu {0}", [waitingFor])}
+      </span>
+    )
+  }
   const map = {
     pending: { label: tx("Menunggu persetujuan"), bg: '#FBEEDD', fg: '#B4650C' },
     approved: { label: tx("Disetujui"), bg: '#DCF3E6', fg: '#1E8E5A' },
@@ -310,7 +317,7 @@ function ApprovalDetail({ table, id, onBack, onToast, onDecided }) {
           <div style={{ fontSize: 12.5, color: 'var(--text-muted)' }}>{submittedAt}</div>
         </div>
       </div>
-      <div style={{ padding: '0 16px 14px' }}><StatusPill status={r.status} /></div>
+      <div style={{ padding: '0 16px 14px' }}><StatusPill status={r.status} waitingFor={r.status === 'pending' && detail.can_act === false ? stepWho(firstPendingStep(detail)) : null} /></div>
 
       <div className="section" style={{ margin: '0 16px' }}>
         <FieldRows table={table} row={r} />
@@ -328,7 +335,7 @@ function ApprovalDetail({ table, id, onBack, onToast, onDecided }) {
         </div>
       </div>
 
-      {r.status === 'pending' && (
+      {r.status === 'pending' && detail.can_act !== false && (
         <div style={{ display: 'flex', gap: 10, padding: 16 }}>
           <button onClick={() => decide(false)} disabled={busy} style={{
             flex: 1, padding: 13, borderRadius: 12, border: '1px solid #C0392B', background: '#fff', color: '#C0392B',
@@ -399,11 +406,40 @@ function fmt(d) {
   return d ? new Date(d).toLocaleDateString(locale(), { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' }) : '-'
 }
 
+const firstPendingStep = (detail) => (detail.steps || []).find((s) => s.status === 'pending')
+const stepWho = (s) => (!s ? null : s.hr_fallback ? 'HR' : s.approver_name)
+
 function Timeline({ row, detail }) {
   const items = [
     { label: tx("Diajukan oleh {0}", [detail.requester_name]), time: row.created_at, color: '#4356C4', done: true },
   ]
-  if (row.status === 'pending') {
+  const steps = detail.steps || []
+  if (steps.length) {
+    // rantai persetujuan berjenjang: satu butir per tahap (tahap yang dilewati tidak ditampilkan)
+    let seenPending = false
+    for (const s of steps) {
+      const who = stepWho(s)
+      const gol = s.approver_grade ? ` (${tx("Gol. {0}", [s.approver_grade])})` : ''
+      if (s.status === 'approved') {
+        const by = s.decided_by_name || who
+        items.push({
+          label: tx("Disetujui oleh {0}", [by]), time: s.decided_at, color: '#1E8E5A', done: true,
+          sub: s.acted_as_hr && by !== who ? tx("menggantikan {0}", [who + gol]) : (s.approver_grade ? tx("Gol. {0}", [s.approver_grade]) : ''),
+        })
+      } else if (s.status === 'rejected') {
+        const by = s.decided_by_name || who
+        items.push({
+          label: tx("Ditolak oleh {0}", [by]), time: s.decided_at, color: '#C0392B', done: true,
+          sub: s.acted_as_hr && by !== who ? tx("menggantikan {0}", [who + gol]) : '',
+        })
+      } else if (s.status === 'pending') {
+        items.push(seenPending
+          ? { label: tx("Berikutnya: {0}", [who + gol]), time: null, color: '#cfc7bd', pending: true }
+          : { label: tx("Menunggu persetujuan {0}", [who + gol]), time: null, color: '#c58a12', pending: true })
+        seenPending = true
+      }
+    }
+  } else if (row.status === 'pending') {
     items.push({ label: tx("Menunggu persetujuan dari {0}", [row.field_name ? 'HR' : (detail.manager_name || 'HR')]), time: null, color: '#c58a12', pending: true })
   } else if (row.status === 'approved') {
     items.push({ label: tx("Disetujui oleh {0}", [detail.approver_name || 'HR']), time: row.decided_at, color: '#1E8E5A', done: true })
@@ -421,6 +457,7 @@ function Timeline({ row, detail }) {
           </div>
           <div style={{ paddingBottom: 14 }}>
             <div style={{ fontSize: 14.5, fontWeight: it.pending ? 400 : 600 }}>{it.label}</div>
+            {it.sub && <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 1 }}>{it.sub}</div>}
             {it.time && (
               <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>
                 {new Date(it.time).toLocaleDateString(locale(), { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' })}, {new Date(it.time).toLocaleTimeString(locale(), { hour: '2-digit', minute: '2-digit' })}

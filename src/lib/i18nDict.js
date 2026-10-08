@@ -4079,6 +4079,106 @@ export const PAIRS = [
 [
 "Kuota Cuti",
 "Leave Quota"
+],
+[
+"Menunggu {0}",
+"Waiting for {0}"
+],
+[
+"Gol. {0}",
+"Grade {0}"
+],
+[
+"tahap {0} dari {1}",
+"step {0} of {1}"
+],
+[
+"Menunggu persetujuan {0}",
+"Awaiting approval from {0}"
+],
+[
+"Berikutnya: {0}",
+"Next: {0}"
+],
+[
+"menggantikan {0}",
+"on behalf of {0}"
+],
+[
+"Posisi persetujuan",
+"Approval status"
+],
+[
+"Override HR diaktifkan",
+"HR override enabled"
+],
+[
+"Override HR dinonaktifkan",
+"HR override disabled"
+],
+[
+"Persetujuan berjenjang berdasarkan golongan",
+"Tiered approval by grade"
+],
+[
+"Golongan {0} → {1}",
+"Grade {0} → {1}"
+],
+[
+"Rantai ditelusuri ke atas lewat atasan. Tingkat yang tidak ada di rantai dilewati; bila tidak ada yang cocok dipakai atasan terdekat yang golongannya lebih tinggi, atau HR bila tidak ada atasan. Tahap berikutnya baru aktif setelah tahap sebelumnya menyetujui.",
+"The chain is traced upward through managers. Levels missing from the chain are skipped; if none match, the nearest manager of a higher grade is used, or HR if there is no manager. The next step only becomes active after the previous step approves."
+],
+[
+"Dari {0} karyawan aktif, {1} memiliki approver tahap pertama yang sudah punya akun login, {2} yang belum, dan {3} langsung ke HR.",
+"Of {0} active employees, {1} have a first-step approver with a login account, {2} do not, and {3} go straight to HR."
+],
+[
+"Atasan dengan akun: {0} dari {1}.",
+"Managers with an account: {0} of {1}."
+],
+[
+"Untuk approver yang belum punya akun, HR diberi tahu dan dapat menyetujui lewat override.",
+"For approvers without an account, HR is notified and can approve via override."
+],
+[
+"HR dapat meng-override persetujuan",
+"HR can override approvals"
+],
+[
+"Jika aktif, HR dapat menyetujui/menolak pada tahap mana pun dan menyelesaikan sisa tahap sekaligus (tercatat sebagai tindakan HR). Jika dimatikan, hanya approver yang ditunjuk yang dapat memutuskan.",
+"When enabled, HR can approve/reject at any step and complete the remaining steps at once (recorded as an HR action). When disabled, only the designated approver can decide."
+],
+[
+"Peringatan: {0} karyawan memiliki approver yang belum punya akun login. Pengajuan mereka tidak akan bisa diproses selama override dimatikan.",
+"Warning: {0} employees have an approver without a login account. Their requests cannot be processed while override is disabled."
+],
+[
+"Pratinjau rantai persetujuan",
+"Approval chain preview"
+],
+[
+"Cari nama atau kode karyawan...",
+"Search by name or employee code..."
+],
+[
+"Tahap",
+"Step"
+],
+[
+"Approver",
+"Approver"
+],
+[
+"Akun login",
+"Login account"
+],
+[
+"Ada",
+"Yes"
+],
+[
+"Belum",
+"Not yet"
 ]
 ]
 export const ONEWAY = [

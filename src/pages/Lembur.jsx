@@ -1,3 +1,4 @@
+import { useRequestProgress } from '../components/ApprovalProgress'
 import { useEffect, useState } from 'react'
 import { ArrowLeft, ScrollText, Search, X } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
@@ -15,6 +16,7 @@ export default function Lembur({ onBack, startNew, onToast }) {
   const [statusFilter, setStatusFilter] = useState('')
   const [query, setQuery] = useState('')
   const [detailRow, setDetailRow] = useState(null)
+  const progress = useRequestProgress('overtime_requests', detailRow?.id, detailRow?.status)
   useBackHandler(() => setShowForm(false), showForm)
   const isDesktop = useIsDesktop()
 
@@ -83,6 +85,7 @@ export default function Lembur({ onBack, startNew, onToast }) {
               [tx("Durasi"), fmtDur(dur(detailRow))],
               [tx("Diajukan"), fmtStamp(detailRow.created_at)],
               [tx("Diputuskan"), detailRow.decided_at ? fmtDateTime(detailRow.decided_at) : tx("Belum diputuskan")],
+              ...(progress ? [[tx("Posisi persetujuan"), progress]] : []),
             ]} />
         )}
       />

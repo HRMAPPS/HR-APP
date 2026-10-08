@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { ArrowLeft, Search, Check, X, Plus, Pencil, Trash2, Download, Upload, Users, ClipboardList, Wallet, CalendarDays, AlarmClock, Receipt, Bell, FileDown, CalendarClock, MapPin, Crosshair, Paperclip, Copy } from 'lucide-react'
+import { ArrowLeft, Search, Check, X, Plus, Pencil, Trash2, Download, Upload, Users, ClipboardList, Wallet, CalendarDays, AlarmClock, Receipt, Bell, FileDown, CalendarClock, MapPin, Crosshair, Paperclip, Copy, GitBranch } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
 import { todayStr } from '../lib/dateUtils'
 import { useIsDesktop } from '../lib/useIsDesktop'
@@ -9,6 +9,8 @@ import EmployeeImportModal from '../components/EmployeeImportModal'
 import HRAttendanceDetail from '../components/HRAttendanceDetail'
 import { FlagBadge } from '../components/AttendanceFlags'
 import LeavePolicyManager from '../components/LeavePolicyManager'
+import ApprovalChainManager from '../components/ApprovalChainManager'
+import { useApprovalProgress, WaitingLine } from '../components/ApprovalProgress'
 
 import { tx, locale } from '../lib/i18n'
 const TABS = [
@@ -18,6 +20,7 @@ const TABS = [
   { key: 'lokasi', label: tx("Lokasi"), icon: MapPin },
   { key: 'attendance', label: tx("Absensi"), icon: ClipboardList },
   { key: 'leave', label: tx("Cuti"), icon: CalendarDays },
+  { key: 'approval', label: tx("Persetujuan"), icon: GitBranch },
   { key: 'overtime', label: tx("Lembur"), icon: AlarmClock },
   { key: 'reimbursement', label: tx("Reimburse"), icon: Receipt },
   { key: 'correction', label: tx("Koreksi Absen"), icon: ClipboardList },
@@ -68,6 +71,7 @@ export default function HRDashboard({ onBack, onToast }) {
         {tab === 'lokasi' && <LocationTab onToast={onToast} isDesktop={isDesktop} />}
         {tab === 'attendance' && <AttendanceTab onToast={onToast} isDesktop={isDesktop} />}
         {tab === 'leave' && <LeaveTab onToast={onToast} isDesktop={isDesktop} />}
+        {tab === 'approval' && <ApprovalChainManager employees={employees} onToast={onToast} isDesktop={isDesktop} />}
         {tab === 'overtime' && <OvertimeTab onToast={onToast} isDesktop={isDesktop} />}
         {tab === 'reimbursement' && <ReimbursementTab onToast={onToast} isDesktop={isDesktop} />}
         {tab === 'correction' && <CorrectionTab onToast={onToast} isDesktop={isDesktop} />}
@@ -1295,6 +1299,7 @@ function AttendanceTab({ onToast, isDesktop }) {
 function ApprovalTab({ onToast, rpcName, table, statusOptions, renderRow, exportColumns, exportFilename, isDesktop, desktopColumns }) {
   const [status, setStatus] = useState('pending')
   const [rows, setRows] = useState(null)
+  const progress = useApprovalProgress(table, rows)
 
   async function load() {
     const { data, error } = await supabase.rpc(rpcName, { p_status: status || null })
@@ -1331,7 +1336,7 @@ function ApprovalTab({ onToast, rpcName, table, statusOptions, renderRow, export
                 : rows.length === 0 ? <tr><td colSpan={desktopColumns.length + 2} className="empty">{tx("Tidak ada pengajuan.")}</td></tr>
                 : rows.map((r) => (
                   <tr key={r.id}>
-                    <td style={{ fontWeight: 600 }}>{r.full_name}</td>
+                    <td style={{ fontWeight: 600 }}>{r.full_name}<WaitingLine info={progress[r.id]} /></td>
                     {desktopColumns.map(([label, fn]) => <td key={label} className="wrap">{fn(r)}</td>)}
                     <td>
                       {r.status === 'pending' ? (
@@ -1386,6 +1391,7 @@ function ApprovalTab({ onToast, rpcName, table, statusOptions, renderRow, export
                 </span>
               )}
             </div>
+            <WaitingLine info={progress[r.id]} />
           </div>
         ))
       )}

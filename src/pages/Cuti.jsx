@@ -1,3 +1,4 @@
+import { useRequestProgress } from '../components/ApprovalProgress'
 import { useEffect, useState } from 'react'
 import { ArrowLeft, FileQuestion, Plus, Search } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
@@ -18,6 +19,7 @@ export default function Cuti({ onBack, startNew, onToast, employee }) {
   const [monthFilter, setMonthFilter] = useState('')
   const [query, setQuery] = useState('')
   const [detailRow, setDetailRow] = useState(null)
+  const progress = useRequestProgress('leave_requests', detailRow?.id, detailRow?.status)
   const [balances, setBalances] = useState([]) // hanya jenis cuti yang kuotanya diaktifkan HR
   useBackHandler(() => setShowForm(false), showForm)
   const isDesktop = useIsDesktop()
@@ -93,6 +95,7 @@ export default function Cuti({ onBack, startNew, onToast, employee }) {
               [tx("Durasi"), tx("{0} hari", [Number(detailRow.total_days)])],
               [tx("Diajukan"), fmtStamp(detailRow.created_at)],
               [tx("Diputuskan"), detailRow.decided_at ? fmtDateTime(detailRow.decided_at) : tx("Belum diputuskan")],
+              ...(progress ? [[tx("Posisi persetujuan"), progress]] : []),
             ]} />
         )}
       />
