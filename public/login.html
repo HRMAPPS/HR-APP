@@ -1,0 +1,619 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#F5EEE7">
+<title>Masuk · Napocut</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #F5EEE7;
+    --card: #FFFFFF;
+    --ink: #1C1A18;
+    --muted: #6F6A64;
+    --field: #FBF8F3;
+    --field-border: #E9E0D3;
+    --field-border-hover: #D9CDBB;
+    --accent: #3A47AE;
+    --accent-top: #5063D0;
+    --accent-bottom: #3541A6;
+    --danger: #B3372B;
+    --radius-card: 32px;
+    --radius-field: 14px;
+
+    --bar-1: #B64739; --bar-2: #E4A9A0; --bar-3: #F0D2C7;
+    --bar-4: #D9C1A0; --bar-5: #ABB799; --bar-6: #7D8A5F;
+    --bar-7: #4F7C84; --bar-8: #2D3A66; --bar-9: #926C89;
+
+    --serif: "Cormorant Garamond", "Cormorant", Georgia, serif;
+    --sans: "Plus Jakarta Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --bar-w: clamp(34px, 4.3vw, 62px);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--sans);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    overflow-x: hidden;
+  }
+
+  .page {
+    position: relative;
+    min-height: 100vh;
+    min-height: 100dvh;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    padding: 0 clamp(24px, 7.6vw, 110px) 0 clamp(24px, 4.45vw, 64px);
+    overflow: hidden;
+  }
+
+  /* ---------- Left: brand ---------- */
+  .brand-col {
+    position: relative;
+    padding-top: clamp(40px, 6.2vh, 56px);
+    min-height: 100vh;
+    min-height: 100dvh;
+  }
+  .logo {
+    display: inline-block;
+    font-family: var(--serif);
+    font-weight: 500;
+    font-size: 44px;
+    line-height: 1;
+    letter-spacing: -0.02em;
+    color: var(--ink);
+    text-decoration: none;
+    margin-left: 2px;
+  }
+  .tagline {
+    margin: clamp(20px, 3.2vh, 30px) 0 0;
+    max-width: 430px;
+    font-family: var(--serif);
+    font-weight: 500;
+    font-size: clamp(38px, 3.5vw, 50px);
+    line-height: 1.06;
+    letter-spacing: -0.012em;
+    color: #1F1B18;
+    text-wrap: balance;
+  }
+
+  /* ---------- Bars ---------- */
+  .bars {
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    display: flex;
+    align-items: flex-end;
+    gap: calc(var(--bar-w) * 0.145);
+    pointer-events: none;
+  }
+  .bar {
+    width: var(--bar-w);
+    height: calc(var(--bar-w) * var(--k));
+    background: var(--c);
+    border-radius: calc(var(--bar-w) / 2) calc(var(--bar-w) / 2) 0 0;
+    transform-origin: bottom;
+    animation: rise 900ms cubic-bezier(.2,.8,.2,1) both;
+    animation-delay: calc(var(--i) * 70ms + 120ms);
+  }
+  .bar:nth-child(1) { --k: 4.84; --c: var(--bar-1); --i: 0; }
+  .bar:nth-child(2) { --k: 6.60; --c: var(--bar-2); --i: 1; }
+  .bar:nth-child(3) { --k: 5.48; --c: var(--bar-3); --i: 2; }
+  .bar:nth-child(4) { --k: 7.74; --c: var(--bar-4); --i: 3; }
+  .bar:nth-child(5) { --k: 6.13; --c: var(--bar-5); --i: 4; }
+  .bar:nth-child(6) { --k: 7.26; --c: var(--bar-6); --i: 5; }
+  .bar:nth-child(7) { --k: 5.32; --c: var(--bar-7); --i: 6; }
+  .bar:nth-child(8) { --k: 6.77; --c: var(--bar-8); --i: 7; }
+  .bar:nth-child(9) { --k: 4.52; --c: var(--bar-9); --i: 8; }
+
+  @keyframes rise {
+    from { transform: scaleY(0.001); opacity: 0; }
+    to   { transform: scaleY(1); opacity: 1; }
+  }
+
+  /* ---------- Right: card ---------- */
+  .form-col {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding-top: 32px;
+  }
+  .card {
+    width: 100%;
+    max-width: 480px;
+    background: var(--card);
+    border-radius: var(--radius-card);
+    padding: 44px;
+    box-shadow:
+      0 1px 0 rgba(255,255,255,.9) inset,
+      0 2px 4px rgba(64, 46, 26, .04),
+      0 18px 40px -12px rgba(64, 46, 26, .14),
+      0 48px 90px -30px rgba(64, 46, 26, .18);
+    animation: fadeUp 700ms cubic-bezier(.2,.8,.2,1) both;
+    animation-delay: 80ms;
+  }
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(14px); }
+    to   { opacity: 1; transform: none; }
+  }
+
+  .card h1 {
+    margin: 0;
+    font-size: 40px;
+    line-height: 1.1;
+    font-weight: 800;
+    letter-spacing: -0.035em;
+  }
+  .card .lead {
+    margin: 10px 0 0;
+    font-size: 15px;
+    line-height: 1.6;
+    color: var(--muted);
+    letter-spacing: -0.005em;
+  }
+
+  form { margin-top: 30px; }
+  .field + .field { margin-top: 18px; }
+  label {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: -0.005em;
+    color: #2A2622;
+  }
+  .control {
+    position: relative;
+    display: flex;
+    align-items: center;
+    height: 54px;
+    background: var(--field);
+    border: 1px solid var(--field-border);
+    border-radius: var(--radius-field);
+    transition: border-color .15s ease, box-shadow .15s ease, background .15s ease;
+  }
+  .control:hover { border-color: var(--field-border-hover); }
+  .control:focus-within {
+    background: #fff;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 4px rgba(58, 71, 174, .14);
+  }
+  .control.invalid { border-color: var(--danger); box-shadow: 0 0 0 4px rgba(179, 55, 43, .1); }
+  .control .icon {
+    flex: none;
+    width: 18px; height: 18px;
+    margin-left: 16px;
+    color: #8C857C;
+    transition: color .15s ease;
+  }
+  .control:focus-within .icon { color: var(--accent); }
+  .control input {
+    flex: 1;
+    min-width: 0;
+    height: 100%;
+    padding: 0 16px 0 14px;
+    border: 0;
+    outline: 0;
+    background: transparent;
+    font: 500 15px/1 var(--sans);
+    letter-spacing: -0.005em;
+    color: var(--ink);
+  }
+  .control input::placeholder { color: #8F887F; font-weight: 400; }
+  .control input:-webkit-autofill {
+    -webkit-box-shadow: 0 0 0 40px var(--field) inset;
+    -webkit-text-fill-color: var(--ink);
+  }
+  .toggle {
+    flex: none;
+    width: 44px; height: 100%;
+    margin-right: 6px;
+    display: grid; place-items: center;
+    border: 0; background: transparent;
+    color: #8C857C;
+    cursor: pointer;
+    border-radius: 10px;
+    transition: color .15s ease;
+  }
+  .toggle:hover { color: var(--ink); }
+  .toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: -4px; }
+  .toggle svg { width: 18px; height: 18px; }
+  .toggle .off { display: none; }
+  .toggle[aria-pressed="true"] .on { display: none; }
+  .toggle[aria-pressed="true"] .off { display: block; }
+
+  .error {
+    display: none;
+    margin-top: 16px;
+    padding: 11px 14px;
+    border-radius: 12px;
+    background: #FBEDEA;
+    color: var(--danger);
+    font-size: 13.5px;
+    font-weight: 500;
+    line-height: 1.45;
+  }
+  .error.show { display: block; animation: fadeUp .3s ease both; }
+
+  .submit {
+    position: relative;
+    width: 100%;
+    height: 56px;
+    margin-top: 28px;
+    border: 0;
+    border-radius: var(--radius-field);
+    background: linear-gradient(180deg, var(--accent-top) 0%, var(--accent-bottom) 100%);
+    color: #fff;
+    font: 700 16px/1 var(--sans);
+    letter-spacing: -0.01em;
+    cursor: pointer;
+    box-shadow:
+      0 1px 0 rgba(255,255,255,.28) inset,
+      0 -1px 0 rgba(0,0,0,.12) inset,
+      0 10px 24px -6px rgba(53, 65, 166, .55),
+      0 4px 8px -2px rgba(53, 65, 166, .25);
+    transition: transform .15s ease, box-shadow .2s ease, filter .2s ease;
+  }
+  .submit:hover { filter: brightness(1.05); transform: translateY(-1px); }
+  .submit:active { transform: translateY(0) scale(.995); filter: brightness(.97); }
+  .submit:focus-visible { outline: 3px solid rgba(58,71,174,.35); outline-offset: 3px; }
+  .submit[disabled] { cursor: progress; filter: saturate(.8) brightness(1); transform: none; }
+  .submit .spinner {
+    display: none;
+    width: 18px; height: 18px;
+    margin: -2px 10px -3px 0;
+    border: 2.5px solid rgba(255,255,255,.4);
+    border-top-color: #fff;
+    border-radius: 50%;
+    vertical-align: middle;
+    animation: spin .7s linear infinite;
+  }
+  .submit[disabled] .spinner { display: inline-block; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .signup {
+    margin: 20px 0 0;
+    text-align: center;
+    font-size: 14px;
+    font-weight: 500;
+    color: #3A3632;
+    letter-spacing: -0.005em;
+  }
+  .signup a {
+    color: var(--accent);
+    font-weight: 700;
+    text-decoration: none;
+    border-radius: 4px;
+  }
+  .signup a:hover { text-decoration: underline; text-underline-offset: 3px; }
+  .signup a:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+  /* ---------- Language switch ---------- */
+  .lang {
+    position: absolute;
+    top: 28px;
+    right: clamp(20px, 2.2vw, 32px);
+    z-index: 5;
+    display: inline-flex;
+    padding: 4px;
+    gap: 2px;
+    border-radius: 999px;
+    background: #EDE4D6;
+    border: 1px solid #E3D8C7;
+  }
+  .lang button {
+    min-width: 42px;
+    height: 32px;
+    padding: 0 12px;
+    border: 0;
+    border-radius: 999px;
+    background: transparent;
+    font: 700 12px/1 var(--sans);
+    letter-spacing: .02em;
+    color: #6E665B;
+    cursor: pointer;
+    transition: background .2s ease, color .2s ease, box-shadow .2s ease;
+  }
+  .lang button[aria-pressed="true"] {
+    background: #fff;
+    color: var(--accent);
+    box-shadow: 0 1px 2px rgba(60, 40, 20, .12), 0 2px 6px rgba(60, 40, 20, .06);
+  }
+  .lang button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+  .sr-only {
+    position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
+    overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0;
+  }
+
+  /* ---------- Tablet ---------- */
+  @media (max-width: 1100px) and (min-width: 821px) {
+    .card { padding: 36px; }
+    .card h1 { font-size: 36px; }
+  }
+
+  /* ---------- Mobile / small tablet ---------- */
+  @media (max-width: 820px) {
+    :root { --bar-w: clamp(26px, 7.4vw, 52px); }
+
+    .page {
+      display: flex;
+      flex-direction: column;
+      padding: 0;
+      min-height: 100vh;
+      min-height: 100dvh;
+    }
+    .brand-col {
+      min-height: 0;
+      padding: calc(env(safe-area-inset-top, 0px) + 22px) 24px 0;
+    }
+    .logo { font-size: 36px; }
+    .tagline {
+      margin-top: 22px;
+      max-width: 340px;
+      font-size: clamp(30px, 8.4vw, 40px);
+    }
+
+    /* bars become a decorative strip under the tagline */
+    .bars {
+      position: relative;
+      left: auto; bottom: auto;
+      margin: 26px -4px 0;
+      justify-content: center;
+      height: calc(var(--bar-w) * 4.4);
+      overflow: hidden;
+      align-items: flex-end;
+    }
+    .bar { height: calc(var(--bar-w) * var(--k) * .56); }
+
+    .form-col {
+      flex: 1;
+      align-items: stretch;
+      justify-content: stretch;
+      padding: 0;
+      margin-top: -30px;
+      position: relative;
+      z-index: 2;
+    }
+    .card {
+      max-width: none;
+      border-radius: 32px 32px 0 0;
+      padding: 32px 24px calc(env(safe-area-inset-bottom, 0px) + 32px);
+      box-shadow: 0 -14px 40px -12px rgba(64, 46, 26, .18);
+    }
+    .card h1 { font-size: 34px; }
+    .card .lead { font-size: 14.5px; }
+    form { margin-top: 24px; }
+    .control { height: 56px; }
+    .control input { font-size: 16px; } /* prevents iOS zoom */
+
+    .lang { top: calc(env(safe-area-inset-top, 0px) + 18px); right: 20px; }
+    .lang button { height: 30px; min-width: 38px; padding: 0 10px; }
+  }
+
+  @media (max-width: 360px) {
+    .brand-col { padding-left: 18px; padding-right: 18px; }
+    .card { padding-left: 18px; padding-right: 18px; }
+    .logo { font-size: 32px; }
+  }
+
+  /* short landscape screens */
+  @media (max-height: 640px) and (min-width: 821px) {
+    .tagline { font-size: 34px; }
+    .bar { height: calc(var(--bar-w) * var(--k) * .7); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; transition: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<main class="page">
+  <div class="lang" role="group" aria-label="Language / Bahasa">
+    <button type="button" data-lang="id" aria-pressed="true">ID</button>
+    <button type="button" data-lang="en" aria-pressed="false">EN</button>
+  </div>
+
+  <section class="brand-col">
+    <a class="logo" href="/" aria-label="Napocut">napocut</a>
+    <h2 class="tagline" data-i18n="tagline">Jadwal, absensi, dan pengajuan Anda dalam satu tempat.</h2>
+
+    <div class="bars" aria-hidden="true">
+      <span class="bar"></span><span class="bar"></span><span class="bar"></span>
+      <span class="bar"></span><span class="bar"></span><span class="bar"></span>
+      <span class="bar"></span><span class="bar"></span><span class="bar"></span>
+    </div>
+  </section>
+
+  <section class="form-col">
+    <div class="card">
+      <h1 data-i18n="title">Masuk</h1>
+      <p class="lead" data-i18n="lead">Masuk untuk melihat jadwal, absensi, dan pengajuan Anda.</p>
+
+      <form id="login-form" novalidate>
+        <div class="field">
+          <label for="email" data-i18n="email">Email</label>
+          <div class="control" id="email-control">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="m4 7.5 8 5.5 8-5.5"/></svg>
+            <input id="email" name="email" type="email" inputmode="email" autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="nama@perusahaan.com" data-i18n-placeholder="emailPh" required>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="password" data-i18n="password">Kata sandi</label>
+          <div class="control" id="password-control">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4.5" y="10.5" width="15" height="10" rx="2.5"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5"/></svg>
+            <input id="password" name="password" type="password" autocomplete="current-password" placeholder="Masukkan kata sandi" data-i18n-placeholder="passwordPh" required>
+            <button class="toggle" type="button" id="toggle-pw" aria-pressed="false" aria-controls="password" aria-label="Tampilkan kata sandi" data-i18n-aria="showPw">
+              <svg class="on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg>
+              <svg class="off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9.9 5.7A10.6 10.6 0 0 1 12 5.5C18.4 5.5 22 12 22 12a17 17 0 0 1-3.2 3.9M6.1 7.3A16.7 16.7 0 0 0 2 12s3.6 6.5 10 6.5c1.5 0 2.8-.3 4-.8"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/><path d="m3 3 18 18"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="error" id="error" role="alert" aria-live="polite"></div>
+
+        <button class="submit" type="submit" id="submit">
+          <span class="spinner" aria-hidden="true"></span><span id="submit-label" data-i18n="submit">Masuk</span>
+        </button>
+
+        <p class="signup"><span data-i18n="noAccount">Belum punya akun?</span> <a href="/register" id="signup-link" data-i18n="signup">Buat akun</a></p>
+      </form>
+    </div>
+  </section>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+(function () {
+  /* ---------- Config ---------- */
+  var SUPABASE_URL = "https://usdnfufdadpiwreqhjhc.supabase.co";
+  var SUPABASE_KEY = "sb_publishable_jNMUj3AkwgNXjnNlImuqvw_ho5FErrn"; // publishable key, aman di client
+  var REDIRECT_AFTER_LOGIN = "/dashboard";
+  var REGISTER_URL = "/register";
+
+  /* ---------- i18n ---------- */
+  var T = {
+    id: {
+      tagline: "Jadwal, absensi, dan pengajuan Anda dalam satu tempat.",
+      title: "Masuk",
+      lead: "Masuk untuk melihat jadwal, absensi, dan pengajuan Anda.",
+      email: "Email", emailPh: "nama@perusahaan.com",
+      password: "Kata sandi", passwordPh: "Masukkan kata sandi",
+      showPw: "Tampilkan kata sandi", hidePw: "Sembunyikan kata sandi",
+      submit: "Masuk", loading: "Memproses…",
+      noAccount: "Belum punya akun?", signup: "Buat akun",
+      errEmail: "Masukkan alamat email yang valid.",
+      errPassword: "Kata sandi wajib diisi.",
+      errCreds: "Email atau kata sandi salah. Silakan coba lagi.",
+      errUnconfirmed: "Email Anda belum diverifikasi. Periksa kotak masuk Anda.",
+      errNetwork: "Tidak dapat terhubung. Periksa koneksi internet Anda.",
+      errGeneric: "Terjadi kesalahan. Silakan coba lagi."
+    },
+    en: {
+      tagline: "Your schedule, attendance, and requests in one place.",
+      title: "Sign in",
+      lead: "Sign in to view your schedule, attendance, and requests.",
+      email: "Email", emailPh: "name@company.com",
+      password: "Password", passwordPh: "Enter your password",
+      showPw: "Show password", hidePw: "Hide password",
+      submit: "Sign in", loading: "Signing in…",
+      noAccount: "Don't have an account?", signup: "Create account",
+      errEmail: "Enter a valid email address.",
+      errPassword: "Password is required.",
+      errCreds: "Incorrect email or password. Please try again.",
+      errUnconfirmed: "Your email isn't verified yet. Check your inbox.",
+      errNetwork: "Can't connect. Check your internet connection.",
+      errGeneric: "Something went wrong. Please try again."
+    }
+  };
+
+  var lang = "id";
+  try {
+    lang = localStorage.getItem("lang") || "id";
+  } catch (e) {}
+  if (!T[lang]) lang = "id";
+
+  var $ = function (s) { return document.querySelector(s); };
+  var emailEl = $("#email"), pwEl = $("#password"), errEl = $("#error");
+  var formEl = $("#login-form"), submitEl = $("#submit"), labelEl = $("#submit-label");
+  var toggleEl = $("#toggle-pw");
+
+  function t(k) { return T[lang][k]; }
+
+  function applyLang() {
+    document.documentElement.lang = lang;
+    document.querySelectorAll("[data-i18n]").forEach(function (el) { el.textContent = t(el.dataset.i18n); });
+    document.querySelectorAll("[data-i18n-placeholder]").forEach(function (el) { el.placeholder = t(el.dataset.i18nPlaceholder); });
+    document.title = t("title") + " · Napocut";
+    document.querySelectorAll(".lang button").forEach(function (b) {
+      b.setAttribute("aria-pressed", String(b.dataset.lang === lang));
+    });
+    toggleEl.setAttribute("aria-label", t(toggleEl.getAttribute("aria-pressed") === "true" ? "hidePw" : "showPw"));
+    if (!submitEl.disabled) labelEl.textContent = t("submit");
+    errEl.classList.remove("show");
+  }
+
+  document.querySelectorAll(".lang button").forEach(function (b) {
+    b.addEventListener("click", function () {
+      lang = b.dataset.lang;
+      try { localStorage.setItem("lang", lang); } catch (e) {}
+      applyLang();
+    });
+  });
+
+  /* ---------- Password toggle ---------- */
+  toggleEl.addEventListener("click", function () {
+    var show = pwEl.type === "password";
+    pwEl.type = show ? "text" : "password";
+    toggleEl.setAttribute("aria-pressed", String(show));
+    toggleEl.setAttribute("aria-label", t(show ? "hidePw" : "showPw"));
+    pwEl.focus();
+  });
+
+  /* ---------- Helpers ---------- */
+  function setInvalid(id, bad) { $("#" + id).classList.toggle("invalid", !!bad); }
+  function showError(msg) { errEl.textContent = msg; errEl.classList.add("show"); }
+  function setLoading(on) {
+    submitEl.disabled = on;
+    labelEl.textContent = on ? t("loading") : t("submit");
+  }
+  emailEl.addEventListener("input", function () { setInvalid("email-control", false); errEl.classList.remove("show"); });
+  pwEl.addEventListener("input", function () { setInvalid("password-control", false); errEl.classList.remove("show"); });
+  $("#signup-link").setAttribute("href", REGISTER_URL);
+
+  /* ---------- Supabase ---------- */
+  var client = null;
+  if (window.supabase && window.supabase.createClient) {
+    client = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    client.auth.getSession().then(function (r) {
+      if (r && r.data && r.data.session) window.location.replace(REDIRECT_AFTER_LOGIN);
+    }).catch(function () {});
+  }
+
+  formEl.addEventListener("submit", async function (e) {
+    e.preventDefault();
+    var email = emailEl.value.trim(), password = pwEl.value;
+    errEl.classList.remove("show");
+
+    var okEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+    setInvalid("email-control", !okEmail);
+    setInvalid("password-control", !password);
+    if (!okEmail) { showError(t("errEmail")); emailEl.focus(); return; }
+    if (!password) { showError(t("errPassword")); pwEl.focus(); return; }
+    if (!client) { showError(t("errNetwork")); return; }
+
+    setLoading(true);
+    try {
+      var res = await client.auth.signInWithPassword({ email: email, password: password });
+      if (res.error) {
+        var m = (res.error.message || "").toLowerCase();
+        if (m.indexOf("not confirmed") > -1) showError(t("errUnconfirmed"));
+        else if (m.indexOf("invalid") > -1) { setInvalid("email-control", true); setInvalid("password-control", true); showError(t("errCreds")); }
+        else showError(t("errGeneric"));
+        setLoading(false);
+        return;
+      }
+      window.location.assign(REDIRECT_AFTER_LOGIN);
+    } catch (err) {
+      showError(t("errNetwork"));
+      setLoading(false);
+    }
+  });
+
+  applyLang();
+})();
+</script>
+</body>
+</html>
