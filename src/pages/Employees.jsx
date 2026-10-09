@@ -82,8 +82,8 @@ export default function Employees({ viewer, onNavigate }) {
   if (isDesktop) {
     return (
       <div>
-        <div style={{ padding: '18px 4px 14px' }}>
-          <h1 style={{ fontSize: 26, margin: 0 }}>{tx("Employees")}</h1>
+        <div style={{ padding: '28px 22px 16px' }}>
+          <h1 style={{ fontSize: 28, fontWeight: 800, letterSpacing: '-.025em', margin: 0 }}>{tx("Employees")}</h1>
         </div>
 
         <div style={{ background: '#fff', borderRadius: '14px 14px 0 0', padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 20, boxShadow: 'var(--shadow-xs)' }}>

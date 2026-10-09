@@ -1,0 +1,220 @@
+/* =====================================================================
+   NAPOCUT "PRESTIGE" THEME  —  lapisan visual terpusat (mobile + desktop)
+   Diimpor SETELAH index.css. Hanya mengubah tampilan (warna, bentuk,
+   bayangan, tipografi, animasi); tidak mengubah struktur/fungsi halaman.
+   Untuk menonaktifkan seluruh tema: hapus import './theme-prestige.css'
+   di main.jsx.
+   ===================================================================== */
+
+:root{
+  --bg: #F5EEE6;
+  --ink: #1F1B19;
+  --line: rgba(120,98,76,.14);          /* hairline hangat */
+  --gold: #C9A56B;                       /* aksen premium, dipakai tipis */
+  --r-xl: 26px; --r-lg: 22px; --r-md: 16px; --r-sm: 12px;
+  --radius-lg: var(--r-lg); --radius-md: var(--r-md); --radius-sm: var(--r-sm);
+  --sh-card: 0 1px 2px rgba(60,40,20,.04), 0 6px 16px rgba(60,40,20,.06), 0 18px 40px -12px rgba(60,40,20,.10);
+  --sh-lift: 0 2px 4px rgba(60,40,20,.05), 0 12px 28px rgba(60,40,20,.10), 0 28px 56px -16px rgba(60,40,20,.16);
+  --shadow-md: var(--sh-card);
+  --shadow-lg: var(--sh-lift);
+  --spring: cubic-bezier(.22,1,.36,1);
+  color-scheme: light;
+}
+
+html{ -webkit-text-size-adjust: 100%; }
+body{ background:#e7ddd1; text-rendering: optimizeLegibility; }
+::selection{ background: rgba(67,86,196,.18); }
+h1,h2,h3{ text-wrap: balance; letter-spacing:-.02em; }
+.stat .num, .tr-num, .tr-dt, .tr-t, td, time, .shift-card__time, .dsk-stats b{ font-variant-numeric: tabular-nums; }
+
+/* Fokus keyboard yang jelas & elegan (aksesibilitas) */
+:focus-visible{ outline: 2.5px solid rgba(67,86,196,.55); outline-offset: 2px; border-radius: 10px; }
+button:focus:not(:focus-visible), a:focus:not(:focus-visible){ outline: none; }
+
+/* ---------------------------------------------------------------- MOBILE */
+.app-shell{
+  background:
+    radial-gradient(120% 38% at 50% -6%, #fff7ee 0%, rgba(255,247,238,0) 70%),
+    var(--bg);
+}
+
+/* Sapaan */
+.topbar{ padding: 22px 20px 8px; }
+.topbar .greeting{ font-size:13px; letter-spacing:.01em; }
+.topbar .greeting strong{ font-size:21px; font-weight:800; letter-spacing:-.02em; color:var(--ink); margin-top:3px; }
+
+/* Kartu shift: hero merah dengan kilau halus */
+.shift-card{ margin:12px 16px 4px; border-radius: var(--r-xl); border:1px solid rgba(169,50,38,.18); box-shadow: 0 10px 30px -10px rgba(169,50,38,.38), var(--sh-card); }
+.shift-card__header{
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.14), rgba(255,255,255,0) 55%),
+    linear-gradient(165deg, #B8382B 0%, #8C2419 100%);
+  font-size:14.5px; letter-spacing:.02em; padding:13px 16px;
+}
+.shift-card__body{ background: linear-gradient(180deg, #FBE6E0 0%, #F4D5CD 100%); padding:20px 16px 18px; }
+.shift-card__role{ font-size:22px; font-weight:800; letter-spacing:-.02em; }
+.shift-card__time{ font-size:17px; font-weight:600; color:#4a403c; }
+.clock-buttons{ border-radius:18px; border:1px solid rgba(169,50,38,.14); box-shadow: 0 6px 16px -6px rgba(120,40,30,.25); }
+.clock-buttons button{ padding:15px 8px; font-weight:800; }
+.clock-buttons button:not(:disabled):active{ transform: scale(.985); }
+.shift-card__status{ font-size:12.5px; color:#6a5b56; }
+
+/* Kisi aplikasi: ubin ikon lebih besar, lembut, hidup saat disentuh */
+.quick-grid, .section, .menu-block, .balance-card{
+  border-radius: var(--r-xl); border:1px solid var(--line); box-shadow: var(--sh-card);
+}
+.quick-grid{ padding:22px 6px; gap:20px 4px; }
+.quick-item{ font-weight:600; letter-spacing:-.005em; }
+.quick-item .ic{
+  width:56px; height:56px; border-radius:19px;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.85), inset 0 -1px 0 rgba(0,0,0,.03), 0 6px 14px -4px rgba(60,40,20,.18);
+  transition: transform .25s var(--spring), box-shadow .25s var(--spring);
+}
+.quick-item:hover .ic{ transform: translateY(-2px); }
+.quick-item:active .ic{ transform: scale(.92); }
+
+.section{ padding:18px; }
+.section-title h2{ font-size:17.5px; font-weight:800; letter-spacing:-.02em; }
+.section-title a{ font-weight:700; font-size:13.5px; padding:4px 10px; margin:-4px -10px; border-radius:999px; }
+.section-title a:hover{ background: rgba(67,86,196,.08); }
+
+/* Header halaman (merah) -> lengkung bawah, lebih lapang */
+.page-header{
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.12), rgba(255,255,255,0) 60%),
+    linear-gradient(165deg, #BE3A2D 0%, #8F261B 100%);
+  padding:18px 16px 20px; border-radius: 0 0 var(--r-lg) var(--r-lg);
+  box-shadow: 0 10px 26px -10px rgba(143,38,27,.55);
+}
+.page-header h1{ font-size:18px; font-weight:800; }
+.page-header .back-btn{ padding:6px; }
+
+/* Daftar & baris */
+.list-item{ border-radius: var(--r-md); border:1px solid var(--line); box-shadow: var(--sh-card); padding:15px 16px; }
+.list-item:hover{ box-shadow: var(--sh-lift); }
+.list-item .info .name{ font-weight:700; letter-spacing:-.01em; }
+.menu-block{ margin-bottom:16px; }
+.menu-block h4{ font-size:12px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; color:#8a7f75; padding:18px 18px 6px; }
+.menu-row{ padding:15px 18px; border-top:1px solid var(--line); font-weight:500; }
+.menu-row:hover{ background:#fbf7f2; }
+.menu-row .chev{ transition: transform .2s var(--spring); }
+.menu-row:hover .chev{ transform: translateX(3px); }
+.account-header .name{ font-size:18px; font-weight:800; letter-spacing:-.02em; }
+
+/* Avatar dengan cincin halus */
+.avatar{ box-shadow: inset 0 1px 1px rgba(255,255,255,.7), 0 0 0 2px #fff, 0 2px 8px rgba(60,40,20,.12); }
+
+/* Navigasi bawah: kapsul melayang bergaya kaca */
+.bottom-nav{
+  bottom: 10px; margin: 0 12px calc(4px + env(safe-area-inset-bottom, 0px));
+  padding:8px 6px; border:1px solid rgba(255,255,255,.7); border-radius: 26px;
+  background: rgba(255,255,255,.82); -webkit-backdrop-filter: saturate(1.6) blur(16px); backdrop-filter: saturate(1.6) blur(16px);
+  box-shadow: 0 10px 30px -6px rgba(60,40,20,.28), 0 2px 6px rgba(60,40,20,.08);
+}
+.bottom-nav button{ position:relative; padding:6px 0 4px; border-radius:18px; color:#948b83; font-size:11px; letter-spacing:.005em; transition: color .2s var(--ease), transform .2s var(--spring); }
+.bottom-nav button:active{ transform: scale(.94); }
+.bottom-nav button.active{ color: var(--blue); }
+.bottom-nav button.active::before{ content:''; position:absolute; inset:0 6px; border-radius:18px; background: linear-gradient(180deg, rgba(67,86,196,.11), rgba(67,86,196,.06)); z-index:0; }
+.bottom-nav button > *{ position:relative; z-index:1; }
+
+/* Tombol, input, tab, status */
+.primary-btn, .fab-bottom-btn{
+  border-radius: 16px; padding:16px; font-weight:800; letter-spacing:.005em;
+  background: linear-gradient(180deg, rgba(255,255,255,.16), rgba(255,255,255,0) 50%), linear-gradient(165deg, #4F62D0, #33409F);
+  box-shadow: 0 10px 22px -8px rgba(51,64,159,.6), inset 0 1px 0 rgba(255,255,255,.25);
+}
+.primary-btn:active:not(:disabled), .fab-bottom-btn:active{ transform: scale(.985); }
+.field input, .field select, .field textarea{ border-radius: 14px; padding:13px 15px; background:#fffdfb; border:1px solid rgba(120,98,76,.2); }
+.field input:focus, .field select:focus, .field textarea:focus{ background:#fff; box-shadow: 0 0 0 4px rgba(67,86,196,.13); }
+.field label{ font-size:12.5px; letter-spacing:.02em; }
+.search-box{ border-radius: 999px; box-shadow: var(--sh-card); border:1px solid var(--line); }
+.tabs button{ transition: color .2s, border-color .2s; border-bottom-width:3px; }
+.tabs button.active{ border-radius:0; }
+.status-approved,.status-pending,.status-rejected,.status-cancelled{ display:inline-flex; align-items:center; padding:3px 11px; border-radius:999px; font-size:12.5px; }
+.status-approved{ background:#E4F4EB; } .status-pending{ background:#FBF0D6; } .status-rejected,.status-cancelled{ background:#F8E3E1; }
+.stats-strip{ border-radius: var(--r-md); border:1px solid rgba(67,86,196,.1); background: linear-gradient(165deg, #F2F4FD, #E6EAFA); }
+.empty-state{ padding:54px 30px 30px; }
+.empty-state h3{ font-weight:800; letter-spacing:-.02em; }
+
+/* Bottom sheet & dialog */
+.sheet-overlay, .modal-overlay{ background: rgba(26,18,12,.42); -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px); animation: pr-fade .2s ease both; }
+.sheet{ border-radius: 30px 30px 0 0; animation: pr-sheet .38s var(--spring) both; }
+.sheet-handle{ width:44px; background:#e3dbd2; }
+.sheet-title-row h3{ font-weight:800; letter-spacing:-.02em; }
+.sheet-close{ background:#f4eee8; padding:6px; }
+.sheet-list-item{ border-bottom:1px solid var(--line); }
+
+/* Animasi masuk halus (hanya saat elemen pertama kali muncul) */
+.section, .list-item, .menu-block, .quick-grid, .shift-card, .balance-card, .tr-stats, .tr-list, .approval-card{ animation: pr-rise .5s var(--spring) both; }
+.shift-card{ animation-delay:.03s } .quick-grid{ animation-delay:.08s } .section:nth-of-type(1){ animation-delay:.12s } .section:nth-of-type(2){ animation-delay:.16s }
+.list-item:nth-child(2){ animation-delay:.04s } .list-item:nth-child(3){ animation-delay:.08s } .list-item:nth-child(4){ animation-delay:.12s } .list-item:nth-child(n+5){ animation-delay:.16s }
+@keyframes pr-rise{ from{ opacity:0; transform: translateY(10px); } to{ opacity:1; transform:none; } }
+@keyframes pr-fade{ from{ opacity:0 } to{ opacity:1 } }
+@keyframes pr-sheet{ from{ transform: translateY(40px); opacity:.6 } to{ transform:none; opacity:1 } }
+
+/* Laporan tim (halaman baru) */
+.tr-stats, .tr-list{ border-radius: var(--r-xl); border:1px solid var(--line); box-shadow: var(--sh-card); }
+.tr-card{ border-color: var(--line); border-radius:18px; background: linear-gradient(180deg,#fff,#fdfaf6); }
+.tr-item-head:active{ background:#fbf7f2; }
+.tr-toggle{ border-radius:13px; border-width:2px; transition: background .2s, border-color .2s; }
+.tr-item-head[aria-expanded="true"] .tr-toggle{ background: rgba(67,86,196,.08); border-color: var(--blue); color: var(--blue); }
+.tr-body{ animation: pr-rise .3s var(--spring) both; }
+
+/* ---------------------------------------------------------------- DESKTOP */
+.desktop-shell{ background: radial-gradient(90% 50% at 70% -10%, #fff7ee 0%, rgba(255,247,238,0) 70%), var(--bg); }
+.desktop-topbar{ height:66px; background: rgba(255,255,255,.82); -webkit-backdrop-filter: saturate(1.5) blur(14px); backdrop-filter: saturate(1.5) blur(14px); border-bottom:1px solid var(--line); box-shadow: 0 1px 0 rgba(255,255,255,.8), 0 6px 20px -12px rgba(60,40,20,.2); }
+.desktop-logo{ letter-spacing:.01em; }
+.desktop-sidebar{ width:96px; background: rgba(255,255,255,.9); border-right:1px solid var(--line); padding:22px 10px; gap:6px; }
+.desktop-sidebar button{ border-radius:16px; padding:13px 4px; font-weight:700; transition: background .2s var(--ease), color .2s var(--ease), transform .2s var(--spring); }
+.desktop-sidebar button:hover{ background:#f6f1ec; transform: translateY(-1px); }
+.desktop-sidebar button.active{ background: linear-gradient(180deg,#EEF1FD,#E5E9FB); box-shadow: inset 0 0 0 1px rgba(67,86,196,.12); }
+.desktop-sidebar button.active::before{ left:-10px; height:24px; width:4px; }
+.desktop-main{ padding:34px 40px; }
+.desktop-main-inner, .desktop-main-inner-chart, .desktop-main-inner-full{ border-radius: var(--r-xl); border:1px solid var(--line); box-shadow: var(--sh-card); }
+.desktop-main .page-header{ border-radius:0; box-shadow:none; background:none; padding:0 0 24px; }
+.desktop-main .page-header h1{ font-size:28px; font-weight:800; letter-spacing:-.025em; }
+.desktop-main .section, .desktop-main .menu-block, .desktop-main .balance-card{ border-radius: var(--r-lg); }
+.desktop-main .list-item:hover{ box-shadow: var(--sh-lift); transform: translateY(-2px); }
+.desktop-main .primary-btn, .desktop-main .fab-bottom-btn{
+  background: linear-gradient(180deg, rgba(255,255,255,.14), rgba(255,255,255,0) 50%), linear-gradient(165deg, #B01E2B, #7D0D18);
+  border-radius:14px; box-shadow: 0 12px 24px -10px rgba(125,13,24,.6);
+}
+.desktop-main .field input, .desktop-main .field select, .desktop-main .field textarea{ border-bottom-color: rgba(120,98,76,.28); }
+.desktop-main .field input:focus, .desktop-main .field select:focus, .desktop-main .field textarea:focus{ border-bottom-color: var(--red); }
+
+
+/* Header judul di dalam kartu penuh (Karyawan, dll.): beri ruang napas */
+.desktop-main-inner-full .page-header, .desktop-main-inner-chart .page-header{ padding: 28px 32px 14px; }
+.desktop-main .search-box{ box-shadow:none; background:#fffdfb; }
+.desktop-main .search-box:focus-within{ border-color: rgba(67,86,196,.45); box-shadow: 0 0 0 4px rgba(67,86,196,.10); }
+
+/* Halaman tabel desktop (HR, Cuti, Lembur, Absensi, Kalender) */
+.dsk-page{ background:#fff; border-radius: var(--r-xl); padding:40px 48px; border:1px solid var(--line); box-shadow: var(--sh-card); }
+.dsk-title{ font-size:30px; font-weight:800; letter-spacing:-.03em; color:var(--ink); }
+.dsk-sub{ font-style:normal; color:#8a7f75; font-size:14.5px; margin:8px 0 28px; }
+.dsk-stats div{ background: linear-gradient(180deg,#fffdfb,#fbf6f1); border:1px solid var(--line); border-radius:16px; padding:14px 22px; box-shadow: var(--sh-card); }
+.dsk-stats b{ color: var(--ink); font-size:24px; font-weight:800; }
+.dsk-filters select, .dsk-filters input{ border-bottom-color: rgba(120,98,76,.3); transition: border-color .2s; }
+.dsk-filters select:focus, .dsk-filters input:focus{ border-bottom-color: var(--blue); }
+.dsk-table-wrap{ border:1px solid var(--line); border-radius: var(--r-md); }
+.dsk-table thead th{ background:#faf6f1; color:#8a7f75; font-size:11.5px; font-weight:800; letter-spacing:.07em; text-transform:uppercase; padding:14px 14px; position:sticky; top:0; }
+.dsk-table td{ padding:15px 14px; border-top:1px solid rgba(120,98,76,.1); }
+.dsk-table tbody tr:hover{ background:#fbf7f2; }
+.dsk-empty{ color:#8a7f75; }
+
+/* Modal desktop (Cuti dll.) — dari abu-abu kaku menjadi kartu putih lembut */
+.dcuti-modal{ background:#fff; padding:0; border-radius: var(--r-xl); overflow:hidden; box-shadow: 0 30px 80px -20px rgba(26,18,12,.5); animation: pr-rise .35s var(--spring) both; }
+.dcuti-modal-body{ background:#fff; padding:30px 32px 32px; }
+.dcuti-modal-body h2{ color: var(--ink); font-weight:800; letter-spacing:-.025em; font-size:24px; border-bottom:1px solid var(--line); }
+.dcuti-modal-foot{ background:#fbf7f2; border-top:1px solid var(--line); padding:14px 24px; }
+
+/* Login */
+.login-page h1{ font-size:30px; font-weight:800; letter-spacing:-.03em; }
+
+/* Scrollbar desktop lebih halus */
+@media (hover:hover){ *{ scrollbar-width: thin; scrollbar-color: rgba(120,98,76,.3) transparent; } }
+
+/* Hormati preferensi "kurangi gerakan" */
+@media (prefers-reduced-motion: reduce){
+  *, *::before, *::after{ animation-duration:.001ms !important; animation-iteration-count:1 !important; transition-duration:.001ms !important; scroll-behavior:auto !important; }
+}
