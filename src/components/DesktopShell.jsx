@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { Bell, Grid3x3, Plus, ExternalLink } from 'lucide-react'
 import { TABS } from './BottomNav'
+import logo from '../assets/napocut-cover.png'
+import './DesktopShell.css'
 
 import { tx } from '../lib/i18n'
 import LanguageSwitch from './LanguageSwitch'
@@ -45,10 +47,24 @@ export default function DesktopShell({ employee, active, onChange, onNavigate, o
   }
 
   return (
-    <div className="desktop-shell">
+    <div className="desktop-shell dsh">
       <header className="desktop-topbar">
-        <div className="desktop-logo">napocut</div>
-        <div className="desktop-org">HRIS <span className="caret">▾</span></div>
+        <button type="button" className="dsh-logo" onClick={() => goTab('home')} aria-label="Beranda">
+          <img src={logo} alt="Napocut" draggable="false" />
+        </button>
+
+        <nav className="dsh-nav" aria-label="Menu utama">
+          {TABS.filter((t) => t.key !== 'request').map((t) => {
+            const Icon = t.icon
+            return (
+              <button key={t.key} type="button" className={active === t.key ? 'active' : ''} aria-current={active === t.key ? 'page' : undefined} onClick={() => goTab(t.key)}>
+                <Icon size={17} />
+                <span>{t.label}</span>
+                {t.key === 'inbox' && unread > 0 && <em className="dsh-nav-badge">{unread > 99 ? '99+' : unread}</em>}
+              </button>
+            )
+          })}
+        </nav>
         <div className="desktop-topbar-spacer" />
 
         <div style={{ position: 'relative' }}>
@@ -179,20 +195,8 @@ export default function DesktopShell({ employee, active, onChange, onNavigate, o
       </header>
 
       <div className="desktop-body">
-        <nav className="desktop-sidebar">
-          {TABS.filter((t) => t.key !== 'request').map((t) => {
-            const Icon = t.icon
-            return (
-              <button key={t.key} className={active === t.key ? 'active' : ''} onClick={() => onChange(t.key)} title={t.label}>
-                <Icon size={22} />
-                <span>{t.label}</span>
-              </button>
-            )
-          })}
-        </nav>
-
         <main className="desktop-main">
-          <div className={wide === 'full' ? 'desktop-main-inner-full' : wide === 'chart' ? 'desktop-main-inner-chart' : wide ? 'desktop-main-inner-wide' : 'desktop-main-inner'}>{children}</div>
+          <div className={(wide === 'full' ? 'desktop-main-inner-full' : wide === 'chart' ? 'desktop-main-inner-chart' : wide ? 'desktop-main-inner-wide' : 'desktop-main-inner') + (active === 'home' ? ' dsh-home' : '')}>{children}</div>
         </main>
       </div>
     </div>

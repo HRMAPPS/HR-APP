@@ -1,0 +1,32 @@
+/* Navigasi bawah mobile: kapsul putih, tombol Pengajuan menonjol (gradien biru). */
+.bottom-nav.hd-nav.hd-nav{
+  display:flex; align-items:flex-end; margin:0 14px calc(6px + env(safe-area-inset-bottom, 0px)); bottom:10px;
+  padding:8px 6px 8px; border:1px solid #EAE1D4; border-radius:28px;
+  background:rgba(255,255,255,.94); -webkit-backdrop-filter:saturate(1.6) blur(16px); backdrop-filter:saturate(1.6) blur(16px);
+  box-shadow:0 14px 34px -10px rgba(60,40,20,.32), 0 2px 6px rgba(60,40,20,.06);
+}
+.bottom-nav.hd-nav.hd-nav button{
+  position:relative; flex:1; min-width:0; padding:10px 0 2px; gap:4px; border-radius:18px; background:none;
+  color:#8E867E; font:700 11px 'Plus Jakarta Sans', system-ui, sans-serif;
+}
+.bottom-nav.hd-nav.hd-nav button.active{ color:#3A47AE; }
+.bottom-nav.hd-nav.hd-nav button.active::before{
+  content:''; position:absolute; top:0; left:50%; width:22px; height:3px; margin-left:-11px; inset:auto;
+  border-radius:0 0 4px 4px; background:#3A47AE; z-index:1;
+  top:-8px; left:50%; right:auto; bottom:auto;
+}
+.bottom-nav.hd-nav .hd-nav-ic{ position:relative; display:flex; }
+.bottom-nav.hd-nav .nav-ic{ width:22px; height:22px; }
+.bottom-nav.hd-nav .hd-nav-badge{
+  position:absolute; top:-6px; right:-10px; min-width:16px; height:16px; padding:0 4px; border-radius:8px;
+  background:#D9453B; color:#fff; font-size:9.5px; font-weight:800; display:flex; align-items:center; justify-content:center;
+  box-shadow:0 0 0 2px #fff;
+}
+.bottom-nav.hd-nav.hd-nav button.is-cta{ padding-top:0; margin-top:-26px; color:#3A47AE; }
+.bottom-nav.hd-nav.hd-nav button.is-cta::before{ display:none; }
+.bottom-nav.hd-nav .hd-cta{
+  width:54px; height:54px; border-radius:18px; display:flex; align-items:center; justify-content:center; color:#fff;
+  background:linear-gradient(180deg,#5063D0,#3541A6); border:3px solid #fff;
+  box-shadow:0 12px 22px -6px rgba(58,71,174,.65), inset 0 1px 0 rgba(255,255,255,.3);
+}
+.bottom-nav.hd-nav.hd-nav button.is-cta:active .hd-cta{ transform:scale(.94); }
