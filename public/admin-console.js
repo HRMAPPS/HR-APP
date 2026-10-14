@@ -1,0 +1,412 @@
+/* ===== Napocut HR - Admin Console (Payroll, BPJS/PPh21, Kontrak, Kuota Cuti, Audit Log) =====
+   Memakai client Supabase milik aplikasi (window.__sb) sehingga sesi login sama. */
+(function () {
+  'use strict';
+  var sb, btn, overlay, main, tabsEl, hrOk = false, adminOk = false, payOk = false, apprOk = false, cur = '', view = null, EMP = [], EMPM = {};
+  var RPF = new Intl.NumberFormat('id-ID');
+  var TABS = [['payroll', 'Payroll', 'pay'], ['emp', 'Gaji & Profil', 'pay'], ['param', 'Parameter', 'admin'], ['report', 'Laporan', 0], ['perf', 'Kinerja', 0], ['train', 'Pelatihan', 0], ['rec', 'Rekrutmen', 0], ['life', 'On/Offboarding', 0], ['overtime', 'Lembur', 0], ['contract', 'Kontrak', 0], ['leave', 'Kuota Cuti', 0], ['audit', 'Audit Log', 0]];
+
+  var css = '#hx-btn{position:fixed;left:12px;bottom:12px;z-index:9998;background:#C0392B;color:#fff;border:0;border-radius:22px;padding:10px 16px;font:600 13px system-ui;box-shadow:0 4px 14px rgba(0,0,0,.25);cursor:pointer}' +
+    '#hx-ov{position:fixed;inset:0;z-index:99999;background:#FBF7F2;color:#2B2420;font:14px system-ui,sans-serif;overflow:auto;-webkit-overflow-scrolling:touch}' +
+    '#hx-ov *{box-sizing:border-box}.hx-hd{position:sticky;top:0;background:#fff;border-bottom:1px solid #EADFD3;padding:10px 14px;display:flex;gap:10px;align-items:center;z-index:2}' +
+    '.hx-hd b{font-size:16px}.hx-tabs{display:flex;gap:6px;overflow:auto;flex:1}.hx-tab{border:1px solid #EADFD3;background:#fff;border-radius:16px;padding:6px 12px;cursor:pointer;white-space:nowrap;font:600 13px system-ui}' +
+    '.hx-tab.on{background:#C0392B;color:#fff;border-color:#C0392B}.hx-x{border:0;background:#F3EDE6;border-radius:50%;width:32px;height:32px;font-size:18px;cursor:pointer}' +
+    '.hx-m{padding:14px;max-width:1100px;margin:0 auto}.hx-c{background:#fff;border:1px solid #EADFD3;border-radius:12px;padding:12px;margin-bottom:12px}.hx-c h3{margin:0 0 8px;font-size:15px}' +
+    '.hx-row{display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end}.hx-f{display:flex;flex-direction:column;gap:3px;font-size:12px;color:#7C7167;flex:1;min-width:130px}' +
+    '.hx-f input,.hx-f select,.hx-f textarea{border:1px solid #D9CEC2;border-radius:8px;padding:8px;font:14px system-ui;background:#fff;color:#2B2420;width:100%}' +
+    '.hx-b{border:0;background:#C0392B;color:#fff;border-radius:8px;padding:8px 12px;font:600 13px system-ui;cursor:pointer}.hx-b.g{background:#F3EDE6;color:#2B2420}.hx-b.s{padding:4px 8px;font-size:12px}.hx-b:disabled{opacity:.5}' +
+    '.hx-tw{overflow:auto;border:1px solid #EADFD3;border-radius:10px;background:#fff}.hx-t{border-collapse:collapse;width:100%;font-size:13px}.hx-t th,.hx-t td{padding:7px 9px;border-bottom:1px solid #F3EDE6;text-align:left;vertical-align:top;white-space:nowrap}' +
+    '.hx-t th{background:#FBF7F2;font-size:12px;color:#7C7167;position:sticky;top:0}.hx-t td.n,.hx-t th.n{text-align:right}.hx-bd{display:inline-block;border-radius:10px;padding:2px 8px;font-size:11px;font-weight:700;background:#F3EDE6}' +
+    '.hx-bd.calculated{background:#FFF3CD}.hx-bd.approved{background:#D6EAF8}.hx-bd.finalized{background:#D4EFDF}.hx-w{color:#B9770E;font-size:12px;white-space:normal}.hx-mut{color:#7C7167;font-size:12px}' +
+    '.hx-toast{position:fixed;left:50%;bottom:70px;transform:translateX(-50%);background:#2B2420;color:#fff;padding:10px 14px;border-radius:10px;z-index:100000;max-width:90%;font:13px system-ui}.hx-toast.bad{background:#C0392B}' +
+    '.hx-pre{white-space:pre-wrap;word-break:break-all;font:11px monospace;background:#FBF7F2;padding:8px;border-radius:8px;max-height:220px;overflow:auto}';
+
+  function add(e, k) { if (k == null || k === false) return; if (Array.isArray(k)) k.forEach(function (x) { add(e, x); }); else e.appendChild(typeof k === 'object' ? k : document.createTextNode(String(k))); }
+  function h(t, a, k) { var e = document.createElement(t); a = a || {}; Object.keys(a).forEach(function (n) { var v = a[n]; if (v == null || v === false) return; if (n === 'class') e.className = v; else if (n.slice(0, 2) === 'on') e.addEventListener(n.slice(2), v); else e.setAttribute(n, v === true ? '' : v); }); add(e, k); return e; }
+  function rp(n) { return 'Rp ' + RPF.format(Math.round(Number(n || 0))); }
+  function nm(id) { var e = EMPM[id]; return e ? e.full_name : '-'; }
+  function toast(m, bad) { var t = h('div', { class: 'hx-toast' + (bad ? ' bad' : '') }, m); document.body.appendChild(t); setTimeout(function () { t.remove(); }, bad ? 7000 : 2500); }
+  function q(b) { return b.then(function (r) { if (r.error) { toast(r.error.message, true); throw r.error; } return r.data; }); }
+  function call(n, a) { return q(sb.rpc(n, a || {})); }
+  function act(fn, ok) { return function (ev) { var b = ev && ev.currentTarget; if (b) b.disabled = true; Promise.resolve().then(fn).then(function () { if (ok) toast(ok); }).catch(function (e) { console.error(e); }).then(function () { if (b && b.isConnected) b.disabled = false; }); }; }
+  function fld(label, attrs, tag) { var i = h(tag || 'input', attrs); return { el: h('label', { class: 'hx-f' }, [h('span', null, label), i]), i: i }; }
+  function sel(label, opts, val) { var s = h('select'); opts.forEach(function (o) { s.appendChild(h('option', { value: o[0] }, o[1])); }); if (val != null) s.value = val; return { el: h('label', { class: 'hx-f' }, [h('span', null, label), s]), i: s }; }
+  function tbl(cols, rows) { return h('div', { class: 'hx-tw' }, h('table', { class: 'hx-t' }, [h('thead', null, h('tr', null, cols.map(function (c) { var n = c.charAt(0) === '#'; return h('th', { class: n ? 'n' : '' }, n ? c.slice(1) : c); }))), h('tbody', null, rows)])); }
+  function tr(cells, onclick) { var r = h('tr', null, cells.map(function (c) { var n = c && c.n; return h('td', { class: n ? 'n' : '' }, n ? c.v : c); })); if (onclick) { r.style.cursor = 'pointer'; r.addEventListener('click', onclick); } return r; }
+  function N(v) { return { n: 1, v: v }; }
+  function card(title, kids) { return h('div', { class: 'hx-c' }, [title ? h('h3', null, title) : null, kids]); }
+  function opt(rows, v, l) { return rows.map(function (r) { return [r[v], l(r)]; }); }
+  function todayISO() { return new Date(Date.now() + 7 * 3600e3).toISOString().slice(0, 10); }
+  function csv(name, rows) { var s = rows.map(function (r) { return r.map(function (c) { c = c == null ? '' : String(c); return /[",\n;]/.test(c) ? '"' + c.replace(/"/g, '""') + '"' : c; }).join(','); }).join('\n'); var a = h('a', { href: URL.createObjectURL(new Blob(['\ufeff' + s], { type: 'text/csv' })), download: name }); document.body.appendChild(a); a.click(); a.remove(); }
+  function loadEmps() { return q(sb.from('employees').select('id,employee_code,full_name,department,role,employment_status').order('full_name')).then(function (d) { EMP = d || []; EMPM = {}; EMP.forEach(function (e) { EMPM[e.id] = e; }); }); }
+  var empOpts = function () { return opt(EMP, 'id', function (e) { return (e.employee_code || '') + ' ' + e.full_name; }); };
+
+  /* ---------- PAYROLL ---------- */
+  function tabPayroll() {
+    view = tabPayroll;
+    return Promise.all([q(sb.from('payroll_periods').select('*').order('start_date', { ascending: false })), q(sb.from('payroll_runs').select('*').order('run_version', { ascending: true }))]).then(function (r) {
+      var periods = r[0], runs = r[1], y = new Date().getFullYear();
+      var code = fld('Kode periode', { value: y + '-' + String(new Date().getMonth() + 1).padStart(2, '0') }), s = fld('Mulai', { type: 'date' }), e = fld('Selesai', { type: 'date' }), p = fld('Tgl bayar', { type: 'date' });
+      var form = card('Buat periode payroll', h('div', { class: 'hx-row' }, [code.el, s.el, e.el, p.el, h('button', { class: 'hx-b', onclick: act(function () { return call('create_payroll_period_admin', { p_code: code.i.value, p_start: s.i.value, p_end: e.i.value, p_payment: p.i.value || null }).then(tabPayroll); }, 'Periode dibuat') }, 'Simpan')]));
+      var list = periods.map(function (pe) {
+        var pr = runs.filter(function (x) { return x.period_id === pe.id; });
+        return card(pe.period_code + '  (' + pe.start_date + ' s/d ' + pe.end_date + ')', [
+          pr.map(function (ru) {
+            return h('div', { class: 'hx-row', style: 'margin:6px 0' }, [h('span', { class: 'hx-bd ' + ru.status }, 'v' + ru.run_version + ' ' + ru.status), h('span', { class: 'hx-mut' }, ru.finalized_at ? 'final ' + ru.finalized_at.slice(0, 10) : ru.calculated_at ? 'dihitung ' + ru.calculated_at.slice(0, 16).replace('T', ' ') : 'belum dihitung'),
+              h('button', { class: 'hx-b s', onclick: function () { runDetail(ru, pe); } }, 'Buka')]);
+          }),
+          h('button', { class: 'hx-b g s', onclick: act(function () { return call('create_payroll_run_admin', { p_period_id: pe.id }).then(tabPayroll); }, 'Run dibuat') }, '+ Run baru / koreksi')]);
+      });
+      main.replaceChildren.apply(main, [form].concat(list.length ? list : [h('div', { class: 'hx-mut' }, 'Belum ada periode.')]));
+    });
+  }
+
+  function runDetail(ru, pe) {
+    view = function () { return q(sb.from('payroll_runs').select('*').eq('id', ru.id).single()).then(function (n) { return runDetail(n, pe); }); };
+    var locked = ru.status === 'approved' || ru.status === 'finalized';
+    return Promise.all([call('get_payroll_run_summary_admin', { p_run_id: ru.id }), q(sb.from('payroll_results').select('*').eq('run_id', ru.id)), q(sb.from('payroll_inputs').select('*').eq('period_id', pe.id)), q(sb.from('payroll_components').select('code,name,type').eq('active', true).order('name'))]).then(function (d) {
+      var sm = d[0] || {}, res = d[1].sort(function (a, b) { return nm(a.employee_id).localeCompare(nm(b.employee_id)); }), inputs = d[2], comps = d[3];
+      var btns = [h('button', { class: 'hx-b g', onclick: function () { tabPayroll(); } }, '< Kembali')];
+      if (ru.status === 'draft' || ru.status === 'calculated') btns.push(h('button', { class: 'hx-b', onclick: act(function () { return call('calculate_payroll_run_admin', { p_run_id: ru.id }).then(view); }, 'Perhitungan selesai') }, 'Hitung payroll'));
+      if (ru.status === 'calculated' && apprOk) btns.push(h('button', { class: 'hx-b', onclick: act(function () { return call('approve_payroll_run_admin', { p_run_id: ru.id }).then(view); }, 'Disetujui') }, 'Setujui'));
+      if (ru.status === 'approved' && apprOk) btns.push(h('button', { class: 'hx-b', onclick: function (ev) { if (confirm('Finalisasi akan MENGUNCI hasil dan menerbitkan slip gaji. Lanjutkan?')) act(function () { return call('finalize_payroll_run_admin', { p_run_id: ru.id }).then(function (n) { toast('Final. ' + n + ' slip diterbitkan'); return view(); }); })(ev); } }, 'Finalisasi + terbitkan slip'));
+      if ((ru.status === 'calculated' || ru.status === 'approved') && apprOk) btns.push(h('button', { class: 'hx-b g', onclick: act(function () { return call('reset_payroll_run_admin', { p_run_id: ru.id }).then(view); }, 'Run dikembalikan ke draft') }, 'Reset ke draft'));
+      if ((ru.status === 'approved' || ru.status === 'finalized') && apprOk) btns.push(h('button', { class: 'hx-b g', onclick: act(function () { return call('get_payroll_bank_export_admin', { p_run_id: ru.id }).then(function (rows) { rows = rows || []; var miss = rows.filter(function (x) { return !x.account_number || !x.bank_name; }).length; csv('transfer-' + pe.period_code + '-v' + ru.run_version + '.csv', [['Bank', 'Nama Pemilik Rekening', 'No Rekening', 'Nominal', 'Keterangan', 'Kode Karyawan', 'Nama Karyawan']].concat(rows.map(function (x) { return [x.bank_name, x.account_holder || x.full_name, x.account_number, x.net_pay, 'Gaji ' + pe.period_code, x.employee_code, x.full_name]; }))); toast(rows.length + ' penerima diekspor (format umum, sesuaikan dengan template bank)' + (miss ? '. ' + miss + ' baris tanpa data rekening lengkap' : ''), !!miss); }); }) }, 'Ekspor transfer bank'));
+      if (!locked) btns.push(h('button', { class: 'hx-b g', onclick: act(function () { return call('import_overtime_to_payroll_admin', { p_period_id: pe.id }).then(function (r) { toast('Lembur diimpor: ' + r.employees_imported + ' karyawan' + (r.skipped_no_salary ? ', ' + r.skipped_no_salary + ' dilewati (gaji pokok belum diisi)' : ''), !!r.skipped_no_salary); return view(); }); }) }, 'Impor lembur terverifikasi'));
+      btns.push(h('button', { class: 'hx-b g', onclick: act(function () { return call('get_payroll_tax_report_admin', { p_run_id: ru.id }).then(function (rows) { rows = rows || []; csv('rekap-bpjs-pph21-' + pe.period_code + '-v' + ru.run_version + '.csv', [['Kode', 'Nama', 'NIK', 'NPWP', 'No BPJS Kesehatan', 'No BPJS TK', 'PTKP', 'Bruto', 'Dasar Pajak', 'KES Karyawan', 'KES Perusahaan', 'JHT Karyawan', 'JHT Perusahaan', 'JP Karyawan', 'JP Perusahaan', 'JKK', 'JKM', 'PPh21', 'Metode']].concat(rows.map(function (x) { return [x.employee_code, x.full_name, x.nik, x.npwp, x.bpjs_kesehatan_no, x.bpjs_tk_no, x.ptkp_status, x.gross_pay, x.taxable_gross, x.kes_emp, x.kes_er, x.jht_emp, x.jht_er, x.jp_emp, x.jp_er, x.jkk_er, x.jkm_er, x.pph21, x.tax_method]; }))); toast('Rekap diunduh (memuat NIK/NPWP, tercatat di audit log)'); }); }) }, 'Rekap BPJS & PPh 21'));
+      btns.push(h('button', { class: 'hx-b g', onclick: function () { csv('payroll-' + pe.period_code + '-v' + ru.run_version + '.csv', [['Kode', 'Nama', 'PTKP', 'Bruto', 'BPJS Karyawan', 'PPh21', 'Potongan Lain', 'Neto', 'BPJS Perusahaan', 'Biaya Perusahaan', 'Metode Pajak', 'Peringatan']].concat(res.map(function (x) { var e = EMPM[x.employee_id] || {}; return [e.employee_code, e.full_name, x.ptkp_status, x.gross_pay, x.bpjs_employee, x.pph21, x.other_deductions, x.net_pay, x.bpjs_employer, x.employer_cost, x.tax_method, (x.warnings || []).join(' | ')]; }))); } }, 'Unduh CSV'));
+      var head = card('Periode ' + pe.period_code + ' - versi ' + ru.run_version + ' (' + ru.status + ')', [h('div', { class: 'hx-row' }, btns),
+        h('div', { class: 'hx-mut', style: 'margin-top:8px' }, 'Karyawan ' + (sm.employees || 0) + ' | Bruto ' + rp(sm.gross) + ' | BPJS karyawan ' + rp(sm.bpjs_employee) + ' | PPh21 ' + rp(sm.pph21) + ' | Potongan lain ' + rp(sm.other_deductions) + ' | Neto ' + rp(sm.net) + ' | Biaya perusahaan ' + rp(sm.employer_cost) + ' | Perlu dicek: ' + (sm.employees_with_warnings || 0))]);
+      var ie = sel('Karyawan', empOpts()), ic = sel('Komponen', opt(comps, 'code', function (c) { return c.name + ' (' + c.type + ')'; }), 'lembur'), ia = fld('Nominal (Rp)', { type: 'number', min: '0' }), inn = fld('Catatan', {});
+      var inForm = locked ? h('div', { class: 'hx-mut' }, 'Input periode terkunci (approved/final).') : h('div', { class: 'hx-row' }, [ie.el, ic.el, ia.el, inn.el, h('button', { class: 'hx-b', onclick: act(function () { return call('upsert_payroll_input_admin', { p_id: null, p_period_id: pe.id, p_employee_id: ie.i.value, p_code: ic.i.value, p_amount: Number(ia.i.value), p_note: inn.i.value || null }).then(view); }, 'Input disimpan') }, 'Tambah')]);
+      var inCard = card('Input periode (lembur, bonus, THR, potongan)', [inForm, inputs.length ? tbl(['Karyawan', 'Komponen', '#Nominal', 'Catatan', ''], inputs.map(function (x) { return tr([nm(x.employee_id), x.component_code, N(rp(x.amount)), x.note || '', locked ? '' : h('button', { class: 'hx-b g s', onclick: act(function () { return call('delete_payroll_input_admin', { p_id: x.id }).then(view); }) }, 'Hapus')]); })) : null]);
+      var det = h('div');
+      var rows = res.map(function (x) {
+        var e = EMPM[x.employee_id] || {};
+        return tr([e.employee_code || '', e.full_name || '', x.ptkp_status || '-', N(rp(x.gross_pay)), N(rp(x.bpjs_employee)), N(rp(x.pph21)), N(rp(x.other_deductions)), N(rp(x.net_pay)), (x.warnings || []).length ? h('span', { class: 'hx-w' }, '! ' + x.warnings.length) : ''], function () {
+          q(sb.from('payroll_result_items').select('*').eq('result_id', x.id)).then(function (its) {
+            det.replaceChildren(card('Rincian ' + (e.full_name || ''), [tbl(['Tipe', 'Komponen', '#Nominal', 'Dasar'], its.map(function (i) { return tr([i.item_type, i.component_name, N(rp(i.amount)), i.reference || '']); })), (x.warnings || []).map(function (w) { return h('div', { class: 'hx-w' }, '! ' + w); }), h('div', { class: 'hx-mut' }, 'Metode pajak: ' + (x.tax_method || '-') + ' | Dasar pajak: ' + rp(x.taxable_gross) + ' | Biaya perusahaan: ' + rp(x.employer_cost))]));
+          });
+        });
+      });
+      main.replaceChildren(head, inCard, card('Hasil per karyawan (klik baris untuk rincian)', res.length ? tbl(['Kode', 'Nama', 'PTKP', '#Bruto', '#BPJS Karyawan', '#PPh21', '#Pot. Lain', '#Neto', 'Cek'], rows) : h('div', { class: 'hx-mut' }, 'Belum dihitung. Klik "Hitung payroll".')), det);
+    });
+  }
+
+  /* ---------- GAJI & PROFIL ---------- */
+  function tabEmp() {
+    view = tabEmp;
+    return Promise.all([q(sb.from('employee_compensation_history').select('employee_id,effective_from,base_salary').order('effective_from', { ascending: false })), q(sb.from('employee_payroll_profiles').select('*'))]).then(function (d) {
+      var sal = {}, prof = {}; d[0].forEach(function (c) { if (!sal[c.employee_id]) sal[c.employee_id] = c; }); d[1].forEach(function (p) { prof[p.employee_id] = p; });
+      var s = fld('Cari nama / kode', {}), body = h('div');
+      function draw() { var t = s.i.value.toLowerCase(); body.replaceChildren(tbl(['Kode', 'Nama', 'Dept', '#Gaji pokok', 'PTKP', 'BPJS'], EMP.filter(function (e) { return (e.full_name + ' ' + (e.employee_code || '')).toLowerCase().indexOf(t) >= 0; }).slice(0, 200).map(function (e) { var p = prof[e.id], c = sal[e.id]; return tr([e.employee_code || '', e.full_name, e.department || '', N(c ? rp(c.base_salary) : '-'), p ? p.ptkp_status : 'belum diisi', p ? [p.bpjs_kes_active ? 'KES ' : '', p.bpjs_jht_active ? 'JHT ' : '', p.bpjs_jp_active ? 'JP ' : '', p.bpjs_jkk_jkm_active ? 'JKK/JKM' : ''].join('') : '-'], function () { empDetail(e.id); }); }))); }
+      s.i.addEventListener('input', draw); draw();
+      main.replaceChildren(card('Gaji pokok & profil payroll (klik karyawan untuk mengatur)', [s.el, h('div', { style: 'height:8px' }), body]));
+    });
+  }
+
+  function empDetail(id) {
+    view = function () { return empDetail(id); };
+    var e = EMPM[id];
+    return Promise.all([q(sb.from('employee_compensation_history').select('*').eq('employee_id', id).order('effective_from', { ascending: false })), q(sb.from('employee_payroll_profiles').select('*').eq('employee_id', id)), q(sb.from('employee_payroll_components').select('*').eq('employee_id', id).order('effective_from', { ascending: false })), q(sb.from('employee_job_history').select('*').eq('employee_id', id).order('effective_from', { ascending: false })), q(sb.from('payroll_components').select('code,name,type').eq('active', true).order('name'))]).then(function (d) {
+      var comp = d[0], p = (d[1] || [])[0] || {}, ecs = d[2], jobs = d[3], comps = d[4];
+      var ef = fld('Berlaku mulai', { type: 'date', value: todayISO() }), nom = fld('Gaji pokok (Rp)', { type: 'number', min: '0' }), rs = fld('Alasan perubahan', {});
+      var c1 = card('Gaji pokok - ' + e.full_name, [h('div', { class: 'hx-row' }, [ef.el, nom.el, rs.el, h('button', { class: 'hx-b', onclick: act(function () { return call('set_compensation_admin', { p_employee_id: id, p_effective_from: ef.i.value, p_base_salary: Number(nom.i.value), p_reason: rs.i.value, p_approved_by: null }).then(view); }, 'Gaji tersimpan') }, 'Simpan')]), tbl(['Berlaku', '#Gaji pokok', 'Alasan'], comp.map(function (c) { return tr([c.effective_from, N(rp(c.base_salary)), c.change_reason]); }))]);
+      var pt = sel('PTKP', ['TK/0', 'TK/1', 'TK/2', 'TK/3', 'K/0', 'K/1', 'K/2', 'K/3'].map(function (x) { return [x, x]; }), p.ptkp_status || 'TK/0'), jk = fld('Tarif JKK (%)', { type: 'number', step: '0.01', value: String((p.jkk_rate != null ? p.jkk_rate : 0.0024) * 100) });
+      function ck(l, v) { var i = h('input', { type: 'checkbox' }); i.checked = !!v; return { i: i, el: h('label', { class: 'hx-f', style: 'flex-direction:row;align-items:center;gap:6px;min-width:100px' }, [i, l]) }; }
+      var npwp = ck('Punya NPWP', p.has_npwp !== false), kes = ck('BPJS Kesehatan', p.bpjs_kes_active), jht = ck('JHT', p.bpjs_jht_active), jp = ck('JP', p.bpjs_jp_active), jkk = ck('JKK + JKM', p.bpjs_jkk_jkm_active);
+      var c2 = card('Profil pajak & BPJS', h('div', { class: 'hx-row' }, [pt.el, jk.el, npwp.el, kes.el, jht.el, jp.el, jkk.el, h('button', { class: 'hx-b', onclick: act(function () { return call('upsert_payroll_profile_admin', { p_employee_id: id, p_ptkp: pt.i.value, p_has_npwp: npwp.i.checked, p_kes: kes.i.checked, p_jht: jht.i.checked, p_jp: jp.i.checked, p_jkk_jkm: jkk.i.checked, p_jkk_rate: Number(jk.i.value) / 100 }).then(view); }, 'Profil tersimpan') }, 'Simpan profil')]));
+      var cc = sel('Komponen', opt(comps, 'code', function (c) { return c.name + ' (' + c.type + ')'; }), 'tunjangan_jabatan'), ca = fld('Nominal / bulan', { type: 'number', min: '0' }), cf = fld('Mulai', { type: 'date', value: todayISO() }), ct = fld('Sampai (opsional)', { type: 'date' });
+      var c3 = card('Komponen tetap bulanan (tunjangan / potongan rutin)', [h('div', { class: 'hx-row' }, [cc.el, ca.el, cf.el, ct.el, h('button', { class: 'hx-b', onclick: act(function () { return call('upsert_employee_component_admin', { p_id: null, p_employee_id: id, p_code: cc.i.value, p_amount: Number(ca.i.value), p_from: cf.i.value, p_to: ct.i.value || null, p_note: null }).then(view); }, 'Komponen tersimpan') }, 'Tambah')]), tbl(['Komponen', '#Nominal', 'Mulai', 'Sampai', ''], ecs.map(function (x) { return tr([x.component_code, N(rp(x.amount)), x.effective_from, x.effective_to || '-', h('button', { class: 'hx-b g s', onclick: act(function () { return call('delete_employee_component_admin', { p_id: x.id }).then(view); }) }, 'Hapus')]); }))]);
+      var c4 = card('Riwayat jabatan & organisasi', tbl(['Mulai', 'Sampai', 'Jabatan', 'Departemen', 'Grade', 'Jenis'], jobs.map(function (j) { return tr([j.effective_from, j.effective_to || 'sekarang', j.position || '-', j.department || '-', j.grade == null ? '-' : j.grade, j.change_type]); })));
+      main.replaceChildren(h('button', { class: 'hx-b g', onclick: function () { tabEmp(); } }, '< Kembali'), h('div', { style: 'height:8px' }), c1, c2, c3, c4);
+    });
+  }
+
+  /* ---------- PARAMETER ---------- */
+  function tabParam() {
+    view = tabParam;
+    return Promise.all([q(sb.from('bpjs_parameters').select('*').order('code').order('effective_from', { ascending: false })), q(sb.from('pph21_ter_rates').select('category,effective_from')), q(sb.from('payroll_settings').select('*').single()), q(sb.from('payroll_components').select('*').order('type').order('name')), q(sb.from('user_permissions').select('*'))]).then(function (d) {
+      var bp = d[0], ter = d[1], st = d[2], comps = d[3], perms = d[4], cnt = {};
+      ter.forEach(function (t) { var k = t.category + ' (berlaku ' + t.effective_from + ')'; cnt[k] = (cnt[k] || 0) + 1; });
+      var pc = sel('Program', ['KES', 'JHT', 'JP', 'JKK', 'JKM'].map(function (x) { return [x, x]; })), re = fld('Karyawan (%)', { type: 'number', step: '0.001' }), rr = fld('Perusahaan (%)', { type: 'number', step: '0.001' }), cap = fld('Batas upah (kosong = tanpa batas)', { type: 'number' }), ef = fld('Berlaku mulai', { type: 'date' }), nt = fld('Catatan', {});
+      var c1 = card('Parameter BPJS (berversi, berlaku mulai tanggal tertentu)', [tbl(['Program', '#Karyawan', '#Perusahaan', '#Batas upah', 'Berlaku', 'Catatan'], bp.map(function (b) { return tr([b.code, N((b.rate_employee * 100).toFixed(3) + '%'), N((b.rate_employer * 100).toFixed(3) + '%'), N(b.wage_cap ? rp(b.wage_cap) : '-'), b.effective_from, b.notes || '']); })), h('div', { style: 'height:8px' }), h('div', { class: 'hx-row' }, [pc.el, re.el, rr.el, cap.el, ef.el, nt.el, h('button', { class: 'hx-b', onclick: act(function () { return call('set_bpjs_parameter_admin', { p_code: pc.i.value, p_rate_employee: Number(re.i.value) / 100, p_rate_employer: Number(rr.i.value) / 100, p_wage_cap: cap.i.value ? Number(cap.i.value) : null, p_effective_from: ef.i.value, p_notes: nt.i.value || null }).then(tabParam); }, 'Parameter tersimpan') }, 'Simpan versi baru')])]);
+      var tef = fld('Berlaku mulai', { type: 'date', value: '2024-01-01' }), ta = fld('Data TER: kategori;dari;sampai;tarif%  (satu baris per lapisan, sampai dikosongkan untuk lapisan terakhir)', { rows: '6', placeholder: 'A;0;5400000;0\nA;5400001;5650000;0.25' }, 'textarea');
+      var c2 = card('Tabel TER PPh 21 (PMK 168/2023)', [h('div', { class: 'hx-mut' }, Object.keys(cnt).length ? 'Terisi: ' + Object.keys(cnt).map(function (k) { return k + ' = ' + cnt[k] + ' baris'; }).join(', ') : 'BELUM DIISI. Selama kosong, PPh 21 Januari-November dihitung Rp 0. Salin tabel resmi (lampiran PMK 168/2023) lalu tempel di bawah.'),
+        h('div', { class: 'hx-row' }, [tef.el]), ta.el, h('div', { style: 'height:8px' }), h('button', { class: 'hx-b', onclick: act(function () { var rows = [], bad = 0; ta.i.value.split('\n').forEach(function (ln) { ln = ln.trim(); if (!ln) return; var c = ln.split(/[\t;|]/); if (c.length < 4) c = ln.split(','); if (c.length < 4) { bad++; return; } var f = Number(c[1].replace(/\s/g, '')), t = c[2].trim() === '' ? null : Number(c[2].replace(/\s/g, '')), r = Number(c[3].replace('%', '').replace(',', '.').trim()); if (!/^[abc]$/i.test(c[0].trim()) || isNaN(f) || (t !== null && isNaN(t)) || isNaN(r)) { bad++; return; } rows.push({ category: c[0].trim().toUpperCase(), income_from: f, income_to: t, rate_percent: r }); }); if (bad) { toast(bad + ' baris tidak valid. Tidak ada yang disimpan.', true); return Promise.reject(); } if (!rows.length) { toast('Data kosong', true); return Promise.reject(); } return call('import_pph21_ter_admin', { p_effective_from: tef.i.value, p_rows: rows }).then(function (n) { toast(n + ' baris TER tersimpan'); return tabParam(); }); }) }, 'Impor tabel TER')]);
+      var en = fld('Nama badan usaha di slip', { value: st.business_entity || '' });
+      function tg(l, v, key) { var i = h('input', { type: 'checkbox' }); i.checked = !!v; i.addEventListener('change', act(function () { var a = { p_allow_self_approval: null, p_include_employer_bpjs: null, p_business_entity: null, p_prorate_new_joiners: null }; a[key] = i.checked; return call('set_payroll_settings_admin', a); }, 'Pengaturan disimpan')); return h('label', { style: 'display:flex;gap:6px;align-items:center;margin:6px 0' }, [i, l]); }
+      var c3 = card('Pengaturan payroll', [tg('Penyetuju boleh sama dengan pembuat run (matikan jika ada lebih dari satu admin)', st.allow_self_approval, 'p_allow_self_approval'), tg('Premi BPJS Kesehatan, JKK, JKM yang dibayar perusahaan ikut dihitung sebagai penghasilan bruto pajak', st.include_employer_bpjs_in_gross, 'p_include_employer_bpjs'), tg('Prorata gaji untuk karyawan yang masuk di tengah periode (berdasarkan tanggal masuk)', st.prorate_new_joiners, 'p_prorate_new_joiners'), h('div', { class: 'hx-row' }, [en.el, h('button', { class: 'hx-b', onclick: act(function () { return call('set_payroll_settings_admin', { p_allow_self_approval: null, p_include_employer_bpjs: null, p_business_entity: en.i.value, p_prorate_new_joiners: null }); }, 'Tersimpan') }, 'Simpan')]), h('div', { class: 'hx-mut' }, 'Versi rumus: ' + st.formula_version)]);
+      var c4 = card('Komponen payroll (master)', tbl(['Kode', 'Nama', 'Tipe', 'Kena pajak', 'Dasar BPJS', 'Catatan'], comps.map(function (c) { return tr([c.code, c.name, c.type, c.taxable ? 'ya' : 'tidak', c.bpjs_base ? 'ya' : 'tidak', c.notes || '']); })));
+      var pe = sel('User HR', opt(EMP.filter(function (x) { return (x.role === 'hr' || x.role === 'admin') && x.employment_status === 'active'; }), 'id', function (x) { return x.full_name + ' (' + x.role + ')'; })), pp = sel('Izin', [['payroll.manage', 'payroll.manage - hitung & kelola payroll'], ['payroll.approve', 'payroll.approve - setujui, finalisasi, ekspor transfer']]);
+      var c5 = card('Hak akses payroll (pemisahan tugas)', [h('div', { class: 'hx-mut', style: 'margin-bottom:8px' }, 'Admin otomatis punya semua izin. User HR lain hanya bisa memakai payroll jika diberi izin. Disarankan: petugas payroll diberi manage saja, penyetuju diberi approve.'),
+        perms.length ? tbl(['User', 'Izin', 'Diberikan', ''], perms.map(function (x) { return tr([nm(x.employee_id), x.permission, x.granted_at.slice(0, 10), h('button', { class: 'hx-b g s', onclick: act(function () { return call('set_user_permission_admin', { p_employee_id: x.employee_id, p_permission: x.permission, p_grant: false }).then(tabParam); }, 'Izin dicabut') }, 'Cabut')]); })) : h('div', { class: 'hx-mut' }, 'Belum ada izin tambahan.'),
+        h('div', { style: 'height:8px' }), h('div', { class: 'hx-row' }, [pe.el, pp.el, h('button', { class: 'hx-b', onclick: act(function () { return call('set_user_permission_admin', { p_employee_id: pe.i.value, p_permission: pp.i.value, p_grant: true }).then(tabParam); }, 'Izin diberikan') }, 'Beri izin')])]);
+      main.replaceChildren(c5, c1, c2, c3, c4);
+    });
+  }
+
+  /* ---------- KONTRAK ---------- */
+  function tabContract() {
+    view = tabContract;
+    return Promise.all([call('get_expiring_contracts', { p_days: 60 }), q(sb.from('employment_contracts').select('*').order('start_date', { ascending: false }).limit(300))]).then(function (d) {
+      var ex = d[0] || [], list = d[1];
+      var e = sel('Karyawan', empOpts()), no = fld('Nomor kontrak', {}), ty = sel('Jenis', ['PKWT', 'PKWTT', 'Probation', 'Harian', 'Magang', 'Lainnya'].map(function (x) { return [x, x]; })), s = fld('Mulai', { type: 'date' }), en = fld('Berakhir (wajib untuk PKWT)', { type: 'date' }), doc = fld('URL dokumen', {});
+      var c0 = card('Kontrak mendekati akhir (60 hari)', ex.length ? tbl(['Kode', 'Nama', 'Dept', 'Jenis', 'Berakhir', '#Sisa hari'], ex.map(function (x) { return tr([x.employee_code || '', x.full_name, x.department || '', x.contract_type, x.end_date, N(x.days_left < 0 ? 'lewat ' + (-x.days_left) : x.days_left)]); })) : h('div', { class: 'hx-mut' }, 'Tidak ada.'));
+      var c1 = card('Tambah kontrak', h('div', { class: 'hx-row' }, [e.el, no.el, ty.el, s.el, en.el, doc.el, h('button', { class: 'hx-b', onclick: act(function () { return call('upsert_contract_hr', { p_id: null, p_employee_id: e.i.value, p_contract_number: no.i.value, p_contract_type: ty.i.value, p_start_date: s.i.value, p_end_date: en.i.value || null, p_document_url: doc.i.value || null, p_notes: null }).then(tabContract); }, 'Kontrak disimpan') }, 'Simpan')]));
+      var c2 = card('Semua kontrak', tbl(['Karyawan', 'No.', 'Jenis', 'Mulai', 'Berakhir', 'Status', ''], list.map(function (c) {
+        return tr([nm(c.employee_id), c.contract_number || '-', c.contract_type, c.start_date, c.end_date || '-', c.status, c.status !== 'active' ? '' : h('span', null, [
+          h('button', { class: 'hx-b g s', onclick: act(function () { var n = prompt('Nomor kontrak baru (boleh kosong):', ''); if (n === null) return; var st = prompt('Tanggal mulai kontrak baru (YYYY-MM-DD):', c.end_date ? new Date(new Date(c.end_date).getTime() + 864e5).toISOString().slice(0, 10) : todayISO()); if (!st) return; var en2 = prompt('Tanggal berakhir kontrak baru (kosong jika PKWTT):', ''); return call('renew_contract_hr', { p_contract_id: c.id, p_new_number: n, p_new_start: st, p_new_end: en2 || null, p_new_type: null, p_notes: null }).then(tabContract); }, 'Kontrak diperpanjang') }, 'Perpanjang'), ' ',
+          h('button', { class: 'hx-b g s', onclick: act(function () { var dt = prompt('Tanggal berakhir (YYYY-MM-DD):', todayISO()); if (!dt) return; var t = confirm('OK = Diakhiri (selesai masa kontrak)\nBatal = Diputus (terminated)') ? 'ended' : 'terminated'; return call('end_contract_hr', { p_contract_id: c.id, p_end_date: dt, p_status: t, p_notes: null }).then(tabContract); }, 'Kontrak diakhiri') }, 'Akhiri')])]);
+      })));
+      main.replaceChildren(c0, c1, c2);
+    });
+  }
+
+  /* ---------- KUOTA CUTI ---------- */
+  function tabLeave() {
+    view = tabLeave;
+    return Promise.all([q(sb.from('leave_types').select('id,name,enforce_quota,default_days').order('name')), q(sb.from('leave_adjustments').select('*').order('created_at', { ascending: false }).limit(100))]).then(function (d) {
+      var lt = d[0], adj = d[1], LT = {}; lt.forEach(function (x) { LT[x.id] = x; });
+      var e = sel('Karyawan', empOpts()), t = sel('Jenis cuti', opt(lt.filter(function (x) { return x.enforce_quota; }), 'id', function (x) { return x.name + ' (kuota dasar ' + x.default_days + ')'; })), y = fld('Tahun', { type: 'number', value: String(new Date().getFullYear()) }), dy = fld('Hari (+ tambah / - kurang)', { type: 'number', step: '0.5' }), k = sel('Jenis', [['opening', 'Saldo awal'], ['carry_over', 'Carry over'], ['manual', 'Manual'], ['correction', 'Koreksi']], 'manual'), rs = fld('Alasan (wajib)', {});
+      main.replaceChildren(card('Penyesuaian kuota cuti', [h('div', { class: 'hx-row' }, [e.el, t.el, y.el, dy.el, k.el, rs.el, h('button', { class: 'hx-b', onclick: act(function () { return call('adjust_leave_quota_hr', { p_employee_id: e.i.value, p_leave_type_id: t.i.value, p_year: Number(y.i.value), p_days: Number(dy.i.value), p_kind: k.i.value, p_reason: rs.i.value }).then(tabLeave); }, 'Penyesuaian tersimpan') }, 'Simpan')]), h('div', { class: 'hx-mut' }, 'Penyesuaian bersifat permanen (tidak bisa diubah/dihapus). Untuk membatalkan, buat koreksi dengan nilai berlawanan.')]),
+        card('100 penyesuaian terakhir', tbl(['Waktu', 'Karyawan', 'Jenis cuti', 'Tahun', '#Hari', 'Jenis', 'Alasan', 'Oleh'], adj.map(function (a) { return tr([a.created_at.slice(0, 16).replace('T', ' '), nm(a.employee_id), LT[a.leave_type_id] ? LT[a.leave_type_id].name : '-', a.year, N(a.days), a.kind, a.reason, nm(a.created_by)]); }))));
+    });
+  }
+
+  /* ---------- AUDIT ---------- */
+  function tabAudit() {
+    view = tabAudit;
+    var names = ['', 'employees', 'payslips', 'leave_balances', 'leave_types', 'leave_adjustments', 'overtime_requests', 'warnings', 'departments', 'approval_rules', 'approval_settings', 'delegations', 'company_assets', 'employment_contracts', 'employee_job_history', 'employee_compensation_history', 'payroll_periods', 'payroll_runs', 'payroll_inputs', 'employee_payroll_profiles', 'employee_payroll_components', 'bpjs_parameters', 'pph21_ter_rates', 'payroll_settings'];
+    var f = sel('Tabel', names.map(function (x) { return [x, x || 'Semua']; })), body = h('div');
+    function load() { var b = sb.from('audit_logs').select('*').order('id', { ascending: false }).limit(200); if (f.i.value) b = b.eq('table_name', f.i.value); return q(b).then(function (rows) { body.replaceChildren(tbl(['Waktu', 'Tabel', 'Aksi', 'Pelaku', 'Kolom berubah', ''], rows.map(function (r) { var det = h('tr', { style: 'display:none' }, h('td', { colspan: '6' }, h('div', { class: 'hx-pre' }, JSON.stringify({ lama: r.old_values, baru: r.new_values }, null, 1)))); var row = tr([r.occurred_at.slice(0, 19).replace('T', ' '), r.table_name, r.action, r.actor_employee_id ? nm(r.actor_employee_id) : (r.actor_user_id ? 'user' : 'sistem/SQL'), (r.changed_fields || []).join(', '), 'detail'], function () { det.style.display = det.style.display === 'none' ? '' : 'none'; }); var frag = document.createDocumentFragment(); frag.appendChild(row); frag.appendChild(det); return frag; }))); }); }
+    f.i.addEventListener('change', load);
+    main.replaceChildren(card('Audit log (200 terbaru, hanya HR/Admin)', [f.el, h('div', { style: 'height:8px' }), body]));
+    return load();
+  }
+
+  /* ---------- LAPORAN ---------- */
+  function tabReport() {
+    view = tabReport;
+    var s = fld('Dari', { type: 'date', value: todayISO().slice(0, 8) + '01' }), e = fld('Sampai', { type: 'date', value: todayISO() }), body = h('div');
+    function load() {
+      body.replaceChildren(h('div', { class: 'hx-mut' }, 'Memuat...'));
+      return Promise.all([call('get_report_headcount_hr'), call('get_report_attendance_hr', { p_start: s.i.value, p_end: e.i.value })]).then(function (d) {
+        var hc = d[0] || {}, rows = d[1] || [];
+        function sum(k) { return rows.reduce(function (a, r) { return a + Number(r[k] || 0); }, 0); }
+        var c1 = card('Headcount (karyawan aktif: ' + (hc.total_active || 0) + ')', [h('div', { class: 'hx-mut' }, 'Nonaktif ' + (hc.total_inactive || 0) + ' | Masuk 30 hari terakhir ' + (hc.joined_last_30d || 0) + ' | Kontrak berakhir <= 60 hari ' + (hc.contracts_expiring_60d || 0)),
+          h('div', { style: 'height:8px' }), tbl(['Departemen', '#Jumlah'], (hc.by_department || []).map(function (x) { return tr([x.department, N(x.count)]); })),
+          h('div', { style: 'height:8px' }), tbl(['Grade', '#Jumlah'], (hc.by_grade || []).map(function (x) { return tr([x.grade == null ? '-' : x.grade, N(x.count)]); }))]);
+        var c2 = card('Rekap absensi, cuti & lembur ' + s.i.value + ' s/d ' + e.i.value, [h('div', { class: 'hx-row' }, [h('button', { class: 'hx-b g', onclick: function () { csv('rekap-absensi-' + s.i.value + '_' + e.i.value + '.csv', [['Kode', 'Nama', 'Departemen', 'Hari Hadir', 'Tepat Waktu', 'Terlambat', 'Belum Clock-out', 'Hari Cuti Disetujui', 'Jam Lembur Disetujui']].concat(rows.map(function (r) { return [r.employee_code, r.full_name, r.department, r.days_present, r.on_time, r.late, r.missing_clock_out, r.leave_days, r.overtime_hours]; }))); } }, 'Unduh CSV')]),
+          h('div', { class: 'hx-mut', style: 'margin:6px 0' }, 'Total hadir ' + sum('days_present') + ' | terlambat ' + sum('late') + ' | belum clock-out ' + sum('missing_clock_out') + ' | cuti ' + sum('leave_days') + ' hari | lembur ' + sum('overtime_hours').toFixed(1) + ' jam. Status tepat waktu/terlambat mengikuti data absensi yang tercatat.'),
+          tbl(['Kode', 'Nama', 'Departemen', '#Hadir', '#Tepat', '#Telat', '#Tanpa out', '#Cuti', '#Lembur (jam)'], rows.filter(function (r) { return r.days_present || r.leave_days || Number(r.overtime_hours); }).map(function (r) { return tr([r.employee_code || '', r.full_name, r.department || '', N(r.days_present), N(r.on_time), N(r.late), N(r.missing_clock_out), N(r.leave_days), N(r.overtime_hours)]); }))]);
+        body.replaceChildren(c1, c2);
+      });
+    }
+    main.replaceChildren(card('Periode laporan', h('div', { class: 'hx-row' }, [s.el, e.el, h('button', { class: 'hx-b', onclick: act(load) }, 'Tampilkan')])), body);
+    return load();
+  }
+
+  /* ---------- LEMBUR ---------- */
+  function tabOvertime() {
+    view = tabOvertime;
+    return q(sb.from('overtime_requests').select('*').eq('status', 'approved').order('work_date', { ascending: false }).limit(200)).then(function (rows) {
+      function mins(a, b) { var x = a.split(':'), y = b.split(':'), d = (Number(y[0]) * 60 + Number(y[1])) - (Number(x[0]) * 60 + Number(x[1])); return d < 0 ? d + 1440 : d; }
+      main.replaceChildren(card('Verifikasi lembur (hanya lembur terverifikasi yang masuk payroll)', [h('div', { class: 'hx-mut', style: 'margin-bottom:8px' }, 'Durasi diajukan belum tentu dibayarkan. Isi menit aktual yang diverifikasi (mis. dari data absensi), lalu klik Verifikasi. Setelah itu impor ke payroll dari halaman detail run.'),
+        rows.length ? tbl(['Tanggal', 'Karyawan', 'Jam', '#Diajukan (mnt)', 'Terverifikasi (mnt)', ''], rows.map(function (o) {
+          var d = mins(o.start_time, o.end_time), i = h('input', { type: 'number', min: '0', max: '1440', value: String(o.verified_minutes != null ? o.verified_minutes : d), style: 'width:90px;padding:4px;border:1px solid #D9CEC2;border-radius:6px' });
+          return tr([o.work_date, nm(o.employee_id), o.start_time.slice(0, 5) + '-' + o.end_time.slice(0, 5), N(d), i, h('span', null, [h('button', { class: 'hx-b s', onclick: act(function () { return call('verify_overtime_hr', { p_id: o.id, p_verified_minutes: Number(i.value) }).then(tabOvertime); }, 'Terverifikasi') }, o.verified_minutes != null ? 'Ubah' : 'Verifikasi'), o.verified_minutes != null ? ' ok' : ''])]);
+        })) : h('div', { class: 'hx-mut' }, 'Belum ada lembur berstatus approved.')]));
+    });
+  }
+
+  /* ---------- ONBOARDING / OFFBOARDING ---------- */
+  function checklist(its) {
+    return h('div', null, its.map(function (it) {
+      var c = h('input', { type: 'checkbox' }); c.checked = !!it.done;
+      c.addEventListener('change', act(function () { return call('set_checklist_item_hr', { p_item_id: it.id, p_done: c.checked, p_notes: null }).then(function () { return tabLife(); }); }));
+      return h('label', { style: 'display:flex;gap:8px;align-items:flex-start;margin:4px 0' }, [c, h('span', null, it.title + (it.required ? '' : ' (opsional)')), it.done_at ? h('span', { class: 'hx-mut' }, ' - selesai ' + it.done_at.slice(0, 10)) : null]);
+    }));
+  }
+  function tabLife() {
+    view = tabLife;
+    var y = new Date().getFullYear();
+    return Promise.all([q(sb.from('checklist_items').select('*').order('sort_order')), q(sb.from('offboarding_cases').select('*').order('created_at', { ascending: false })), q(sb.from('company_assets').select('employee_id')), call('get_report_turnover_hr', { p_year: y })]).then(function (d) {
+      var items = d[0], cases = d[1], assets = d[2], tv = d[3] || {}, byEmp = {};
+      items.filter(function (i) { return i.kind === 'onboarding'; }).forEach(function (i) { (byEmp[i.employee_id] = byEmp[i.employee_id] || []).push(i); });
+      var onList = Object.keys(byEmp).filter(function (id) { return byEmp[id].some(function (i) { return !i.done; }); }).map(function (id) { var a = byEmp[id], dn = a.filter(function (i) { return i.done; }).length; return card(nm(id) + '  (' + dn + '/' + a.length + ' selesai)', checklist(a)); });
+      var oe = sel('Karyawan', empOpts());
+      var c1 = card('Mulai onboarding', h('div', { class: 'hx-row' }, [oe.el, h('button', { class: 'hx-b', onclick: act(function () { return call('start_onboarding_hr', { p_employee_id: oe.i.value }).then(tabLife); }, 'Checklist dibuat') }, 'Buat checklist')]));
+      var fe = sel('Karyawan', empOpts()), ft = sel('Jenis', [['resign', 'Pengunduran diri'], ['end_of_contract', 'Kontrak berakhir'], ['terminated', 'Pemutusan hubungan kerja'], ['retired', 'Pensiun'], ['other', 'Lainnya']]), fr = fld('Alasan', {}), fn2 = fld('Tgl pengajuan', { type: 'date' }), fl = fld('Hari kerja terakhir', { type: 'date' });
+      var c2 = card('Mulai offboarding', [h('div', { class: 'hx-row' }, [fe.el, ft.el, fr.el, fn2.el, fl.el, h('button', { class: 'hx-b', onclick: act(function () { return call('start_offboarding_hr', { p_employee_id: fe.i.value, p_exit_type: ft.i.value, p_reason: fr.i.value, p_notice_date: fn2.i.value || null, p_last_working_date: fl.i.value }).then(tabLife); }, 'Offboarding dimulai') }, 'Mulai')]), h('div', { class: 'hx-mut' }, 'Selesaikan offboarding setelah payroll terakhir karyawan difinalisasi: karyawan nonaktif tidak ikut perhitungan payroll berikutnya.')]);
+      var open = cases.filter(function (c) { return c.status === 'open'; }).map(function (c) {
+        var its = items.filter(function (i) { return i.case_id === c.id; }), na = assets.filter(function (a) { return a.employee_id === c.employee_id; }).length;
+        return card('Offboarding: ' + nm(c.employee_id) + ' (' + c.exit_type + ', hari terakhir ' + c.last_working_date + ')', [na ? h('div', { class: 'hx-w' }, '! Masih tercatat ' + na + ' aset perusahaan atas nama karyawan ini') : null, checklist(its), h('div', { class: 'hx-row', style: 'margin-top:8px' }, [
+          h('button', { class: 'hx-b', onclick: function (ev) { if (confirm('Selesaikan offboarding? Karyawan akan DINONAKTIFKAN dan kontrak aktifnya diakhiri.')) act(function () { return call('complete_offboarding_hr', { p_case_id: c.id }).then(function () { return loadEmps().then(tabLife); }); }, 'Offboarding selesai')(ev); } }, 'Selesaikan & nonaktifkan'),
+          h('button', { class: 'hx-b g', onclick: act(function () { return call('cancel_offboarding_hr', { p_case_id: c.id }).then(tabLife); }, 'Dibatalkan') }, 'Batalkan')])]);
+      });
+      var done = cases.filter(function (c) { return c.status !== 'open'; });
+      var c3 = card('Turnover ' + (tv.year || y), [h('div', { class: 'hx-mut' }, 'Keluar (offboarding selesai): ' + (tv.leavers || 0) + ' | Karyawan aktif saat ini: ' + (tv.active_now || 0) + (tv.by_type && tv.by_type.length ? ' | ' + tv.by_type.map(function (t) { return t.exit_type + ' ' + t.count; }).join(', ') : '')), h('div', { class: 'hx-mut' }, tv.note || ''),
+        done.length ? tbl(['Karyawan', 'Jenis', 'Hari terakhir', 'Status', 'Alasan'], done.map(function (c) { return tr2(c); })) : null]);
+      function tr2(c) { return tr([nm(c.employee_id), c.exit_type, c.last_working_date, c.status, c.reason || '']); }
+      main.replaceChildren.apply(main, [c1].concat(onList.length ? onList : [h('div', { class: 'hx-mut', style: 'margin-bottom:12px' }, 'Tidak ada onboarding yang sedang berjalan.')], [c2], open.length ? open : [h('div', { class: 'hx-mut', style: 'margin-bottom:12px' }, 'Tidak ada offboarding yang sedang berjalan.')], [c3]));
+    });
+  }
+
+  /* ---------- REKRUTMEN ---------- */
+  var STAGES = [['screening', 'Screening'], ['interview_hr', 'Interview HR'], ['interview_user', 'Interview User'], ['test', 'Tes'], ['offer', 'Penawaran'], ['accepted', 'Diterima (accepted)'], ['rejected', 'Ditolak'], ['withdrawn', 'Mundur']];
+  function tabRec() {
+    view = tabRec;
+    return Promise.all([q(sb.from('job_openings').select('*').order('created_at', { ascending: false })), q(sb.from('applications').select('*').order('stage_changed_at', { ascending: false })), q(sb.from('candidates').select('id,full_name,email,phone,source,cv_url,retention_until'))]).then(function (d) {
+      var ops = d[0], apps = d[1], cands = d[2], CM = {}, OM = {}; cands.forEach(function (c) { CM[c.id] = c; }); ops.forEach(function (o) { OM[o.id] = o; });
+      var t = fld('Posisi', {}), dp = fld('Departemen', {}), lc = fld('Lokasi', {}), hc = fld('Jumlah', { type: 'number', min: '1', value: '1' }), rq = fld('Persyaratan', {}), stt = sel('Status', [['draft', 'Draft'], ['open', 'Dibuka'], ['closed', 'Ditutup']], 'open');
+      var c1 = card('Lowongan', [h('div', { class: 'hx-row' }, [t.el, dp.el, lc.el, hc.el, rq.el, stt.el, h('button', { class: 'hx-b', onclick: act(function () { return call('upsert_opening_hr', { p_id: null, p_title: t.i.value, p_department: dp.i.value, p_department_id: null, p_location: lc.i.value, p_headcount: Number(hc.i.value), p_requirements: rq.i.value, p_status: stt.i.value }).then(tabRec); }, 'Lowongan disimpan') }, 'Simpan')]),
+        h('div', { style: 'height:8px' }), tbl(['Posisi', 'Dept', 'Lokasi', '#Butuh', '#Pelamar', 'Status'], ops.map(function (o) {
+          var ss = sel('', [['draft', 'Draft'], ['open', 'Dibuka'], ['closed', 'Ditutup']], o.status); ss.i.addEventListener('change', act(function () { return call('upsert_opening_hr', { p_id: o.id, p_title: o.title, p_department: o.department, p_department_id: o.department_id, p_location: o.location, p_headcount: o.headcount, p_requirements: o.requirements, p_status: ss.i.value }).then(tabRec); }, 'Status diubah'));
+          return tr([o.title, o.department || '', o.location || '', N(o.headcount), N(apps.filter(function (a) { return a.opening_id === o.id; }).length), ss.i]);
+        }))]);
+      var oo = sel('Lowongan', opt(ops.filter(function (o) { return o.status !== 'closed'; }), 'id', function (o) { return o.title; })), cn = fld('Nama', {}), ce = fld('Email', { type: 'email' }), cp = fld('Telepon', {}), cs = fld('Sumber', {}), cv = fld('URL CV', {}), ct = fld('Catatan', {});
+      var c2 = card('Tambah kandidat', h('div', { class: 'hx-row' }, [oo.el, cn.el, ce.el, cp.el, cs.el, cv.el, ct.el, h('button', { class: 'hx-b', onclick: act(function () { return call('add_candidate_hr', { p_opening_id: oo.i.value, p_full_name: cn.i.value, p_email: ce.i.value, p_phone: cp.i.value, p_source: cs.i.value, p_cv_url: cv.i.value, p_notes: ct.i.value || null }).then(tabRec); }, 'Kandidat ditambahkan') }, 'Tambah')]));
+      var flt = sel('Filter lowongan', [['', 'Semua']].concat(opt(ops, 'id', function (o) { return o.title; }))), det = h('div'), body = h('div');
+      function draw() {
+        var rows = apps.filter(function (a) { return !flt.i.value || a.opening_id === flt.i.value; });
+        body.replaceChildren(tbl(['Kandidat', 'Kontak', 'Lowongan', 'Tahap', 'Sejak', ''], rows.map(function (a) {
+          var c = CM[a.candidate_id] || {}, o = OM[a.opening_id] || {}, final = a.stage === 'hired' || a.stage === 'rejected' || a.stage === 'withdrawn', cell;
+          if (final) cell = a.stage + (a.reject_reason ? ' (' + a.reject_reason + ')' : '');
+          else { var ss = sel('', STAGES, a.stage); ss.i.addEventListener('change', act(function () { var st = ss.i.value, note = null, why = null; if (st === 'rejected') { why = prompt('Alasan penolakan (wajib):', ''); if (!why) { ss.i.value = a.stage; return; } } else { note = prompt('Catatan / hasil tahap ini (opsional):', ''); if (note === null) { ss.i.value = a.stage; return; } } return call('move_application_hr', { p_application_id: a.id, p_stage: st, p_note: note || null, p_reject_reason: why }).then(tabRec); }, 'Tahap diperbarui')); cell = ss.i; }
+          var act2 = a.stage === 'accepted' ? h('button', { class: 'hx-b s', onclick: act(function () { var code = prompt('Kode karyawan baru:', ''); if (!code) return; var jd = prompt('Tanggal mulai bekerja (YYYY-MM-DD):', todayISO()); if (!jd) return; return call('convert_candidate_to_employee_hr', { p_application_id: a.id, p_employee_code: code, p_join_date: jd, p_manager_id: null, p_department_id: null }).then(function () { toast('Karyawan dibuat & checklist onboarding dimulai'); return loadEmps().then(tabRec); }); }) }, 'Jadikan karyawan') : '';
+          return tr([c.full_name || '-', [c.email || '', c.phone ? ' ' + c.phone : ''].join(''), o.title || '-', cell, a.stage_changed_at.slice(0, 10), act2], function (ev) { if (ev.target.tagName === 'SELECT' || ev.target.tagName === 'BUTTON' || ev.target.tagName === 'OPTION') return; q(sb.from('application_events').select('*').eq('application_id', a.id).order('created_at')).then(function (evs) { det.replaceChildren(card('Riwayat ' + (c.full_name || ''), tbl(['Waktu', 'Tahap', 'Catatan', 'Oleh'], evs.map(function (e) { return tr([e.created_at.slice(0, 16).replace('T', ' '), e.stage, e.note || '', nm(e.actor_id)]); })))); }); });
+        })));
+      }
+      flt.i.addEventListener('change', draw); draw();
+      var exp = cands.filter(function (c) { return c.retention_until < todayISO(); }).length;
+      main.replaceChildren(c1, c2, card('Pipeline kandidat (klik baris untuk riwayat)', [flt.el, h('div', { style: 'height:8px' }), body]), det, exp ? h('div', { class: 'hx-w' }, '! ' + exp + ' kandidat telah melewati masa retensi data (default 12 bulan). Tinjau dan hapus/anonimkan sesuai kebijakan perlindungan data perusahaan.') : null);
+    });
+  }
+
+  /* ---------- KINERJA ---------- */
+  var perfSel = null;
+  function tabPerf() {
+    view = tabPerf;
+    return Promise.all([q(sb.from('review_periods').select('*').order('start_date', { ascending: false })), q(sb.from('review_criteria').select('*').eq('active', true).order('sort_order'))]).then(function (d) {
+      var pers = d[0], crit = d[1];
+      var nme = fld('Nama periode', { placeholder: 'mis. Q4 2026' }), a = fld('Mulai', { type: 'date' }), b = fld('Selesai', { type: 'date' }), stt = sel('Status', [['open', 'Open'], ['draft', 'Draft'], ['closed', 'Closed']]);
+      var c1 = card('Periode penilaian', [h('div', { class: 'hx-row' }, [nme.el, a.el, b.el, stt.el, h('button', { class: 'hx-b', onclick: act(function () { return call('upsert_review_period_hr', { p_id: null, p_name: nme.i.value, p_start: a.i.value, p_end: b.i.value, p_status: stt.i.value }).then(tabPerf); }, 'Periode disimpan') }, 'Simpan')]), h('div', { style: 'height:8px' }),
+        pers.length ? tbl(['Periode', 'Mulai', 'Selesai', 'Status', ''], pers.map(function (x) { return tr([x.name, x.start_date, x.end_date, x.status, h('button', { class: 'hx-b g s', onclick: function () { perfSel = x.id; tabPerf(); } }, perfSel === x.id ? 'Dipilih' : 'Buka')]); })) : h('div', { class: 'hx-mut' }, 'Belum ada periode.')]);
+      if (!perfSel || !pers.some(function (x) { return x.id === perfSel; })) { main.replaceChildren(c1); return; }
+      var per = pers.filter(function (x) { return x.id === perfSel; })[0];
+      return q(sb.from('performance_evaluations').select('*').eq('period_id', per.id)).then(function (evs) {
+        evs.sort(function (x, y) { return nm(x.employee_id).localeCompare(nm(y.employee_id)); });
+        var cnt = { draft: 0, submitted: 0, finalized: 0 }; evs.forEach(function (e) { cnt[e.status]++; });
+        var c2 = card('Penilaian ' + per.name, [h('div', { class: 'hx-row' }, [h('button', { class: 'hx-b', onclick: act(function () { return call('generate_evaluations_hr', { p_period_id: per.id }).then(function (n) { toast(n + ' penilaian dibuat'); return tabPerf(); }); }) }, 'Buat penilaian karyawan aktif'), h('span', { class: 'hx-mut' }, 'Draft ' + cnt.draft + ' | Dikirim ' + cnt.submitted + ' | Final ' + cnt.finalized)]), h('div', { style: 'height:8px' }),
+          tbl(['Karyawan', 'Atasan/penilai', 'Status', '#Skor (1-5)'], evs.map(function (e) { return tr([nm(e.employee_id), nm(e.evaluator_id), e.status, N(e.overall_score == null ? '-' : e.overall_score)], function () { evEditor(e, crit, per); }); }))]);
+        main.replaceChildren(c1, c2);
+      });
+    });
+  }
+  function evEditor(e, crit, per) {
+    q(sb.from('evaluation_scores').select('*').eq('evaluation_id', e.id)).then(function (sc) {
+      var SM = {}; sc.forEach(function (x) { SM[x.criterion_id] = x; });
+      var locked = e.status === 'finalized', rows = crit.map(function (c) { var v = SM[c.id], si = sel('', [['', '-'], ['1', '1 - Kurang'], ['2', '2 - Cukup'], ['3', '3 - Baik'], ['4', '4 - Sangat baik'], ['5', '5 - Istimewa']], v ? String(v.score) : ''), ni = h('input', { value: v && v.note ? v.note : '', placeholder: 'catatan', style: 'width:100%;padding:6px;border:1px solid #D9CEC2;border-radius:6px' }); if (locked) { si.i.disabled = true; ni.disabled = true; } return { c: c, si: si.i, ni: ni }; });
+      var cm = fld('Komentar umum', { rows: '3' }, 'textarea'); cm.i.value = e.comments || ''; if (locked) cm.i.disabled = true;
+      function collect() { return rows.filter(function (r) { return r.si.value; }).map(function (r) { return { criterion_id: r.c.id, score: Number(r.si.value), note: r.ni.value }; }); }
+      function save(submit) { return call('save_evaluation_hr', { p_eval_id: e.id, p_scores: collect(), p_comments: cm.i.value || null, p_submit: submit }).then(function (o) { toast('Tersimpan. Skor ' + o); return tabPerf().then(function () { }); }); }
+      var bt = [h('button', { class: 'hx-b g', onclick: function () { tabPerf(); } }, '< Kembali')];
+      if (!locked) { bt.push(h('button', { class: 'hx-b g', onclick: act(function () { return save(false); }) }, 'Simpan draft')); bt.push(h('button', { class: 'hx-b', onclick: act(function () { return save(true); }) }, 'Kirim penilaian')); }
+      if (e.status === 'submitted') bt.push(h('button', { class: 'hx-b', onclick: function (ev) { if (confirm('Finalisasi mengunci penilaian dan membuatnya terlihat oleh karyawan. Lanjutkan?')) act(function () { return call('finalize_evaluation_hr', { p_eval_id: e.id }).then(tabPerf); }, 'Penilaian final')(ev); } }, 'Finalisasi'));
+      main.replaceChildren(card(nm(e.employee_id) + ' - ' + per.name + ' (' + e.status + (e.overall_score != null ? ', skor ' + e.overall_score : '') + ')', [h('div', { class: 'hx-row' }, bt), h('div', { style: 'height:8px' }),
+        h('div', null, rows.map(function (r) { return h('div', { style: 'display:grid;grid-template-columns:1.2fr 1fr 2fr;gap:8px;margin:6px 0;align-items:center' }, [h('span', null, r.c.name + (r.c.weight != 1 ? ' (bobot ' + r.c.weight + ')' : '')), r.si, r.ni]); })), cm.el]));
+    });
+  }
+
+  /* ---------- PELATIHAN ---------- */
+  var trSel = null;
+  function tabTrain() {
+    view = tabTrain;
+    return Promise.all([q(sb.from('training_programs').select('*').order('start_date', { ascending: false })), call('get_expiring_certificates_hr', { p_days: 90 })]).then(function (d) {
+      var progs = d[0], ex = d[1] || [];
+      var t = fld('Nama pelatihan', {}), pv = fld('Penyelenggara', {}), lc = fld('Lokasi', {}), a = fld('Mulai', { type: 'date' }), b = fld('Selesai', { type: 'date' });
+      var c0 = card('Sertifikat mendekati kedaluwarsa (90 hari)', ex.length ? tbl(['Kode', 'Nama', 'Pelatihan', 'Berlaku sampai', '#Sisa hari'], ex.map(function (x) { return tr([x.employee_code || '', x.full_name, x.program_title, x.certificate_expiry, N(x.days_left < 0 ? 'lewat ' + (-x.days_left) : x.days_left)]); })) : h('div', { class: 'hx-mut' }, 'Tidak ada.'));
+      var c1 = card('Program pelatihan', [h('div', { class: 'hx-row' }, [t.el, pv.el, lc.el, a.el, b.el, h('button', { class: 'hx-b', onclick: act(function () { return call('upsert_training_hr', { p_id: null, p_title: t.i.value, p_provider: pv.i.value, p_location: lc.i.value, p_start: a.i.value, p_end: b.i.value || null, p_notes: null }).then(tabTrain); }, 'Program disimpan') }, 'Simpan')]), h('div', { style: 'height:8px' }),
+        progs.length ? tbl(['Pelatihan', 'Penyelenggara', 'Mulai', 'Selesai', ''], progs.map(function (x) { return tr([x.title, x.provider || '', x.start_date, x.end_date || '', h('button', { class: 'hx-b g s', onclick: function () { trSel = x.id; tabTrain(); } }, trSel === x.id ? 'Dipilih' : 'Peserta')]); })) : h('div', { class: 'hx-mut' }, 'Belum ada program.')]);
+      if (!trSel || !progs.some(function (x) { return x.id === trSel; })) { main.replaceChildren(c0, c1); return; }
+      var pg = progs.filter(function (x) { return x.id === trSel; })[0];
+      return q(sb.from('training_participants').select('*').eq('program_id', pg.id)).then(function (ps) {
+        var ms = h('select', { multiple: true, size: '6', style: 'width:100%;border:1px solid #D9CEC2;border-radius:8px;padding:4px' }, EMP.filter(function (e) { return e.employment_status === 'active'; }).map(function (e) { return h('option', { value: e.id }, (e.employee_code || '') + ' ' + e.full_name); }));
+        var c2 = card('Peserta: ' + pg.title, [h('div', { class: 'hx-f' }, [h('span', null, 'Tambah peserta (tahan Ctrl/Cmd untuk memilih banyak)'), ms]), h('div', { style: 'height:6px' }), h('button', { class: 'hx-b', onclick: act(function () { var ids = Array.prototype.filter.call(ms.options, function (o) { return o.selected; }).map(function (o) { return o.value; }); if (!ids.length) { toast('Pilih peserta dahulu', true); return Promise.reject(); } return call('add_training_participants_hr', { p_program_id: pg.id, p_employee_ids: ids }).then(function (n) { toast(n + ' peserta ditambahkan'); return tabTrain(); }); }) }, 'Tambahkan'), h('div', { style: 'height:8px' }),
+          ps.length ? tbl(['Peserta', 'Kehadiran', 'Hasil', 'URL sertifikat', 'Sertifikat berlaku s/d', ''], ps.map(function (x) {
+            var at = sel('', [['registered', 'Terdaftar'], ['attended', 'Hadir'], ['absent', 'Tidak hadir']], x.attendance), rs = h('input', { value: x.result || '', style: 'width:110px;padding:4px;border:1px solid #D9CEC2;border-radius:6px' }), cu = h('input', { value: x.certificate_url || '', style: 'width:140px;padding:4px;border:1px solid #D9CEC2;border-radius:6px' }), ce = h('input', { type: 'date', value: x.certificate_expiry || '', style: 'padding:4px;border:1px solid #D9CEC2;border-radius:6px' });
+            return tr([nm(x.employee_id), at.i, rs, cu, ce, h('button', { class: 'hx-b s', onclick: act(function () { return call('update_training_participant_hr', { p_id: x.id, p_attendance: at.i.value, p_result: rs.value, p_certificate_url: cu.value, p_certificate_expiry: ce.value || null }).then(tabTrain); }, 'Tersimpan') }, 'Simpan')]);
+          })) : h('div', { class: 'hx-mut' }, 'Belum ada peserta.')]);
+        main.replaceChildren(c0, c1, c2);
+      });
+    });
+  }
+
+  var FN = { perf: tabPerf, train: tabTrain, rec: tabRec, life: tabLife, overtime: tabOvertime, report: tabReport, payroll: tabPayroll, emp: tabEmp, param: tabParam, contract: tabContract, leave: tabLeave, audit: tabAudit };
+  function go(k) { cur = k; Array.prototype.forEach.call(tabsEl.children, function (c) { c.classList.toggle('on', c.getAttribute('data-k') === k); }); main.replaceChildren(h('div', { class: 'hx-mut' }, 'Memuat...')); FN[k]().catch(function (e) { console.error(e); }); }
+  function open() {
+    if (overlay) { overlay.remove(); }
+    tabsEl = h('div', { class: 'hx-tabs' }, TABS.filter(function (t) { return !t[2] || (t[2] === 'pay' ? payOk : adminOk); }).map(function (t) { return h('button', { class: 'hx-tab', 'data-k': t[0], onclick: function () { go(t[0]); } }, t[1]); }));
+    main = h('div', { class: 'hx-m' });
+    overlay = h('div', { id: 'hx-ov' }, [h('div', { class: 'hx-hd' }, [h('b', null, 'Admin HR'), tabsEl, h('button', { class: 'hx-x', onclick: function () { overlay.remove(); overlay = null; } }, 'x')]), main]);
+    document.body.appendChild(overlay);
+    loadEmps().then(function () { go(payOk ? 'payroll' : 'contract'); }).catch(function () { });
+  }
+  function show() { if (!btn) { btn = h('button', { id: 'hx-btn', onclick: open }, 'Admin HR'); document.body.appendChild(btn); } }
+  function hide() { if (btn) { btn.remove(); btn = null; } if (overlay) { overlay.remove(); overlay = null; } hrOk = adminOk = payOk = apprOk = false; }
+  /* ---- Koneksi Supabase ----
+     Jika aplikasi membagikan client-nya (window.__sb) maka dipakai. Jika tidak, console membuat client sendiri
+     dengan memakai token login yang sudah disimpan aplikasi di localStorage (tanpa refresh token sendiri).
+     URL dan anon key di bawah adalah kunci PUBLIK (role anon), sama seperti yang sudah ada di aplikasi Anda. */
+  var SUPA_URL = 'https://usdnfufdadpiwreqhjhc.supabase.co';
+  var SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVzZG5mdWZkYWRwaXdyZXFoamhjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU4MDcyNzksImV4cCI6MjEwMTM4MzI3OX0.baXxwVj-f8lwE94E6CmHZJURRZPqqKXQVcDEs29KAOo';
+  var ownClient = false;
+  function tokenFromStorage() {
+    try {
+      for (var i = 0; i < localStorage.length; i++) {
+        var k = localStorage.key(i);
+        if (/^sb-.+-auth-token$/.test(k) && k.indexOf('usdnfufdadpiwreqhjhc') >= 0) {
+          var v = JSON.parse(localStorage.getItem(k) || 'null');
+          if (v && v.access_token && (!v.expires_at || v.expires_at * 1000 > Date.now())) return v.access_token;
+        }
+      }
+    } catch (e) { }
+    return null;
+  }
+  function loadLib() {
+    if (window.supabase && window.supabase.createClient) return Promise.resolve(window.supabase);
+    return import('https://esm.sh/@supabase/supabase-js@2.45.0');
+  }
+  function makeClient() {
+    return loadLib().then(function (lib) {
+      ownClient = true;
+      return lib.createClient(SUPA_URL, SUPA_KEY, {
+        auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
+        global: { fetch: function (u, o) { o = o || {}; var hd = new Headers(o.headers || {}); var t = tokenFromStorage(); if (t) hd.set('Authorization', 'Bearer ' + t); o.headers = hd; return fetch(u, o); } }
+      });
+    });
+  }
+  function hasSession() {
+    if (ownClient) return Promise.resolve(!!tokenFromStorage());
+    return sb.auth.getSession().then(function (s) { return !!(s && s.data && s.data.session); });
+  }
+  function check() {
+    hasSession().then(function (ok) {
+      if (!ok) { hide(); return; }
+      if (btn) return;
+      sb.rpc('is_hr').then(function (a) { if (a.error || !a.data) return; hrOk = true; return Promise.all([sb.rpc('is_admin'), sb.rpc('has_perm', { p_perm: 'payroll.manage' }), sb.rpc('has_perm', { p_perm: 'payroll.approve' })]).then(function (b) { adminOk = !!(b[0] && b[0].data); payOk = !!(b[1] && b[1].data); apprOk = !!(b[2] && b[2].data); show(); }); });
+    }).catch(function () { });
+  }
+  function start() { var st = document.createElement('style'); st.textContent = css; document.head.appendChild(st); check(); setInterval(check, 4000); }
+  function boot() {
+    if (window.__sb) { sb = window.__sb; start(); return; }
+    var tries = 0;
+    (function wait() {
+      if (window.__sb) { sb = window.__sb; start(); return; }
+      if (++tries < 6) { setTimeout(wait, 500); return; }
+      makeClient().then(function (c) { sb = c; start(); }).catch(function (e) { console.error('Admin console: gagal memuat client Supabase', e); });
+    })();
+  }
+  boot();
+})();
